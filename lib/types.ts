@@ -136,7 +136,7 @@ export interface ProdutoMaisVendido {
   receita_total: number;
   preco_medio: number;
   custo_medio: number;
-  margem_percentual: number;
+  margem_percentual: number | null;
 }
 
 // Estoque

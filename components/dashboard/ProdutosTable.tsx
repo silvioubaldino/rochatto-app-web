@@ -10,7 +10,8 @@ interface ProdutosTableProps {
   isLoading?: boolean;
 }
 
-function margemColor(margem: number): string {
+function margemColor(margem: number | null | undefined): string {
+  if (!margem && margem !== 0) return "text-muted-foreground";
   if (margem > 30) return "text-green-600 font-semibold";
   if (margem >= 15) return "text-yellow-600 font-semibold";
   return "text-red-600 font-semibold";
@@ -61,7 +62,7 @@ export function ProdutosTable({ produtos, isLoading }: ProdutosTableProps) {
               <td className="py-2 text-right">{formatMoeda(p.preco_medio)}</td>
               <td className="py-2 text-right">{formatMoeda(p.custo_medio)}</td>
               <td className={cn("py-2 text-right", margemColor(p.margem_percentual))}>
-                {p.margem_percentual.toFixed(1)}%
+                {(p.margem_percentual ?? 0).toFixed(1)}%
               </td>
             </tr>
           ))}
