@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   onAuthStateChanged,
-  signInWithPopup,
+  signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   type User,
 } from "firebase/auth";
-import { getFirebaseAuth, googleProvider } from "@/lib/firebase";
+import { getFirebaseAuth } from "@/lib/firebase";
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -22,9 +22,9 @@ export function useAuth() {
     return unsubscribe;
   }, []);
 
-  const signIn = useCallback(async () => {
+  const signIn = useCallback(async (email: string, pass: string) => {
     const auth = getFirebaseAuth();
-    await signInWithPopup(auth, googleProvider);
+    await signInWithEmailAndPassword(auth, email, pass);
   }, []);
 
   const signOut = useCallback(async () => {

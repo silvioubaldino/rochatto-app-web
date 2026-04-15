@@ -37,6 +37,8 @@ export function AlertasPanel({
   const router = useRouter();
   const [confirmacao, setConfirmacao] = useState<ConfirmacaoState | null>(null);
   const [confirmando, setConfirmando] = useState(false);
+  const [removidos, setRemovidos] = useState<Set<string>>(new Set());
+  
   const safeNotificacoes = Array.isArray(notificacoes) ? notificacoes : [];
   const visiveis = safeNotificacoes.filter((n) => !removidos.has(n.id));
 
