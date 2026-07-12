@@ -139,3 +139,29 @@ npm run dev
 - Conectar repositório GitHub ao Vercel
 - Configurar variáveis de ambiente no painel
 - Deploy automático a cada push na branch `main`
+
+## This repo's role (docs framework)
+
+I consume the AYD contracts (source of truth) from the context repo (`rochatto-app-context`).
+If the backend diverges from the AYD, I flag it — I do not adapt silently.
+
+## Engineering conventions (local)
+@docs/conventions.md
+
+## Docs framework (summary)
+
+How this repo connects to the shared context (`rochatto-app-context`). The **full rules**
+live in the linked files — this is just the essentials.
+
+- **READ-ONLY context:** run `docs/scripts/sync-context.sh` to populate `docs/shared/`
+  (a **gitignored** mirror of the context repo — **do not edit here**). Map and rules:
+  @docs/shared/CLAUDE.md (IDs, frontmatter, lifecycle, `ID@repo` refs) ·
+  @docs/shared/requirements.md (requirements **and glossary** — ALWAYS use these terms).
+- **What lives in this repo:** `docs/specs/` (SPEC — already includes the implementation
+  plan: approach, steps, tests, checklist), `docs/technical_decisions/` (local TDR),
+  `docs/conventions.md` (CONV), `docs/changelog.md`.
+- **Contracts only change in the context** (AYD/ADR). If this frontend diverges from the AYD,
+  **flag it** — do not adapt locally (see `docs/shared/CLAUDE.md`, "Core rule").
+- **Feature flow:** read the AYD in `docs/shared/design/` → create/update the SPEC
+  (`parents: [AYD-NNN@context]`, covers what + how) and implement → contract changed? go
+  back to the AYD in the context repo before proceeding.
