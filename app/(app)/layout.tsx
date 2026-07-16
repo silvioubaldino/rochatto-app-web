@@ -12,6 +12,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   LayoutDashboard,
   ShoppingCart,
+  FileText,
   Users,
   Package,
   LogOut,
@@ -29,6 +30,7 @@ interface NavItem {
 
 const mainNav: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
+  { label: "Orçamentos", href: "/orcamentos", icon: <FileText className="h-4 w-4" /> },
   { label: "Vendas", href: "/vendas", icon: <ShoppingCart className="h-4 w-4" /> },
   { label: "Clientes", href: "/clientes", icon: <Users className="h-4 w-4" /> },
   { label: "Catálogos", href: "/catalogos", icon: <BookOpen className="h-4 w-4" /> },

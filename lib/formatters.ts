@@ -1,5 +1,5 @@
 import { format, parseISO } from "date-fns";
-import type { StatusVenda } from "./types";
+import type { StatusVenda, QuoteStatus } from "./types";
 
 export function formatMoeda(valor: number): string {
   const v = typeof valor === "number" ? valor : (Number(valor) || 0);
@@ -27,4 +27,16 @@ export const STATUS_COLORS: Record<StatusVenda, string> = {
   A_RETIRAR: "bg-orange-100 text-orange-800",
   ENTREGUE_PARCIAL: "bg-blue-100 text-blue-800",
   ENTREGUE: "bg-green-100 text-green-800",
+};
+
+export const QUOTE_STATUS_LABELS: Record<QuoteStatus, string> = {
+  OPEN: "Aberto",
+  WON: "Ganho",
+  LOST: "Perdido",
+};
+
+export const QUOTE_STATUS_COLORS: Record<QuoteStatus, string> = {
+  OPEN: "bg-yellow-100 text-yellow-800",
+  WON: "bg-green-100 text-green-800",
+  LOST: "bg-red-100 text-red-800",
 };
