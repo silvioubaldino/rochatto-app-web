@@ -80,6 +80,7 @@ export interface Venda {
   cliente_nome: string;
   vendedor_externo_id?: string;
   vendedor_externo_nome?: string;
+  quote_id?: string;
   status: StatusVenda;
   data_venda: string;
   data_entrega_prevista?: string;
@@ -97,6 +98,38 @@ export interface Venda {
   lucro: number;
   itens?: ItemVenda[];
   pagamentos?: PagamentoCliente[];
+  created_at: string;
+}
+
+// Quote (Orçamento) — AYD-001. Contrato em inglês (ADR-001), rótulos em PT-BR na UI.
+export type QuoteStatus = "OPEN" | "WON" | "LOST";
+
+export interface QuoteItem {
+  id: string;
+  quote_id: string;
+  product_id?: string;
+  product_name: string;
+  supplier_id?: string;
+  supplier_name?: string;
+  quantity: number;
+  unit_price: number;
+  unit_cost: number;
+  total_price: number;
+  created_at: string;
+}
+
+export interface Quote {
+  id: string;
+  customer_id: string;
+  customer_name: string;
+  referrer_id?: string;
+  referrer_name?: string;
+  status: QuoteStatus;
+  lost_reason?: string;
+  quote_date: string;
+  notes?: string;
+  total_quote: number;
+  items?: QuoteItem[];
   created_at: string;
 }
 

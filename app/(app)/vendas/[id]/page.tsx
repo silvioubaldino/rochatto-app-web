@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import Link from "next/link";
 import { useVenda } from "@/hooks/useVenda";
 import { usePagamentos } from "@/hooks/usePagamentos";
 import { useProdutos } from "@/hooks/useProdutos";
@@ -452,6 +453,19 @@ export default function VendaDetalhePage() {
             </dd>
             <dt className="text-muted-foreground">Observações</dt>
             <dd>{venda.observacoes || "—"}</dd>
+            {venda.quote_id && (
+              <>
+                <dt className="text-muted-foreground">Origem</dt>
+                <dd>
+                  <Link
+                    href={`/orcamentos/${venda.quote_id}`}
+                    className="text-primary hover:underline"
+                  >
+                    Originado do Orçamento #{venda.quote_id.slice(0, 8)}
+                  </Link>
+                </dd>
+              </>
+            )}
           </dl>
         </Card>
 
