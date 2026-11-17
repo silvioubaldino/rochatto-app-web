@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useQuote } from "@/hooks/useQuote";
 import { useProdutos } from "@/hooks/useProdutos";
-import { useFornecedores } from "@/hooks/useFornecedores";
 import { api, APIError } from "@/lib/api";
 import { formatMoeda, formatData, QUOTE_STATUS_LABELS, QUOTE_STATUS_COLORS } from "@/lib/formatters";
 import type { QuoteItem } from "@/lib/types";
@@ -42,7 +41,6 @@ export default function OrcamentoDetalhePage() {
   const quoteId = params.id as string;
   const { quote, isLoading, refresh } = useQuote(quoteId);
   const { produtos } = useProdutos();
-  const { fornecedores } = useFornecedores();
 
   const isOpen = quote?.status === "OPEN";
 
@@ -55,16 +53,12 @@ export default function OrcamentoDetalhePage() {
   const [newItem, setNewItem] = useState({
     product_name: "",
     product_id: "",
-    supplier_name: "",
-    supplier_id: "",
     quantity: 0,
     unit_price: 0,
     unit_cost: 0,
   });
   const [newItemProdutoSearch, setNewItemProdutoSearch] = useState("");
   const [showNewProdutoDropdown, setShowNewProdutoDropdown] = useState(false);
-  const [newItemFornecedorSearch, setNewItemFornecedorSearch] = useState("");
-  const [showNewFornecedorDropdown, setShowNewFornecedorDropdown] = useState(false);
   const [savingNewItem, setSavingNewItem] = useState(false);
 
   // Delete item
@@ -91,7 +85,6 @@ export default function OrcamentoDetalhePage() {
       unit_price: item.unit_price,
       unit_cost: item.unit_cost,
       quantity: item.quantity,
-      supplier_name: item.supplier_name,
       product_name: item.product_name,
     });
   }
@@ -103,7 +96,16 @@ export default function OrcamentoDetalhePage() {
 
   async function saveEditItem(itemId: string) {
     try {
-      await api.put(`/quotes/${quoteId}/items/${itemId}`, editItemData);
+      const current = (quote?.items || []).find((i) => i.id === itemId);
+      if (!current) return;
+      // A api substitui o item inteiro: enviar todos os campos preserva o vínculo com o Product.
+      await api.put(`/quotes/${quoteId}/items/${itemId}`, {
+        product_id: current.product_id ?? null,
+        product_name: editItemData.product_name ?? current.product_name,
+        quantity: editItemData.quantity ?? current.quantity,
+        unit_price: editItemData.unit_price ?? current.unit_price,
+        unit_cost: editItemData.unit_cost ?? current.unit_cost,
+      });
       toast.success("Item atualizado.");
       cancelEditItem();
       refresh();
@@ -140,14 +142,15 @@ export default function OrcamentoDetalhePage() {
     }
     setSavingNewItem(true);
     try {
-      await api.post(`/quotes/${quoteId}/items`, newItem);
+      await api.post(`/quotes/${quoteId}/items`, {
+        ...newItem,
+        product_id: newItem.product_id || null, // a api rejeita string vazia
+      });
       toast.success("Item adicionado.");
       setAddingItem(false);
       setNewItem({
         product_name: "",
         product_id: "",
-        supplier_name: "",
-        supplier_id: "",
         quantity: 0,
         unit_price: 0,
         unit_cost: 0,
@@ -353,7 +356,6 @@ export default function OrcamentoDetalhePage() {
             <thead>
               <tr className="border-b text-left text-muted-foreground">
                 <th className="pb-2 pr-4 font-medium">Produto</th>
-                <th className="pb-2 pr-4 font-medium">Fornecedor</th>
                 <th className="pb-2 pr-4 font-medium text-right">Qtd</th>
                 <th className="pb-2 pr-4 font-medium text-right">Preço Unit.</th>
                 <th className="pb-2 pr-4 font-medium text-right">Total</th>
@@ -364,7 +366,6 @@ export default function OrcamentoDetalhePage() {
               {(quote.items || []).map((item) => (
                 <tr key={item.id} className="border-b last:border-b-0">
                   <td className="py-2 pr-4">{item.product_name}</td>
-                  <td className="py-2 pr-4">{item.supplier_name || "—"}</td>
                   {editingItemId === item.id ? (
                     <>
                       <td className="py-2 pr-4 text-right">
@@ -489,55 +490,6 @@ export default function OrcamentoDetalhePage() {
                                 }}
                               >
                                 {p.nome}
-                              </button>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-2 pr-4">
-                    <div className="relative">
-                      <Input
-                        placeholder="Fornecedor..."
-                        value={newItemFornecedorSearch || newItem.supplier_name}
-                        onChange={(e) => {
-                          setNewItemFornecedorSearch(e.target.value);
-                          setNewItem((prev) => ({
-                            ...prev,
-                            supplier_name: e.target.value,
-                            supplier_id: "",
-                          }));
-                          setShowNewFornecedorDropdown(true);
-                        }}
-                        onFocus={() => newItemFornecedorSearch && setShowNewFornecedorDropdown(true)}
-                        onBlur={() => setTimeout(() => setShowNewFornecedorDropdown(false), 200)}
-                        className="h-7 text-sm"
-                      />
-                      {showNewFornecedorDropdown && (
-                        <div className="absolute top-full left-0 z-50 mt-1 w-full max-h-40 overflow-y-auto rounded-md border bg-popover shadow-md">
-                          {fornecedores
-                            .filter((f) =>
-                              f.nome
-                                .toLowerCase()
-                                .includes((newItemFornecedorSearch || "").toLowerCase()),
-                            )
-                            .slice(0, 6)
-                            .map((f) => (
-                              <button
-                                key={f.id}
-                                type="button"
-                                className="w-full px-3 py-1.5 text-left text-sm hover:bg-muted"
-                                onMouseDown={() => {
-                                  setNewItem((prev) => ({
-                                    ...prev,
-                                    supplier_id: f.id,
-                                    supplier_name: f.nome,
-                                  }));
-                                  setNewItemFornecedorSearch("");
-                                  setShowNewFornecedorDropdown(false);
-                                }}
-                              >
-                                {f.nome}
                               </button>
                             ))}
                         </div>

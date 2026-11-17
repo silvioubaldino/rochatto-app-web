@@ -9,10 +9,9 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { api, APIError } from "@/lib/api";
 import { formatMoeda } from "@/lib/formatters";
-import type { Cliente, Produto, Fornecedor } from "@/lib/types";
+import type { Cliente, Produto } from "@/lib/types";
 import { useClientes } from "@/hooks/useClientes";
 import { useProdutos } from "@/hooks/useProdutos";
-import { useFornecedores } from "@/hooks/useFornecedores";
 import { useVendedoresExternos } from "@/hooks/useVendedoresExternos";
 import { ClienteModal } from "@/components/forms/ClienteModal";
 import { MoneyInput } from "@/components/ui/MoneyInput";
@@ -26,8 +25,6 @@ import { Loader2, Plus, Trash2, ArrowLeft, Search } from "lucide-react";
 const itemSchema = z.object({
   product_id: z.string().optional(),
   product_name: z.string().min(1, "Produto é obrigatório"),
-  supplier_id: z.string().optional(),
-  supplier_name: z.string().optional(),
   quantity: z.number().min(0.01, "Quantidade deve ser maior que 0"),
   unit_price: z.number().min(0, "Preço inválido"),
   unit_cost: z.number().min(0, "Custo inválido"),
@@ -92,8 +89,6 @@ export default function NovoOrcamentoPage() {
         {
           product_id: "",
           product_name: "",
-          supplier_id: "",
-          supplier_name: "",
           quantity: 0,
           unit_price: 0,
           unit_cost: 0,
@@ -115,9 +110,6 @@ export default function NovoOrcamentoPage() {
   const [produtoSearches, setProdutoSearches] = useState<Record<number, string>>({});
   const [showProdutoDropdown, setShowProdutoDropdown] = useState<Record<number, boolean>>({});
 
-  const [fornecedorSearches, setFornecedorSearches] = useState<Record<number, string>>({});
-  const [showFornecedorDropdown, setShowFornecedorDropdown] = useState<Record<number, boolean>>({});
-
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedClienteSearch(clienteSearch), 300);
     return () => clearTimeout(timer);
@@ -125,7 +117,6 @@ export default function NovoOrcamentoPage() {
 
   const { clientes, refresh: refreshClientes } = useClientes(debouncedClienteSearch || undefined);
   const { produtos } = useProdutos();
-  const { fornecedores } = useFornecedores();
   const { vendedoresExternos } = useVendedoresExternos();
 
   const filteredProdutos = useCallback(
@@ -135,15 +126,6 @@ export default function NovoOrcamentoPage() {
       return produtos.filter((p) => p.nome.toLowerCase().includes(search));
     },
     [produtos, produtoSearches],
-  );
-
-  const filteredFornecedores = useCallback(
-    (index: number) => {
-      const search = (fornecedorSearches[index] || "").toLowerCase();
-      if (!search) return [];
-      return fornecedores.filter((f) => f.nome.toLowerCase().includes(search));
-    },
-    [fornecedores, fornecedorSearches],
   );
 
   const totalQuote = useMemo(() => {
@@ -169,33 +151,44 @@ export default function NovoOrcamentoPage() {
     setShowProdutoDropdown((prev) => ({ ...prev, [index]: false }));
   }
 
-  function handleSelectFornecedor(index: number, fornecedor: Fornecedor) {
-    setValue(`items.${index}.supplier_id`, fornecedor.id);
-    setValue(`items.${index}.supplier_name`, fornecedor.nome);
-    setFornecedorSearches((prev) => ({ ...prev, [index]: "" }));
-    setShowFornecedorDropdown((prev) => ({ ...prev, [index]: false }));
-  }
-
   function addItem() {
     append({
       product_id: "",
       product_name: "",
-      supplier_id: "",
-      supplier_name: "",
       quantity: 0,
       unit_price: 0,
       unit_cost: 0,
     });
   }
 
+  function buildPayload(data: QuoteFormData) {
+    return {
+      ...data,
+      referrer_id: data.referrer_id || null,
+      notes: data.notes || null,
+      // A api espera UUID ou null — string vazia é rejeitada (400).
+      items: data.items.map((item) => ({ ...item, product_id: item.product_id || null })),
+    };
+  }
+
+  // Venda rápida (AYD-001): cria o Quote e converte em Sale num passo só.
+  async function onQuickSale(data: QuoteFormData) {
+    try {
+      const result = await api.post<{ sale_id: string; quote_id: string }>(
+        "/quotes/quick-sale",
+        buildPayload(data),
+      );
+      toast.success("Venda criada com sucesso!");
+      router.push(`/vendas/${result.sale_id}`);
+    } catch (err) {
+      const message = err instanceof APIError ? err.message : "Erro ao criar venda.";
+      toast.error(message);
+    }
+  }
+
   async function onSubmit(data: QuoteFormData) {
     try {
-      const payload = {
-        ...data,
-        referrer_id: data.referrer_id || undefined,
-        notes: data.notes || undefined,
-      };
-      const created = await api.post<{ id: string }>("/quotes", payload);
+      const created = await api.post<{ id: string }>("/quotes", buildPayload(data));
       toast.success("Orçamento criado com sucesso!");
       router.push(`/orcamentos/${created.id}`);
     } catch (err) {
@@ -312,19 +305,18 @@ export default function NovoOrcamentoPage() {
             Itens do Orçamento
           </h2>
 
-          <div className="hidden sm:grid sm:grid-cols-[1fr_1fr_80px_110px_110px_32px] gap-2 text-xs font-medium text-muted-foreground px-1">
+          <div className="hidden sm:grid sm:grid-cols-[1fr_80px_110px_110px_32px] gap-2 text-xs font-medium text-muted-foreground px-1">
             <span>Produto</span>
-            <span>Fornecedor</span>
             <span>Qtd</span>
             <span>Preço Venda</span>
-            <span>Custo</span>
+            <span>Custo estimado</span>
             <span />
           </div>
 
           {fields.map((field, index) => (
             <div
               key={field.id}
-              className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_80px_110px_110px_32px] gap-2 items-start rounded-md border p-2 sm:border-0 sm:p-0"
+              className="grid grid-cols-1 sm:grid-cols-[1fr_80px_110px_110px_32px] gap-2 items-start rounded-md border p-2 sm:border-0 sm:p-0"
             >
               {/* Produto */}
               <div className="relative">
@@ -366,43 +358,6 @@ export default function NovoOrcamentoPage() {
                     {errors.items[index].product_name?.message}
                   </p>
                 )}
-              </div>
-
-              {/* Fornecedor */}
-              <div className="relative">
-                <label className="text-xs text-muted-foreground sm:hidden">Fornecedor</label>
-                <Input
-                  placeholder="Fornecedor..."
-                  value={
-                    fornecedorSearches[index] !== undefined
-                      ? fornecedorSearches[index]
-                      : watchItems?.[index]?.supplier_name || ""
-                  }
-                  onChange={(e) => {
-                    setFornecedorSearches((prev) => ({ ...prev, [index]: e.target.value }));
-                    setValue(`items.${index}.supplier_name`, e.target.value);
-                    setValue(`items.${index}.supplier_id`, "");
-                    setShowFornecedorDropdown((prev) => ({ ...prev, [index]: true }));
-                  }}
-                  onFocus={() => {
-                    if (fornecedorSearches[index]) {
-                      setShowFornecedorDropdown((prev) => ({ ...prev, [index]: true }));
-                    }
-                  }}
-                  onBlur={() =>
-                    setTimeout(
-                      () => setShowFornecedorDropdown((prev) => ({ ...prev, [index]: false })),
-                      200,
-                    )
-                  }
-                  className="h-8 text-sm"
-                />
-                <AutocompleteDropdown
-                  items={filteredFornecedores(index)}
-                  show={showFornecedorDropdown[index] || false}
-                  onSelect={(f) => handleSelectFornecedor(index, f)}
-                  renderLabel={(f) => f.nome}
-                />
               </div>
 
               {/* Quantidade */}
@@ -516,6 +471,14 @@ export default function NovoOrcamentoPage() {
             disabled={isSubmitting}
           >
             Cancelar
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={isSubmitting}
+            onClick={handleSubmit(onQuickSale)}
+          >
+            Venda rápida
           </Button>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}

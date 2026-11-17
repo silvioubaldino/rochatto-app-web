@@ -26,6 +26,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+- Quote screens hardening: quote without supplier, quick sale, valid empty ids, item edits keep the product link.
 - Implement SPEC-001: Orçamentos screens (list/filter, issue form with editable item price, mark as lost, convert to Sale with redirect); Sale detail now shows its originating Quote.
 - Added SPEC-001: Quote screens (list/filter, issue form with editable item price, mark as lost, convert to Sale). [PR#2](https://github.com/silvioubaldino/rochatto-app-web/pull/2)
 - Repo initialized from the scaffold.

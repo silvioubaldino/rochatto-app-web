@@ -109,8 +109,6 @@ export interface QuoteItem {
   quote_id: string;
   product_id?: string;
   product_name: string;
-  supplier_id?: string;
-  supplier_name?: string;
   quantity: number;
   unit_price: number;
   unit_cost: number;
