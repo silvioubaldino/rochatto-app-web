@@ -85,10 +85,11 @@ export default function DashboardPage() {
         <KPICard
           title="A Pagar Fornecedores"
           value={resumo ? formatMoeda(resumo.total_a_pagar_fornecedor) : "—"}
+          subtitle="Compras com pagamento pendente"
           variant="danger"
           icon={<TrendingDown className="h-4 w-4" />}
           isLoading={resumoLoading}
-          onClick={() => router.push("/vendas")}
+          onClick={() => router.push("/compras?payment_status=PENDING")}
         />
         <KPICard
           title="Lucro do Período"
@@ -109,7 +110,7 @@ export default function DashboardPage() {
           variant="default"
           icon={<ShoppingCart className="h-4 w-4" />}
           isLoading={resumoLoading}
-          onClick={() => router.push("/vendas?status=A_ENTREGAR")}
+          onClick={() => router.push("/vendas?delivery_status=TO_DELIVER")}
         />
         <KPICard
           title="Comissões Pendentes"

@@ -1,195 +1,184 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { useEffect, useState } from "react";
+import { useSWRConfig } from "swr";
+import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
-import { EstoqueModal } from "@/components/forms/EstoqueModal";
-import { useEstoque, useResumoEstoque } from "@/hooks/useEstoque";
+import { StockAdjustmentModal } from "@/components/stock/StockAdjustmentModal";
+import { StockStatementSheet } from "@/components/stock/StockStatementSheet";
+import { useStockAdjustments, useStockBalance } from "@/hooks/useStock";
 import { useProdutos } from "@/hooks/useProdutos";
-import { api } from "@/lib/api";
-import { formatMoeda, formatData } from "@/lib/formatters";
-import type { EstoqueEntrada } from "@/lib/types";
+import {
+  STOCK_ADJUSTMENT_REASON_LABELS,
+  formatData,
+  formatMoeda,
+  formatQuantidade,
+} from "@/lib/formatters";
+import { cn } from "@/lib/utils";
 
+// Stock — AYD-002 §4: Balance por Product (calculado) + ajustes manuais imutáveis.
 export default function EstoquePage() {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editando, setEditando] = useState<EstoqueEntrada | undefined>(
-    undefined,
-  );
-  const [deletando, setDeletando] = useState<EstoqueEntrada | undefined>(
-    undefined,
-  );
-
-  // Filtros da aba Histórico
-  const [filtroProdutoId, setFiltroProdutoId] = useState("");
-  const [filtroInicio, setFiltroInicio] = useState("");
-  const [filtroFim, setFiltroFim] = useState("");
-  const [filtroAtivo, setFiltroAtivo] = useState<{
-    produto_id?: string;
-    data_inicio?: string;
-    data_fim?: string;
-  }>({});
-
-  const { resumo, isLoading: resumoLoading, refresh: refreshResumo } =
-    useResumoEstoque();
-  const {
-    entradas,
-    isLoading: entradasLoading,
-    refresh: refreshEntradas,
-  } = useEstoque(filtroAtivo);
+  const { mutate } = useSWRConfig();
   const { produtos } = useProdutos();
 
-  const valorTotalEstoque = resumo.reduce((s, r) => s + r.valor_total_estoque, 0);
+  // Saldo
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [onlyNegative, setOnlyNegative] = useState(false);
+  const [statementProductId, setStatementProductId] = useState<string | null>(null);
 
-  function abrirNovo() {
-    setEditando(undefined);
-    setModalOpen(true);
+  // Ajustes
+  const [adjProductFilter, setAdjProductFilter] = useState("");
+  const [adjModalOpen, setAdjModalOpen] = useState(false);
+  const [adjModalProductId, setAdjModalProductId] = useState<string | undefined>();
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const { balances, isLoading: balancesLoading } = useStockBalance({
+    q: debouncedSearch || undefined,
+    only_negative: onlyNegative,
+  });
+  const { adjustments, isLoading: adjustmentsLoading } = useStockAdjustments(
+    adjProductFilter || undefined,
+  );
+
+  const productName = (id: string) => produtos.find((p) => p.id === id)?.nome ?? "—";
+
+  function openAdjustment(productId?: string) {
+    setAdjModalProductId(productId);
+    setAdjModalOpen(true);
   }
 
-  function abrirEditar(entrada: EstoqueEntrada) {
-    setEditando(entrada);
-    setModalOpen(true);
-  }
-
-  function handleSuccess() {
-    refreshResumo();
-    refreshEntradas();
-  }
-
-  function aplicarFiltros() {
-    setFiltroAtivo({
-      produto_id: filtroProdutoId || undefined,
-      data_inicio: filtroInicio || undefined,
-      data_fim: filtroFim || undefined,
-    });
-  }
-
-  function limparFiltros() {
-    setFiltroProdutoId("");
-    setFiltroInicio("");
-    setFiltroFim("");
-    setFiltroAtivo({});
-  }
-
-  async function confirmarDelete() {
-    if (!deletando) return;
-    try {
-      await api.delete(`/estoque/${deletando.id}`);
-      toast.success("Entrada excluída com sucesso.");
-      refreshResumo();
-      refreshEntradas();
-    } catch {
-      toast.error("Erro ao excluir entrada.");
-    } finally {
-      setDeletando(undefined);
-    }
+  function handleAdjustmentSaved() {
+    // Saldo, extrato e lista de ajustes mudam juntos.
+    mutate((key) => typeof key === "string" && key.startsWith("/stock"));
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold tracking-tight">Estoque</h1>
-        <Button onClick={abrirNovo}>
-          <Plus className="h-4 w-4 mr-1" />
-          Nova Entrada
+        <Button onClick={() => openAdjustment()}>
+          <Plus className="h-4 w-4" />
+          Novo ajuste
         </Button>
       </div>
+      <p className="text-sm text-muted-foreground">
+        Saldo = entradas (compras de reposição recebidas) − saídas (itens de venda de estoque) ±
+        ajustes. Itens sob encomenda não passam pelo estoque.
+      </p>
 
-      <Tabs defaultValue="resumo">
+      <Tabs defaultValue="saldo">
         <TabsList>
-          <TabsTrigger value="resumo">Resumo Atual</TabsTrigger>
-          <TabsTrigger value="historico">Histórico de Entradas</TabsTrigger>
+          <TabsTrigger value="saldo">Saldo por produto</TabsTrigger>
+          <TabsTrigger value="ajustes">Ajustes</TabsTrigger>
         </TabsList>
 
-        {/* Aba Resumo */}
-        <TabsContent value="resumo" className="mt-4">
-          {resumoLoading ? (
+        <TabsContent value="saldo" className="mt-4 space-y-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Buscar produto</Label>
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Nome do produto..."
+                  className="h-8 w-56 pl-7"
+                />
+              </div>
+            </div>
+            <label className="flex h-8 items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={onlyNegative}
+                onChange={(e) => setOnlyNegative(e.target.checked)}
+                className="h-4 w-4"
+              />
+              Só saldo negativo
+            </label>
+          </div>
+
+          {balancesLoading ? (
             <div className="space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => (
+              {Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-10 w-full" />
               ))}
             </div>
-          ) : resumo.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">
-              Nenhum produto em estoque. Registre a primeira entrada.
+          ) : balances.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              {onlyNegative || debouncedSearch
+                ? "Nenhum produto encontrado com esses filtros."
+                : "Nenhum produto com movimento de estoque. Registre uma carga inicial com \"Novo ajuste\"."}
             </p>
           ) : (
             <div className="rounded-lg border overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50">
-                    <th className="py-3 px-4 text-left font-medium">Produto</th>
-                    <th className="py-3 px-4 text-right font-medium">
-                      Qtd Total
-                    </th>
-                    <th className="py-3 px-4 text-right font-medium">
-                      Custo Médio
-                    </th>
-                    <th className="py-3 px-4 text-right font-medium">
-                      Valor Total
-                    </th>
-                    <th className="py-3 px-4 text-right font-medium">
-                      Última Entrada
-                    </th>
+                    <th className="px-4 py-3 text-left font-medium">Produto</th>
+                    <th className="px-4 py-3 text-left font-medium">Unidade</th>
+                    <th className="px-4 py-3 text-right font-medium">Entradas</th>
+                    <th className="px-4 py-3 text-right font-medium">Saídas</th>
+                    <th className="px-4 py-3 text-right font-medium">Ajustes</th>
+                    <th className="px-4 py-3 text-right font-medium">Saldo</th>
+                    <th className="px-4 py-3 text-right font-medium">Custo última entrada</th>
+                    <th className="px-4 py-3 text-right font-medium">Data</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {resumo.map((r) => (
+                  {balances.map((b) => (
                     <tr
-                      key={r.produto_id}
-                      className="border-b last:border-0 hover:bg-muted/30"
+                      key={b.product_id}
+                      onClick={() => setStatementProductId(b.product_id)}
+                      className={cn(
+                        "border-b last:border-0 cursor-pointer hover:bg-muted/30",
+                        b.balance < 0 && "bg-red-50",
+                      )}
+                      title="Ver extrato"
                     >
-                      <td className="py-3 px-4">{r.produto_nome}</td>
-                      <td className="py-3 px-4 text-right">
-                        {r.quantidade_total}
+                      <td className="px-4 py-3 font-medium">{b.product_name}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{b.unit || "—"}</td>
+                      <td className="px-4 py-3 text-right">{formatQuantidade(b.inflow_qty)}</td>
+                      <td className="px-4 py-3 text-right">{formatQuantidade(b.outflow_qty)}</td>
+                      <td className="px-4 py-3 text-right">{formatQuantidade(b.adjustment_qty)}</td>
+                      <td
+                        className={cn(
+                          "px-4 py-3 text-right font-semibold",
+                          b.balance < 0 && "text-destructive",
+                        )}
+                      >
+                        {formatQuantidade(b.balance)}
                       </td>
-                      <td className="py-3 px-4 text-right">
-                        {formatMoeda(r.custo_medio)}
+                      <td className="px-4 py-3 text-right">
+                        {b.last_inflow_cost !== null ? formatMoeda(b.last_inflow_cost) : "—"}
                       </td>
-                      <td className="py-3 px-4 text-right font-medium">
-                        {formatMoeda(r.valor_total_estoque)}
-                      </td>
-                      <td className="py-3 px-4 text-right text-muted-foreground">
-                        {formatData(r.ultima_entrada)}
+                      <td className="px-4 py-3 text-right text-muted-foreground">
+                        {b.last_inflow_date ? formatData(b.last_inflow_date) : "—"}
                       </td>
                     </tr>
                   ))}
                 </tbody>
-                <tfoot>
-                  <tr className="border-t bg-muted/50">
-                    <td
-                      colSpan={3}
-                      className="py-3 px-4 text-right font-semibold"
-                    >
-                      Valor total em estoque:
-                    </td>
-                    <td className="py-3 px-4 text-right font-bold">
-                      {formatMoeda(valorTotalEstoque)}
-                    </td>
-                    <td />
-                  </tr>
-                </tfoot>
               </table>
             </div>
           )}
         </TabsContent>
 
-        {/* Aba Histórico */}
-        <TabsContent value="historico" className="mt-4 space-y-4">
-          {/* Filtros */}
+        <TabsContent value="ajustes" className="mt-4 space-y-4">
           <div className="flex flex-wrap items-end gap-3">
             <div className="space-y-1">
               <Label className="text-xs">Produto</Label>
               <select
-                value={filtroProdutoId}
-                onChange={(e) => setFiltroProdutoId(e.target.value)}
-                className="h-9 rounded-md border bg-background px-3 text-sm min-w-[180px]"
+                value={adjProductFilter}
+                onChange={(e) => setAdjProductFilter(e.target.value)}
+                className="h-8 min-w-[200px] rounded-md border border-input bg-background px-3 text-sm"
               >
                 <option value="">Todos</option>
                 {produtos.map((p) => (
@@ -199,108 +188,46 @@ export default function EstoquePage() {
                 ))}
               </select>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">De</Label>
-              <Input
-                type="date"
-                value={filtroInicio}
-                onChange={(e) => setFiltroInicio(e.target.value)}
-                className="h-9 w-36"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Até</Label>
-              <Input
-                type="date"
-                value={filtroFim}
-                onChange={(e) => setFiltroFim(e.target.value)}
-                className="h-9 w-36"
-              />
-            </div>
-            <Button size="sm" onClick={aplicarFiltros}>
-              Aplicar
-            </Button>
-            {(filtroAtivo.produto_id ||
-              filtroAtivo.data_inicio ||
-              filtroAtivo.data_fim) && (
-              <Button size="sm" variant="outline" onClick={limparFiltros}>
-                Limpar
-              </Button>
-            )}
           </div>
 
-          {/* Tabela histórico */}
-          {entradasLoading ? (
+          {adjustmentsLoading ? (
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-10 w-full" />
               ))}
             </div>
-          ) : entradas.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">
-              Nenhuma entrada registrada.
-            </p>
+          ) : adjustments.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">Nenhum ajuste registrado.</p>
           ) : (
             <div className="rounded-lg border overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50">
-                    <th className="py-3 px-4 text-left font-medium">Data</th>
-                    <th className="py-3 px-4 text-left font-medium">Produto</th>
-                    <th className="py-3 px-4 text-left font-medium">
-                      Fornecedor
-                    </th>
-                    <th className="py-3 px-4 text-right font-medium">Qtd</th>
-                    <th className="py-3 px-4 text-right font-medium">
-                      Custo Unit.
-                    </th>
-                    <th className="py-3 px-4 text-right font-medium">Total</th>
-                    <th className="py-3 px-4 text-center font-medium">
-                      Ações
-                    </th>
+                    <th className="px-4 py-3 text-left font-medium">Data</th>
+                    <th className="px-4 py-3 text-left font-medium">Produto</th>
+                    <th className="px-4 py-3 text-left font-medium">Motivo</th>
+                    <th className="px-4 py-3 text-right font-medium">Quantidade</th>
+                    <th className="px-4 py-3 text-right font-medium">Custo unit.</th>
+                    <th className="px-4 py-3 text-left font-medium">Observações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {entradas.map((e) => (
-                    <tr
-                      key={e.id}
-                      className="border-b last:border-0 hover:bg-muted/30"
-                    >
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        {formatData(e.data_entrada)}
+                  {adjustments.map((a) => (
+                    <tr key={a.id} className="border-b last:border-0">
+                      <td className="px-4 py-3 whitespace-nowrap">{formatData(a.adjusted_at)}</td>
+                      <td className="px-4 py-3">{a.product_name || productName(a.product_id)}</td>
+                      <td className="px-4 py-3">{STOCK_ADJUSTMENT_REASON_LABELS[a.reason] ?? "—"}</td>
+                      <td
+                        className={cn("px-4 py-3 text-right", a.quantity < 0 && "text-destructive")}
+                      >
+                        {a.quantity > 0 ? "+" : ""}
+                        {formatQuantidade(a.quantity)}
                       </td>
-                      <td className="py-3 px-4">{e.produto_nome}</td>
-                      <td className="py-3 px-4 text-muted-foreground">
-                        {e.fornecedor_nome ?? "—"}
+                      <td className="px-4 py-3 text-right">
+                        {a.unit_cost !== null ? formatMoeda(a.unit_cost) : "—"}
                       </td>
-                      <td className="py-3 px-4 text-right">{e.quantidade_entrada}</td>
-                      <td className="py-3 px-4 text-right">
-                        {formatMoeda(e.custo_unit)}
-                      </td>
-                      <td className="py-3 px-4 text-right font-medium">
-                        {formatMoeda(e.quantidade_entrada * e.custo_unit)}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center justify-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => abrirEditar(e)}
-                            title="Editar"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={() => setDeletando(e)}
-                            title="Excluir"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
+                      <td className="px-4 py-3 text-muted-foreground max-w-[240px] truncate">
+                        {a.notes || "—"}
                       </td>
                     </tr>
                   ))}
@@ -311,21 +238,17 @@ export default function EstoquePage() {
         </TabsContent>
       </Tabs>
 
-      {/* Modal de entrada */}
-      <EstoqueModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        entrada={editando}
-        onSuccess={handleSuccess}
+      <StockStatementSheet
+        productId={statementProductId}
+        onClose={() => setStatementProductId(null)}
+        onNewAdjustment={(id) => openAdjustment(id)}
       />
 
-      {/* Delete confirm */}
-      <DeleteConfirmDialog
-        open={!!deletando}
-        onClose={() => setDeletando(undefined)}
-        onConfirm={confirmarDelete}
-        title="Excluir Entrada de Estoque"
-        description="Tem certeza que deseja excluir esta entrada de estoque? Esta ação não pode ser desfeita."
+      <StockAdjustmentModal
+        open={adjModalOpen}
+        onClose={() => setAdjModalOpen(false)}
+        productId={adjModalProductId}
+        onSuccess={handleAdjustmentSaved}
       />
     </div>
   );

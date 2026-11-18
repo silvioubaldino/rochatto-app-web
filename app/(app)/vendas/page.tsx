@@ -4,30 +4,47 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useVendas } from "@/hooks/useVendas";
 import { useClientes } from "@/hooks/useClientes";
-import type { Venda, StatusVenda } from "@/lib/types";
-import { formatMoeda, formatData, STATUS_LABELS, STATUS_COLORS } from "@/lib/formatters";
-import { StatusBadge } from "@/components/ui/StatusBadge";
-import { DataTable } from "@/components/tables/DataTable";
+import Link from "next/link";
+import type { Venda, SaleDeliveryStatus, SalePaymentStatus } from "@/lib/types";
+import type { VendasFilters } from "@/hooks/useVendas";
+import {
+  formatMoeda,
+  formatData,
+  SALE_DELIVERY_STATUSES,
+  SALE_DELIVERY_STATUS_LABELS,
+  SALE_PAYMENT_STATUSES,
+  SALE_PAYMENT_STATUS_LABELS,
+} from "@/lib/formatters";
+import { SaleDeliveryBadge, SalePaymentBadge } from "@/components/status-badges";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, X } from "lucide-react";
+import { FileText, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const ALL_STATUSES: StatusVenda[] = [
-  "A_ENTREGAR",
-  "A_ENTREGAR_DATA",
-  "A_RETIRAR",
-  "ENTREGUE_PARCIAL",
-  "ENTREGUE",
-];
+const ROW_COLORS: Record<SaleDeliveryStatus, string> = {
+  TO_DELIVER: "",
+  DELIVERED: "bg-green-50/60",
+  CANCELED: "bg-muted/40 text-muted-foreground",
+};
+
+function asDeliveryStatus(v: string | null): SaleDeliveryStatus | "" {
+  return v && (SALE_DELIVERY_STATUSES as string[]).includes(v) ? (v as SaleDeliveryStatus) : "";
+}
+
+function asPaymentStatus(v: string | null): SalePaymentStatus | "" {
+  return v && (SALE_PAYMENT_STATUSES as string[]).includes(v) ? (v as SalePaymentStatus) : "";
+}
 
 export default function VendasPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // Filters from URL
-  const [status, setStatus] = useState<StatusVenda | "">(
-    (searchParams.get("status") as StatusVenda) || "",
+  const [deliveryStatus, setDeliveryStatus] = useState<SaleDeliveryStatus | "">(
+    asDeliveryStatus(searchParams.get("delivery_status")),
+  );
+  const [paymentStatus, setPaymentStatus] = useState<SalePaymentStatus | "">(
+    asPaymentStatus(searchParams.get("payment_status")),
   );
   const [dataInicio, setDataInicio] = useState(searchParams.get("data_inicio") || "");
   const [dataFim, setDataFim] = useState(searchParams.get("data_fim") || "");
@@ -46,27 +63,29 @@ export default function VendasPage() {
   const { clientes } = useClientes(debouncedClienteSearch || undefined);
 
   // Build filters
-  const filters = useMemo(() => {
-    const f: Record<string, string | boolean> = {};
-    if (status) f.status = status;
+  const filters = useMemo<VendasFilters | undefined>(() => {
+    const f: VendasFilters = {};
+    if (deliveryStatus) f.delivery_status = deliveryStatus;
+    if (paymentStatus) f.payment_status = paymentStatus;
     if (dataInicio) f.data_inicio = dataInicio;
     if (dataFim) f.data_fim = dataFim;
     if (clienteId) f.cliente_id = clienteId;
     return Object.keys(f).length > 0 ? f : undefined;
-  }, [status, dataInicio, dataFim, clienteId]);
+  }, [deliveryStatus, paymentStatus, dataInicio, dataFim, clienteId]);
 
-  const { vendas, isLoading } = useVendas(filters as Parameters<typeof useVendas>[0]);
+  const { vendas, isLoading } = useVendas(filters);
 
   // Update URL on filter change
   useEffect(() => {
     const params = new URLSearchParams();
-    if (status) params.set("status", status);
+    if (deliveryStatus) params.set("delivery_status", deliveryStatus);
+    if (paymentStatus) params.set("payment_status", paymentStatus);
     if (dataInicio) params.set("data_inicio", dataInicio);
     if (dataFim) params.set("data_fim", dataFim);
     if (clienteId) params.set("cliente_id", clienteId);
     const qs = params.toString();
     router.replace(qs ? `/vendas?${qs}` : "/vendas", { scroll: false });
-  }, [status, dataInicio, dataFim, clienteId, router]);
+  }, [deliveryStatus, paymentStatus, dataInicio, dataFim, clienteId, router]);
 
   function handleSelectCliente(id: string, nome: string) {
     setClienteId(id);
@@ -127,12 +146,23 @@ export default function VendasPage() {
       ),
     },
     {
-      key: "status",
-      header: "Status",
-      width: "180px",
+      key: "delivery_status",
+      header: "Entrega",
       render: (row: Venda) => (
-        <StatusBadge status={row.status} dataEntrega={row.data_entrega_prevista} />
+        <div className="space-y-0.5">
+          <SaleDeliveryBadge status={row.delivery_status} />
+          {row.delivery_status === "TO_DELIVER" && row.data_entrega_prevista && (
+            <p className="text-xs text-muted-foreground">
+              até {formatData(row.data_entrega_prevista)}
+            </p>
+          )}
+        </div>
       ),
+    },
+    {
+      key: "payment_status",
+      header: "Pagamento",
+      render: (row: Venda) => <SalePaymentBadge status={row.payment_status} />,
     },
   ];
 
@@ -140,26 +170,50 @@ export default function VendasPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Vendas</h1>
-        <Button onClick={() => router.push("/vendas/nova")}>
-          <Plus className="h-4 w-4" />
-          Nova Venda
+        <Button variant="outline" onClick={() => router.push("/orcamentos/novo")}>
+          <FileText className="h-4 w-4" />
+          Novo Orçamento / Venda rápida
         </Button>
       </div>
+      <p className="text-sm text-muted-foreground">
+        Toda venda nasce de um orçamento: converta um orçamento ganho em{" "}
+        <Link href="/orcamentos" className="text-primary hover:underline">
+          Orçamentos
+        </Link>{" "}
+        ou use a <strong>Venda rápida</strong> no novo orçamento.
+      </p>
 
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-3">
-        {/* Status filter */}
+        {/* Delivery status filter */}
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Status</label>
+          <label className="text-xs font-medium text-muted-foreground">Entrega</label>
           <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as StatusVenda | "")}
+            value={deliveryStatus}
+            onChange={(e) => setDeliveryStatus(asDeliveryStatus(e.target.value))}
+            className="h-8 rounded-md border border-input bg-background px-3 text-sm"
+          >
+            <option value="">Todas</option>
+            {SALE_DELIVERY_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {SALE_DELIVERY_STATUS_LABELS[s]}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Payment status filter */}
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Pagamento</label>
+          <select
+            value={paymentStatus}
+            onChange={(e) => setPaymentStatus(asPaymentStatus(e.target.value))}
             className="h-8 rounded-md border border-input bg-background px-3 text-sm"
           >
             <option value="">Todos</option>
-            {ALL_STATUSES.map((s) => (
+            {SALE_PAYMENT_STATUSES.map((s) => (
               <option key={s} value={s}>
-                {STATUS_LABELS[s]}
+                {SALE_PAYMENT_STATUS_LABELS[s]}
               </option>
             ))}
           </select>
@@ -234,7 +288,7 @@ export default function VendasPage() {
       </div>
 
       {/* Table with row coloring */}
-      <div className="rounded-lg border overflow-hidden">
+      <div className="rounded-lg border overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-muted/50 border-b">
@@ -273,7 +327,7 @@ export default function VendasPage() {
                   onClick={() => router.push(`/vendas/${venda.id}`)}
                   className={cn(
                     "border-b last:border-b-0 cursor-pointer transition-colors hover:opacity-80",
-                    STATUS_COLORS[venda.status].split(" ")[0],
+                    ROW_COLORS[venda.delivery_status],
                   )}
                 >
                   {columns.map((col) => (

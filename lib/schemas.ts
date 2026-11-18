@@ -85,3 +85,123 @@ export const productCategorySchema = z.object({
 });
 
 export type ProductCategoryFormData = z.infer<typeof productCategorySchema>;
+
+// --- AYD-002: Purchase, Supplier payment e Stock adjustment -----------------
+
+/** "1,5" / "1.5" → 1.5; vazio ou inválido → NaN. */
+export function parseDecimal(value: string | number | null | undefined): number {
+  if (typeof value === "number") return value;
+  const v = (value ?? "").trim().replace(/\s/g, "").replace(",", ".");
+  if (!v) return NaN;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : NaN;
+}
+
+const positiveQuantity = z
+  .string()
+  .transform(parseDecimal)
+  .pipe(
+    z
+      .number({ error: "Informe a quantidade" })
+      .refine((v) => v > 0, "Quantidade deve ser maior que zero"),
+  );
+
+const nonNegativeMoney = z.number().min(0, "Valor não pode ser negativo");
+
+/** Linha de reposição (POST/PUT /purchases/{id}/items e `items` do POST /purchases). */
+export const purchaseItemSchema = z.object({
+  product_id: z.string().min(1, "Selecione o produto"),
+  quantity: positiveQuantity,
+  unit_cost: nonNegativeMoney,
+});
+
+export type PurchaseItemFormInput = z.input<typeof purchaseItemSchema>;
+export type PurchaseItemFormData = z.output<typeof purchaseItemSchema>;
+
+/** Purchase STOCK_REPLENISHMENT nova (POST /purchases). */
+export const replenishmentPurchaseSchema = z.object({
+  supplier_id: z.string().min(1, "Selecione o fornecedor"),
+  expected_date: z.string(),
+  notes: z.string(),
+  items: z.array(purchaseItemSchema).min(1, "Adicione ao menos um produto"),
+});
+
+export type ReplenishmentPurchaseFormInput = z.input<typeof replenishmentPurchaseSchema>;
+export type ReplenishmentPurchaseFormData = z.output<typeof replenishmentPurchaseSchema>;
+
+export function toReplenishmentPurchasePayload(data: ReplenishmentPurchaseFormData) {
+  return {
+    kind: "STOCK_REPLENISHMENT" as const,
+    supplier_id: data.supplier_id,
+    expected_date: emptyToNull(data.expected_date),
+    notes: emptyToNull(data.notes),
+    sale_item_ids: [] as string[],
+    items: data.items.map((i) => ({
+      product_id: i.product_id,
+      quantity: i.quantity,
+      unit_cost: i.unit_cost,
+    })),
+  };
+}
+
+/** PUT /purchases/{id} — só expected_date e notes. */
+export const purchaseHeaderSchema = z.object({
+  expected_date: z.string(),
+  notes: z.string(),
+});
+
+export type PurchaseHeaderFormData = z.infer<typeof purchaseHeaderSchema>;
+
+export function toPurchaseHeaderPayload(data: PurchaseHeaderFormData) {
+  return {
+    expected_date: emptyToNull(data.expected_date),
+    notes: emptyToNull(data.notes),
+  };
+}
+
+/** PATCH /purchases/{id}/payment com PAID. */
+export const supplierPaymentSchema = z.object({
+  paid_amount: nonNegativeMoney,
+  paid_at: z.string().min(1, "Informe a data do pagamento"),
+});
+
+export type SupplierPaymentFormData = z.infer<typeof supplierPaymentSchema>;
+
+/** POST /stock/adjustments — quantidade ± (≠ 0), custo opcional. */
+export const stockAdjustmentSchema = z.object({
+  product_id: z.string().min(1, "Selecione o produto"),
+  quantity: z
+    .string()
+    .transform(parseDecimal)
+    .pipe(
+      z
+        .number({ error: "Informe a quantidade (use − para baixar)" })
+        .refine((v) => v !== 0, "A quantidade não pode ser zero"),
+    ),
+  unit_cost: z
+    .string()
+    .transform((v) => (v.trim() ? parseDecimal(v) : null))
+    .pipe(
+      z
+        .number({ error: "Custo inválido" })
+        .refine((v) => v >= 0, "Custo não pode ser negativo")
+        .nullable(),
+    ),
+  reason: z.string().pipe(z.enum(["INITIAL", "COUNT", "OTHER"], { error: "Motivo é obrigatório" })),
+  adjusted_at: z.string().min(1, "Informe a data"),
+  notes: z.string(),
+});
+
+export type StockAdjustmentFormInput = z.input<typeof stockAdjustmentSchema>;
+export type StockAdjustmentFormData = z.output<typeof stockAdjustmentSchema>;
+
+export function toStockAdjustmentPayload(data: StockAdjustmentFormData) {
+  return {
+    product_id: data.product_id,
+    quantity: data.quantity,
+    unit_cost: data.unit_cost,
+    reason: data.reason,
+    adjusted_at: data.adjusted_at,
+    notes: emptyToNull(data.notes),
+  };
+}

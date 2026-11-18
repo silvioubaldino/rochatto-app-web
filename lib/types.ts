@@ -1,12 +1,19 @@
 // Enums
-export type StatusVenda =
-  | "A_ENTREGAR"
-  | "A_ENTREGAR_DATA"
-  | "A_RETIRAR"
-  | "ENTREGUE_PARCIAL"
-  | "ENTREGUE";
-
 export type StatusPagamento = "pendente" | "recebido";
+
+// Atendimento da Sale — AYD-002. Enums do contrato em inglês (ADR-001); rótulos PT-BR em
+// lib/formatters.ts (nunca exibir o código do enum).
+export type ItemOrigin = "MADE_TO_ORDER" | "FROM_STOCK";
+export type PurchaseKind = "MADE_TO_ORDER" | "STOCK_REPLENISHMENT";
+export type PurchaseStatus = "OPEN" | "ORDERED" | "RECEIVED";
+export type SupplierPaymentStatus = "PENDING" | "PAID";
+/** Status de entrega da Sale (manual) — substitui o `status_venda` legado. */
+export type SaleDeliveryStatus = "TO_DELIVER" | "DELIVERED" | "CANCELED";
+/** Status de pagamento da Sale — calculado dos Receipts pela API (view), nunca enviado. */
+export type SalePaymentStatus = "PENDING" | "PARTIAL" | "PAID";
+export type StockAdjustmentReason = "INITIAL" | "COUNT" | "OTHER";
+/** Avisos não bloqueantes devolvidos ao gravar um Item de Sale. */
+export type SaleItemWarning = "INSUFFICIENT_STOCK";
 
 // Cadastros comerciais — AYD-003. Campos/rotas novos em inglês (ADR-001).
 export type PartnerType = "ARCHITECT" | "ENGINEER" | "BUILDER" | "OTHER";
@@ -79,8 +86,14 @@ export interface ItemVenda {
   custo_unit: number;
   total_venda: number;
   total_custo: number;
-  pago_fornecedor: number;
-  a_pagar_fornecedor: number;
+  // AYD-002: origem do Item e Purchase que o atende (só leitura; setado pela Purchase).
+  origin: ItemOrigin;
+  purchase_id: string | null;
+}
+
+/** Resposta de POST/PUT /vendas/{id}/itens[/{itemId}] — o Item + avisos (AYD-002 §1). */
+export interface ItemVendaWriteResponse extends ItemVenda {
+  warnings?: SaleItemWarning[] | null;
 }
 
 export interface PagamentoCliente {
@@ -102,7 +115,9 @@ export interface Venda {
   vendedor_externo_id?: string;
   vendedor_externo_nome?: string;
   quote_id?: string;
-  status: StatusVenda;
+  // AYD-002: status de entrega (manual, via PATCH) e de pagamento (calculado).
+  delivery_status: SaleDeliveryStatus;
+  payment_status: SalePaymentStatus;
   data_venda: string;
   data_entrega_prevista?: string;
   frete_valor: number;
@@ -114,7 +129,6 @@ export interface Venda {
   total_custo: number;
   total_recebido: number;
   a_receber: number;
-  a_pagar_fornecedor: number;
   a_pagar_frete: number;
   lucro: number;
   itens?: ItemVenda[];
@@ -191,26 +205,138 @@ export interface ProdutoMaisVendido {
   margem_percentual: number | null;
 }
 
-// Estoque
-export interface EstoqueResumo {
-  produto_id: string;
+// Purchase — AYD-002 §3 (`/purchases`).
+
+/** Item de Sale (made-to-order) anexado a uma Purchase. */
+export interface PurchaseSaleItem {
+  id: string;
+  sale_id: string;
+  customer_name: string;
   produto_nome: string;
-  quantidade_total: number;
-  custo_medio: number;
-  valor_total_estoque: number;
-  ultima_entrada: string;
+  quantidade: number;
+  custo_unit: number;
 }
 
-export interface EstoqueEntrada {
+/** Linha de reposição de Stock (só Purchase STOCK_REPLENISHMENT). */
+export interface PurchaseItem {
   id: string;
-  produto_id?: string;
+  product_id: string;
+  product_name: string;
+  quantity: number;
+  unit_cost: number;
+}
+
+export interface PurchaseDetail {
+  id: string;
+  kind: PurchaseKind;
+  status: PurchaseStatus;
+  supplier_id: string;
+  supplier_name: string;
+  expected_date: string | null;
+  notes: string | null;
+  ordered_at: string | null;
+  received_at: string | null;
+  payment_status: SupplierPaymentStatus;
+  paid_amount: number | null;
+  paid_at: string | null;
+  total_cost: number;
+  to_pay: number;
+  sale_items: PurchaseSaleItem[];
+  items: PurchaseItem[];
+  created_at?: string;
+}
+
+/**
+ * Linha de GET /purchases. ASSUNÇÃO (o AYD só diz "lista"): mesmos campos do
+ * PurchaseDetail; as linhas (`sale_items`/`items`) podem vir ou não.
+ */
+export type PurchaseListItem = Omit<PurchaseDetail, "sale_items" | "items"> &
+  Partial<Pick<PurchaseDetail, "sale_items" | "items">>;
+
+/** Resposta de PATCH /purchases/{id}/status. */
+export interface PurchaseStatusResponse {
+  id: string;
+  status: PurchaseStatus;
+  ordered_at: string | null;
+  received_at: string | null;
+}
+
+/** Resposta de PATCH /purchases/{id}/payment. */
+export interface PurchasePaymentResponse {
+  id: string;
+  payment_status: SupplierPaymentStatus;
+  paid_amount: number | null;
+  paid_at: string | null;
+  to_pay: number;
+}
+
+/**
+ * GET /purchases/pending-sale-items — fila "a comprar" (RF-31).
+ * ASSUNÇÃO de forma (o AYD diz só "agrupados por Supplier"): array de grupos; um grupo com
+ * `supplier_id: null` reúne os Items ainda sem Supplier, se a API o devolver.
+ */
+export interface PendingSaleItem {
+  id: string;
+  sale_id: string;
+  customer_name: string;
+  produto_id: string | null;
   produto_nome: string;
-  fornecedor_id?: string;
-  fornecedor_nome?: string;
-  quantidade_entrada: number;
+  quantidade: number;
   custo_unit: number;
-  data_entrada: string;
-  observacoes?: string;
+  sale_date: string;
+}
+
+export interface PendingSaleItemGroup {
+  supplier_id: string | null;
+  supplier_name: string | null;
+  items: PendingSaleItem[];
+}
+
+// Stock — AYD-002 §4 (`/stock`). Substitui o legado `/estoque`.
+
+export interface StockBalance {
+  product_id: string;
+  product_name: string;
+  unit: string | null;
+  inflow_qty: number;
+  outflow_qty: number;
+  adjustment_qty: number;
+  balance: number;
+  last_inflow_cost: number | null;
+  last_inflow_date: string | null;
+}
+
+export type StockMovementKind = "INFLOW" | "OUTFLOW" | "ADJUSTMENT";
+
+/**
+ * Linha do extrato. ASSUNÇÃO (o AYD diz só "entradas, saídas, ajustes"): `quantity` vem
+ * com sinal (saída negativa, ajuste ±); `reference_id` = Purchase (INFLOW), Sale (OUTFLOW)
+ * ou ajuste (ADJUSTMENT).
+ */
+export interface StockMovement {
+  kind: StockMovementKind;
+  date: string;
+  quantity: number;
+  unit_cost: number | null;
+  reference_id: string | null;
+  description: string | null;
+}
+
+/** GET /stock/balance/{productId} — Balance + extrato. */
+export interface StockStatement extends StockBalance {
+  movements: StockMovement[];
+}
+
+/** GET /stock/adjustments. ASSUNÇÃO: a resposta traz `product_name`. */
+export interface StockAdjustment {
+  id: string;
+  product_id: string;
+  product_name?: string;
+  quantity: number;
+  unit_cost: number | null;
+  reason: StockAdjustmentReason;
+  adjusted_at: string;
+  notes: string | null;
   created_at: string;
 }
 
