@@ -125,6 +125,7 @@ export const replenishmentPurchaseSchema = z.object({
   supplier_id: z.string().min(1, "Selecione o fornecedor"),
   expected_date: z.string(),
   notes: z.string(),
+  allocation_method: z.enum(["BY_QUANTITY", "BY_VALUE"]),
   items: z.array(purchaseItemSchema).min(1, "Adicione ao menos um produto"),
 });
 
@@ -135,6 +136,7 @@ export function toReplenishmentPurchasePayload(data: ReplenishmentPurchaseFormDa
   return {
     kind: "STOCK_REPLENISHMENT" as const,
     supplier_id: data.supplier_id,
+    allocation_method: data.allocation_method,
     expected_date: emptyToNull(data.expected_date),
     notes: emptyToNull(data.notes),
     sale_item_ids: [] as string[],
@@ -146,6 +148,26 @@ export function toReplenishmentPurchasePayload(data: ReplenishmentPurchaseFormDa
   };
 }
 
+/** Custo adicional da compra (POST/PUT /purchases/{id}/charges) — AYD-008 §1. */
+export const purchaseChargeSchema = z.object({
+  kind: z.enum(["FREIGHT", "UNLOADING", "TAX", "OTHER"]),
+  amount: z.number({ error: "Informe o valor" }).gt(0, "Valor deve ser maior que zero"),
+  description: z.string(),
+  /** "" = "a definir" (payee_supplier_id null). */
+  payee_supplier_id: z.string(),
+});
+
+export type PurchaseChargeFormData = z.infer<typeof purchaseChargeSchema>;
+
+export function toPurchaseChargePayload(data: PurchaseChargeFormData) {
+  return {
+    kind: data.kind,
+    amount: data.amount,
+    description: emptyToNull(data.description),
+    payee_supplier_id: emptyToNull(data.payee_supplier_id),
+  };
+}
+
 /** PUT /purchases/{id} — só expected_date e notes. */
 export const purchaseHeaderSchema = z.object({
   expected_date: z.string(),
@@ -154,10 +176,15 @@ export const purchaseHeaderSchema = z.object({
 
 export type PurchaseHeaderFormData = z.infer<typeof purchaseHeaderSchema>;
 
-export function toPurchaseHeaderPayload(data: PurchaseHeaderFormData) {
+export function toPurchaseHeaderPayload(
+  data: PurchaseHeaderFormData,
+  allocationMethod?: "BY_QUANTITY" | "BY_VALUE",
+) {
   return {
     expected_date: emptyToNull(data.expected_date),
     notes: emptyToNull(data.notes),
+    // AYD-008: o PUT é de substituição; reenvia o rateio para não voltar ao default.
+    ...(allocationMethod ? { allocation_method: allocationMethod } : {}),
   };
 }
 

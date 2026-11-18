@@ -41,7 +41,7 @@ export default function EstoquePage() {
     return () => clearTimeout(t);
   }, [search]);
 
-  const { balances, isLoading: balancesLoading } = useStockBalance({
+  const { balances, totalStockValue, isLoading: balancesLoading } = useStockBalance({
     q: debouncedSearch || undefined,
     only_negative: onlyNegative,
   });
@@ -131,6 +131,7 @@ export default function EstoquePage() {
                     <th className="px-4 py-3 text-right font-medium">Saldo</th>
                     <th className="px-4 py-3 text-right font-medium">Custo última entrada</th>
                     <th className="px-4 py-3 text-right font-medium">Data</th>
+                    <th className="px-4 py-3 text-right font-medium">Valor em estoque</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -163,9 +164,20 @@ export default function EstoquePage() {
                       <td className="px-4 py-3 text-right text-muted-foreground">
                         {b.last_inflow_date ? formatData(b.last_inflow_date) : "—"}
                       </td>
+                      <td className="px-4 py-3 text-right font-medium">
+                        {b.stock_value != null ? formatMoeda(b.stock_value) : "—"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
+                <tfoot>
+                  <tr className="border-t bg-muted/50 font-semibold">
+                    <td colSpan={8} className="px-4 py-3 text-right">
+                      Total em estoque
+                    </td>
+                    <td className="px-4 py-3 text-right">{formatMoeda(totalStockValue)}</td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           )}

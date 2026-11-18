@@ -18,14 +18,25 @@ import {
 import { api, APIError } from "@/lib/api";
 import { isPurchaseRelatedKey, usePurchase } from "@/hooks/usePurchases";
 import {
+  ALLOCATION_METHODS,
+  ALLOCATION_METHOD_LABELS,
+  OBLIGATION_WARNING_MESSAGES,
+  PURCHASE_CHARGE_KIND_LABELS,
   PURCHASE_KIND_LABELS,
   formatData,
   formatMoeda,
   formatQuantidade,
 } from "@/lib/formatters";
-import type { PurchaseItem, PurchaseSaleItem, PurchaseStatus } from "@/lib/types";
+import type {
+  AllocationMethod,
+  PurchaseCharge,
+  PurchaseItem,
+  PurchaseSaleItem,
+  PurchaseStatus,
+} from "@/lib/types";
 import { PurchaseStatusBadge } from "@/components/status-badges";
 import { PurchaseHeaderModal } from "@/components/purchases/PurchaseHeaderModal";
+import { PurchaseChargeModal } from "@/components/purchases/PurchaseChargeModal";
 import { PurchaseItemModal } from "@/components/purchases/PurchaseItemModal";
 import { OriginObligations } from "@/components/obligations/OriginObligations";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
@@ -99,6 +110,10 @@ export default function CompraDetalhePage() {
   const [deletingItem, setDeletingItem] = useState<PurchaseItem | null>(null);
   const [detachingSaleItem, setDetachingSaleItem] = useState<PurchaseSaleItem | null>(null);
   const [pendingTransition, setPendingTransition] = useState<Transition | null>(null);
+  const [chargeModalOpen, setChargeModalOpen] = useState(false);
+  const [editingCharge, setEditingCharge] = useState<PurchaseCharge | undefined>();
+  const [deletingCharge, setDeletingCharge] = useState<PurchaseCharge | null>(null);
+  const [allocBusy, setAllocBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -106,6 +121,46 @@ export default function CompraDetalhePage() {
   function refreshAll() {
     refresh();
     mutate(isPurchaseRelatedKey);
+  }
+
+  /** AYD-007/008: mudar valor/credor pode deixar uma conta quitada demais (HTTP 200 + warnings). */
+  function warn(warnings?: string[] | null) {
+    if (warnings?.includes("OVERSETTLED")) {
+      toast.warning(OBLIGATION_WARNING_MESSAGES.OVERSETTLED);
+    }
+  }
+
+  async function changeAllocation(method: AllocationMethod) {
+    if (!purchase || method === purchase.allocation_method) return;
+    setAllocBusy(true);
+    try {
+      // PUT é de substituição: reenvia previsão e observações junto com o rateio.
+      await api.put(`/purchases/${purchaseId}`, {
+        expected_date: purchase.expected_date ? purchase.expected_date.slice(0, 10) : null,
+        notes: purchase.notes || null,
+        allocation_method: method,
+      });
+      toast.success("Rateio atualizado.");
+      refreshAll();
+    } catch (err) {
+      // 422: BY_QUANTITY com unidades diferentes ("use rateio por valor").
+      toast.error(err instanceof APIError ? err.message : "Erro ao alterar o rateio.");
+    } finally {
+      setAllocBusy(false);
+    }
+  }
+
+  async function confirmDeleteCharge() {
+    if (!deletingCharge) return;
+    try {
+      await api.delete(`/purchases/${purchaseId}/charges/${deletingCharge.id}`);
+      toast.success("Custo adicional removido.");
+      refreshAll();
+    } catch (err) {
+      toast.error(err instanceof APIError ? err.message : "Erro ao remover custo adicional.");
+    } finally {
+      setDeletingCharge(null);
+    }
   }
 
   async function runTransition() {
@@ -244,17 +299,116 @@ export default function CompraDetalhePage() {
 
         {/* Saldos vêm das contas a pagar da compra (AYD-007 §6) */}
         <Card className="p-4 space-y-3">
-          <h2 className="text-sm font-semibold uppercase text-muted-foreground">Pagamento ao fornecedor</h2>
+          <h2 className="text-sm font-semibold uppercase text-muted-foreground">Pagamento aos credores</h2>
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-            <dt className="text-muted-foreground">Custo total</dt>
-            <dd className="font-semibold">{formatMoeda(purchase.total_cost)}</dd>
+            <dt className="text-muted-foreground">Custo da compra</dt>
+            <dd className="font-semibold">{formatMoeda(purchase.composition.total)}</dd>
             <dt className="text-muted-foreground">Pago</dt>
             <dd className="text-green-600">{formatMoeda(purchase.paid)}</dd>
             <dt className="text-muted-foreground">A pagar</dt>
-            <dd className="font-semibold text-orange-600">{formatMoeda(purchase.payable)}</dd>
+            <dd className="font-semibold text-orange-600">{formatMoeda(purchase.open)}</dd>
           </dl>
         </Card>
       </div>
+
+      {/* Composição do custo (AYD-008) */}
+      <Card className="p-4 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold uppercase text-muted-foreground">Composição do custo</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setEditingCharge(undefined);
+              setChargeModalOpen(true);
+            }}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Custo adicional
+          </Button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-left text-muted-foreground">
+                <th className="pb-2 pr-3 font-medium">Componente</th>
+                <th className="pb-2 pr-3 font-medium">Credor</th>
+                <th className="pb-2 pr-3 font-medium text-right">Valor</th>
+                <th className="pb-2 font-medium w-16">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b">
+                <td className="py-2 pr-3">Pedras ({purchase.lines.length} {purchase.lines.length === 1 ? "item" : "itens"})</td>
+                <td className="py-2 pr-3">{purchase.supplier_name}</td>
+                <td className="py-2 pr-3 text-right">{formatMoeda(purchase.composition.goods_total)}</td>
+                <td />
+              </tr>
+              {purchase.composition.charges.map((c) => (
+                <tr key={c.id} className="border-b">
+                  <td className="py-2 pr-3">
+                    {PURCHASE_CHARGE_KIND_LABELS[c.kind]}
+                    {c.description ? <span className="text-muted-foreground"> — {c.description}</span> : null}
+                  </td>
+                  <td className="py-2 pr-3">
+                    {c.payee_name ?? <span className="italic text-muted-foreground">A definir</span>}
+                  </td>
+                  <td className="py-2 pr-3 text-right">{formatMoeda(c.amount)}</td>
+                  <td className="py-2">
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        title="Editar / trocar credor"
+                        onClick={() => {
+                          setEditingCharge(c);
+                          setChargeModalOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon-xs" title="Remover" onClick={() => setDeletingCharge(c)}>
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="font-semibold">
+                <td className="pt-2 pr-3" colSpan={2}>
+                  Custo da compra
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    (custos adicionais: {formatMoeda(purchase.composition.charges_total)})
+                  </span>
+                </td>
+                <td className="pt-2 pr-3 text-right">{formatMoeda(purchase.composition.total)}</td>
+                <td />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <label htmlFor="alloc-method" className="text-muted-foreground">
+            Rateio dos custos adicionais
+          </label>
+          <select
+            id="alloc-method"
+            value={purchase.allocation_method}
+            disabled={allocBusy}
+            onChange={(e) => changeAllocation(e.target.value as AllocationMethod)}
+            className="h-8 rounded-md border border-input bg-background px-3 text-sm"
+          >
+            {ALLOCATION_METHODS.map((m) => (
+              <option key={m} value={m}>
+                {ALLOCATION_METHOD_LABELS[m]}
+              </option>
+            ))}
+          </select>
+          {allocBusy && <Loader2 className="h-4 w-4 animate-spin" />}
+        </div>
+      </Card>
 
       <OriginObligations
         originType="PURCHASE"
@@ -399,6 +553,48 @@ export default function CompraDetalhePage() {
         </Card>
       )}
 
+      {/* Custo de entrada por linha (AYD-008 §3) */}
+      <Card className="p-4 space-y-3">
+        <h2 className="text-sm font-semibold uppercase text-muted-foreground">Custo de entrada por linha</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-left text-muted-foreground">
+                <th className="pb-2 pr-3 font-medium">Produto</th>
+                <th className="pb-2 pr-3 font-medium text-right">Qtd</th>
+                <th className="pb-2 pr-3 font-medium text-right">Base</th>
+                <th className="pb-2 pr-3 font-medium text-right">Rateado</th>
+                <th className="pb-2 pr-3 font-medium text-right">Total c/ custos</th>
+                <th className="pb-2 font-medium text-right">Custo unit. de entrada</th>
+              </tr>
+            </thead>
+            <tbody>
+              {purchase.lines.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-6 text-center text-muted-foreground">
+                    Sem linhas.
+                  </td>
+                </tr>
+              ) : (
+                purchase.lines.map((l) => (
+                  <tr key={`${l.line_type}-${l.line_id}`} className="border-b last:border-0">
+                    <td className="py-2 pr-3">{l.product_name}</td>
+                    <td className="py-2 pr-3 text-right">
+                      {formatQuantidade(l.quantity)}
+                      {l.unit ? ` ${l.unit}` : ""}
+                    </td>
+                    <td className="py-2 pr-3 text-right">{formatMoeda(l.base_cost)}</td>
+                    <td className="py-2 pr-3 text-right">{formatMoeda(l.allocated_charges)}</td>
+                    <td className="py-2 pr-3 text-right">{formatMoeda(l.landed_total)}</td>
+                    <td className="py-2 text-right font-medium">{formatMoeda(l.landed_unit_cost)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
       {!isOpen && (
         <p className="text-xs text-muted-foreground">
           {purchase.status === "RECEIVED"
@@ -420,6 +616,24 @@ export default function CompraDetalhePage() {
         purchaseId={purchaseId}
         item={editingItem}
         onSuccess={refreshAll}
+      />
+      <PurchaseChargeModal
+        open={chargeModalOpen}
+        onClose={() => setChargeModalOpen(false)}
+        purchaseId={purchaseId}
+        defaultSupplierId={purchase.supplier_id}
+        charge={editingCharge}
+        onSuccess={(w) => {
+          warn(w);
+          refreshAll();
+        }}
+      />
+      <DeleteConfirmDialog
+        open={!!deletingCharge}
+        onClose={() => setDeletingCharge(null)}
+        onConfirm={confirmDeleteCharge}
+        title="Remover custo adicional"
+        description={`Remover "${deletingCharge ? PURCHASE_CHARGE_KIND_LABELS[deletingCharge.kind] : "este custo"}" da compra? O rateio e a conta do credor são recalculados.`}
       />
       <AlertDialog open={!!pendingTransition} onOpenChange={(o) => !o && !busy && setPendingTransition(null)}>
         <AlertDialogContent>

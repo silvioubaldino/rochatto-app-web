@@ -9,6 +9,7 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 import { api, APIError } from "@/lib/api";
 import { useFornecedores } from "@/hooks/useFornecedores";
 import { useProdutos } from "@/hooks/useProdutos";
+import { ALLOCATION_METHODS, ALLOCATION_METHOD_LABELS } from "@/lib/formatters";
 import type { PurchaseDetail } from "@/lib/types";
 import {
   replenishmentPurchaseSchema,
@@ -57,7 +58,7 @@ export function ReplenishmentPurchaseModal({ open, onClose, onCreated }: Repleni
 
   useEffect(() => {
     if (open) {
-      reset({ supplier_id: "", expected_date: "", notes: "", items: [EMPTY_LINE] });
+      reset({ supplier_id: "", expected_date: "", notes: "", allocation_method: "BY_QUANTITY", items: [EMPTY_LINE] });
     }
   }, [open, reset]);
 
@@ -108,6 +109,21 @@ export function ReplenishmentPurchaseModal({ open, onClose, onCreated }: Repleni
               <Label htmlFor="rp-expected">Previsão no fornecedor</Label>
               <Input id="rp-expected" type="date" {...register("expected_date")} />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="rp-alloc">Rateio dos custos adicionais</Label>
+            <select
+              id="rp-alloc"
+              {...register("allocation_method")}
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              {ALLOCATION_METHODS.map((m) => (
+                <option key={m} value={m}>
+                  {ALLOCATION_METHOD_LABELS[m]}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-2">
