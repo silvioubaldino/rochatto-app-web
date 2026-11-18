@@ -21,6 +21,8 @@ export function getFirebaseAuth(): Auth {
 }
 
 export const googleProvider = new GoogleAuthProvider();
+// Sempre deixa escolher a conta (evita entrar sem querer com outra conta Google logada).
+googleProvider.setCustomParameters({ prompt: "select_account" });
 
 let _db: Firestore | undefined;
 export function getFirestoreDb(): Firestore {
