@@ -85,3 +85,14 @@ export function validateSaleItemDraft(draft: SaleItemDraft): string | null {
     return "Item de estoque precisa de um produto do catálogo (o saldo é por produto).";
   return null;
 }
+
+/**
+ * Valida o Freight antes de PUT /vendas/{id} (AYD-004: a API devolve 400 se
+ * frete_valor < 0, frete_pago < 0 ou frete_pago > frete_valor). Retorna a mensagem ou null.
+ */
+export function validateFreight(freteValor: number, fretePago: number): string | null {
+  if (freteValor < 0) return "Frete não pode ser negativo.";
+  if (fretePago < 0) return "Frete pago não pode ser negativo.";
+  if (fretePago > freteValor) return "Frete pago não pode ser maior que o frete.";
+  return null;
+}

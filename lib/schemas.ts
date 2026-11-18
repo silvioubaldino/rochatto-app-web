@@ -205,3 +205,47 @@ export function toStockAdjustmentPayload(data: StockAdjustmentFormData) {
     notes: emptyToNull(data.notes),
   };
 }
+
+// --- Receipt (AYD-004) -------------------------------------------------------
+
+/**
+ * Receipt do Customer. Recebido → data e payment method obrigatórios; agendado → data
+ * agendada obrigatória, payment method opcional (forma combinada).
+ */
+export const receiptSchema = z
+  .object({
+    valor: z.number().min(0.01, "Valor deve ser maior que 0"),
+    tipo: z.enum(["recebido", "agendar"]),
+    data_pagamento: z.string().optional(),
+    data_agendada: z.string().optional(),
+    // "" = não informado (valor vazio do select)
+    payment_method: z.enum(["", "PIX", "CASH", "CARD", "BOLETO", "TRANSFER"]),
+    observacoes: z.string().optional(),
+  })
+  .refine((d) => d.tipo !== "recebido" || !!d.data_pagamento, {
+    message: "Data do recebimento é obrigatória",
+    path: ["data_pagamento"],
+  })
+  .refine((d) => d.tipo !== "recebido" || d.payment_method !== "", {
+    message: "Forma de pagamento é obrigatória para recebimentos",
+    path: ["payment_method"],
+  })
+  .refine((d) => d.tipo !== "agendar" || !!d.data_agendada, {
+    message: "Data agendada é obrigatória",
+    path: ["data_agendada"],
+  });
+
+export type ReceiptFormData = z.infer<typeof receiptSchema>;
+
+/** Body de POST/PUT /vendas/{id}/pagamentos (`status` é exigido só pelo PUT; enviado nos dois). */
+export function toReceiptPayload(data: ReceiptFormData) {
+  const received = data.tipo === "recebido";
+  return {
+    valor: data.valor,
+    status: received ? "recebido" : "pendente",
+    data_pagamento: received ? data.data_pagamento : undefined,
+    data_agendada: received ? undefined : data.data_agendada,
+    payment_method: data.payment_method === "" ? undefined : data.payment_method,
+    observacoes: data.observacoes || undefined,
+  };
+}

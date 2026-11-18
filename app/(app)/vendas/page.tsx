@@ -40,6 +40,22 @@ function asPaymentStatus(v: string | null): PaymentFilter {
   return v && (SALE_PAYMENT_STATUSES as string[]).includes(v) ? (v as SalePaymentStatus) : "";
 }
 
+function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+      Filtro: {label}
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Remover filtro ${label}`}
+        className="rounded-full p-0.5 hover:bg-primary/20"
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </span>
+  );
+}
+
 export default function VendasPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -51,8 +67,18 @@ export default function VendasPage() {
   const [paymentStatus, setPaymentStatus] = useState<PaymentFilter>(
     asPaymentStatus(searchParams.get("payment_status")),
   );
-  const [dataInicio, setDataInicio] = useState(searchParams.get("data_inicio") || "");
-  const [dataFim, setDataFim] = useState(searchParams.get("data_fim") || "");
+  // AYD-004: `from`/`to` (data_venda); `data_inicio`/`data_fim` legados ainda são aceitos na URL.
+  const [dataInicio, setDataInicio] = useState(
+    searchParams.get("from") || searchParams.get("data_inicio") || "",
+  );
+  const [dataFim, setDataFim] = useState(
+    searchParams.get("to") || searchParams.get("data_fim") || "",
+  );
+  // AYD-004: filtros vindos do painel Financeiro (saldos em aberto)
+  const [freightPending, setFreightPending] = useState(searchParams.get("freight_pending") === "true");
+  const [commissionPending, setCommissionPending] = useState(
+    searchParams.get("commission_pending") === "true",
+  );
   const [clienteSearch, setClienteSearch] = useState("");
   const [debouncedClienteSearch, setDebouncedClienteSearch] = useState("");
   const [clienteId, setClienteId] = useState(searchParams.get("cliente_id") || "");
@@ -72,11 +98,13 @@ export default function VendasPage() {
     const f: VendasFilters = {};
     if (deliveryStatus) f.delivery_status = deliveryStatus;
     if (paymentStatus) f.payment_status = paymentStatus;
-    if (dataInicio) f.data_inicio = dataInicio;
-    if (dataFim) f.data_fim = dataFim;
+    if (dataInicio) f.from = dataInicio;
+    if (dataFim) f.to = dataFim;
     if (clienteId) f.cliente_id = clienteId;
+    if (freightPending) f.freight_pending = true;
+    if (commissionPending) f.commission_pending = true;
     return Object.keys(f).length > 0 ? f : undefined;
-  }, [deliveryStatus, paymentStatus, dataInicio, dataFim, clienteId]);
+  }, [deliveryStatus, paymentStatus, dataInicio, dataFim, clienteId, freightPending, commissionPending]);
 
   const { vendas, isLoading } = useVendas(filters);
 
@@ -85,12 +113,14 @@ export default function VendasPage() {
     const params = new URLSearchParams();
     if (deliveryStatus) params.set("delivery_status", deliveryStatus);
     if (paymentStatus) params.set("payment_status", paymentStatus);
-    if (dataInicio) params.set("data_inicio", dataInicio);
-    if (dataFim) params.set("data_fim", dataFim);
+    if (dataInicio) params.set("from", dataInicio);
+    if (dataFim) params.set("to", dataFim);
     if (clienteId) params.set("cliente_id", clienteId);
+    if (freightPending) params.set("freight_pending", "true");
+    if (commissionPending) params.set("commission_pending", "true");
     const qs = params.toString();
     router.replace(qs ? `/vendas?${qs}` : "/vendas", { scroll: false });
-  }, [deliveryStatus, paymentStatus, dataInicio, dataFim, clienteId, router]);
+  }, [deliveryStatus, paymentStatus, dataInicio, dataFim, clienteId, freightPending, commissionPending, router]);
 
   function handleSelectCliente(id: string, nome: string) {
     setClienteId(id);
@@ -139,7 +169,7 @@ export default function VendasPage() {
     {
       key: "a_receber",
       header: "A Receber",
-      render: (row: Venda) => formatMoeda(row.a_receber),
+      render: (row: Venda) => formatMoeda(row.receivable),
     },
     {
       key: "lucro",
@@ -187,6 +217,18 @@ export default function VendasPage() {
         </Link>{" "}
         ou use a <strong>Venda rápida</strong> no novo orçamento.
       </p>
+
+      {/* Filtros ativos vindos do painel Financeiro (AYD-004) */}
+      {(freightPending || commissionPending) && (
+        <div className="flex flex-wrap items-center gap-2">
+          {freightPending && (
+            <FilterChip label="Frete a pagar" onRemove={() => setFreightPending(false)} />
+          )}
+          {commissionPending && (
+            <FilterChip label="Comissão pendente" onRemove={() => setCommissionPending(false)} />
+          )}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-3">

@@ -12,6 +12,7 @@ import type {
   StockAdjustmentReason,
   StockMovementKind,
   SaleItemWarning,
+  PaymentMethod,
 } from "./types";
 
 export function formatMoeda(valor: number): string {
@@ -165,4 +166,20 @@ export function formatLeadSource(
   if (!leadSource) return "—";
   const label = LEAD_SOURCE_LABELS[leadSource] ?? "—";
   return leadSource === "PARTNER" && referrerName ? `${label} · ${referrerName}` : label;
+}
+
+// AYD-004 — forma de pagamento do Receipt (nunca exibir o código do enum).
+export const PAYMENT_METHODS: PaymentMethod[] = ["PIX", "CASH", "CARD", "BOLETO", "TRANSFER"];
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  PIX: "Pix",
+  CASH: "Dinheiro",
+  CARD: "Cartão",
+  BOLETO: "Boleto",
+  TRANSFER: "Transferência",
+};
+
+/** Rótulo da forma de pagamento; null/ausente (Receipt legado ou pendente) = "Não informado". */
+export function formatPaymentMethod(method?: PaymentMethod | null): string {
+  return method ? (PAYMENT_METHOD_LABELS[method] ?? "Não informado") : "Não informado";
 }

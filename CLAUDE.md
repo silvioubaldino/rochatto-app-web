@@ -50,6 +50,7 @@ app/
     compras/                 → compras ao fornecedor, fila "a comprar", detalhe/pagamento
     clientes/                → CRUD de clientes
     estoque/                 → saldo por produto, extrato e ajustes
+    financeiro/              → painel entra × sai: vendas do período, movimento, saldos em aberto (SPEC-004)
     catalogos/               → produtos, categorias, fornecedores, parceiros
 components/
   ui/                        → shadcn/ui (nunca editar diretamente; StatusBadge/MoneyInput são nossos)
@@ -112,6 +113,7 @@ Rótulos e cores ficam em `lib/formatters.ts`; badges em `components/status-badg
 | Compra (`status`) | OPEN → Aberta · ORDERED → Pedida · RECEIVED → Recebida |
 | Pagamento ao fornecedor | PENDING → Pendente · PAID → Pago |
 | Ajuste de estoque (`reason`) | INITIAL → Carga inicial · COUNT → Contagem · OTHER → Outro |
+| Forma de pagamento (`payment_method`, AYD-004) | PIX → Pix · CASH → Dinheiro · CARD → Cartão · BOLETO → Boleto · TRANSFER → Transferência · null → Não informado |
 
 ## Variáveis de ambiente
 
@@ -146,7 +148,7 @@ npm run dev
 
 > As fases acima (`.claude/specs/`) são o plano histórico. As entregas atuais seguem as
 > SPECs em `docs/specs/` (SPEC-001 Orçamentos, SPEC-002 Atendimento da venda, SPEC-003
-> Cadastros comerciais).
+> Cadastros comerciais, SPEC-004 Financeiro).
 
 ## Deploy (Vercel — Free Tier)
 

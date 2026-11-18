@@ -11,6 +11,12 @@ export interface VendasFilters {
   data_inicio?: string;
   data_fim?: string;
   cliente_id?: string;
+  // AYD-004
+  freight_pending?: boolean;
+  commission_pending?: boolean;
+  /** data_venda entre from e to (inclusive), YYYY-MM-DD */
+  from?: string;
+  to?: string;
 }
 
 function buildQuery(filters?: VendasFilters): string {
@@ -21,6 +27,10 @@ function buildQuery(filters?: VendasFilters): string {
   if (filters.data_inicio) params.set("data_inicio", filters.data_inicio);
   if (filters.data_fim) params.set("data_fim", filters.data_fim);
   if (filters.cliente_id) params.set("cliente_id", filters.cliente_id);
+  if (filters.freight_pending) params.set("freight_pending", "true");
+  if (filters.commission_pending) params.set("commission_pending", "true");
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to) params.set("to", filters.to);
   const qs = params.toString();
   return qs ? `/vendas?${qs}` : "/vendas";
 }

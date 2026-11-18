@@ -20,6 +20,7 @@ import {
   Loader2,
   BookOpen,
   Truck,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ const mainNav: NavItem[] = [
   { label: "Orçamentos", href: "/orcamentos", icon: <FileText className="h-4 w-4" /> },
   { label: "Vendas", href: "/vendas", icon: <ShoppingCart className="h-4 w-4" /> },
   { label: "Compras", href: "/compras", icon: <Truck className="h-4 w-4" /> },
+  { label: "Financeiro", href: "/financeiro", icon: <Wallet className="h-4 w-4" /> },
   { label: "Clientes", href: "/clientes", icon: <Users className="h-4 w-4" /> },
   { label: "Catálogos", href: "/catalogos", icon: <BookOpen className="h-4 w-4" /> },
   { label: "Estoque", href: "/estoque", icon: <Package className="h-4 w-4" /> },

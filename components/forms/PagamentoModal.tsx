@@ -3,11 +3,11 @@
 import { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { api, APIError } from "@/lib/api";
-import { formatMoeda } from "@/lib/formatters";
+import { formatMoeda, PAYMENT_METHODS, PAYMENT_METHOD_LABELS } from "@/lib/formatters";
+import { receiptSchema, toReceiptPayload, type ReceiptFormData } from "@/lib/schemas";
 import type { PagamentoCliente } from "@/lib/types";
 import {
   Dialog,
@@ -23,30 +23,7 @@ import { Button } from "@/components/ui/button";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import { Loader2 } from "lucide-react";
 
-const pagamentoSchema = z
-  .object({
-    valor: z.number().min(0.01, "Valor deve ser maior que 0"),
-    tipo: z.enum(["recebido", "agendar"]),
-    data_pagamento: z.string().optional(),
-    data_agendada: z.string().optional(),
-    observacoes: z.string().optional(),
-  })
-  .refine(
-    (data) => {
-      if (data.tipo === "recebido") return !!data.data_pagamento;
-      return true;
-    },
-    { message: "Data do recebimento é obrigatória", path: ["data_pagamento"] },
-  )
-  .refine(
-    (data) => {
-      if (data.tipo === "agendar") return !!data.data_agendada;
-      return true;
-    },
-    { message: "Data agendada é obrigatória", path: ["data_agendada"] },
-  );
-
-type PagamentoFormData = z.infer<typeof pagamentoSchema>;
+type PagamentoFormData = ReceiptFormData;
 
 interface PagamentoModalProps {
   open: boolean;
@@ -78,7 +55,7 @@ export function PagamentoModal({
     reset,
     formState: { errors, isSubmitting },
   } = useForm<PagamentoFormData>({
-    resolver: zodResolver(pagamentoSchema),
+    resolver: zodResolver(receiptSchema),
   });
 
   const watchTipo = watch("tipo");
@@ -95,6 +72,7 @@ export function PagamentoModal({
           data_agendada: pagamento.data_agendada
             ? pagamento.data_agendada.slice(0, 10)
             : "",
+          payment_method: pagamento.payment_method ?? "",
           observacoes: pagamento.observacoes ?? "",
         });
       } else {
@@ -103,6 +81,7 @@ export function PagamentoModal({
           tipo: "recebido",
           data_pagamento: format(new Date(), "yyyy-MM-dd"),
           data_agendada: "",
+          payment_method: "",
           observacoes: "",
         });
       }
@@ -110,13 +89,7 @@ export function PagamentoModal({
   }, [open, pagamento, saldoPendente, reset]);
 
   async function onSubmit(data: PagamentoFormData) {
-    const payload = {
-      valor: data.valor,
-      status: data.tipo === "recebido" ? "recebido" : "pendente",
-      data_pagamento: data.tipo === "recebido" ? data.data_pagamento : undefined,
-      data_agendada: data.tipo === "agendar" ? data.data_agendada : undefined,
-      observacoes: data.observacoes || undefined,
-    };
+    const payload = toReceiptPayload(data);
 
     try {
       if (isEdit) {
@@ -230,12 +203,34 @@ export function PagamentoModal({
             </>
           )}
 
+          {/* Forma de pagamento (AYD-004): obrigatória ao receber, opcional ao agendar */}
+          <div className="space-y-2">
+            <Label htmlFor="payment_method">
+              Forma de pagamento{watchTipo === "recebido" ? " *" : ""}
+            </Label>
+            <select
+              id="payment_method"
+              {...register("payment_method")}
+              className="h-8 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="">{watchTipo === "recebido" ? "Selecione..." : "Não informada"}</option>
+              {PAYMENT_METHODS.map((m) => (
+                <option key={m} value={m}>
+                  {PAYMENT_METHOD_LABELS[m]}
+                </option>
+              ))}
+            </select>
+            {errors.payment_method && (
+              <p className="text-xs text-destructive">{errors.payment_method.message}</p>
+            )}
+          </div>
+
           {/* Observações */}
           <div className="space-y-2">
             <Label htmlFor="pag_obs">Observações</Label>
             <Textarea
               id="pag_obs"
-              placeholder="Forma de pagamento, notas..."
+              placeholder="Notas..."
               {...register("observacoes")}
             />
           </div>
