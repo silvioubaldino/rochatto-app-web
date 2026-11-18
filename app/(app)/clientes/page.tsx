@@ -5,7 +5,14 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useClientes } from "@/hooks/useClientes";
 import { api, APIError } from "@/lib/api";
-import type { Cliente } from "@/lib/types";
+import type { Cliente, LeadSource } from "@/lib/types";
+import {
+  formatLeadSource,
+  LEAD_SOURCES,
+  LEAD_SOURCE_LABELS,
+  PARTNER_TYPE_LABELS,
+} from "@/lib/formatters";
+import { usePartners } from "@/hooks/usePartners";
 import { DataTable } from "@/components/tables/DataTable";
 import { ClienteModal } from "@/components/forms/ClienteModal";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
@@ -26,9 +33,16 @@ export default function ClientesPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const { clientes, isLoading, refresh } = useClientes(
-    debouncedSearch || undefined,
-  );
+  // Filtros de origem (AYD-003): lead_source e, quando Parceiro, qual Partner.
+  const [leadSourceFilter, setLeadSourceFilter] = useState<LeadSource | "">("");
+  const [referrerFilter, setReferrerFilter] = useState("");
+  const { partners } = usePartners();
+
+  const { clientes, isLoading, refresh } = useClientes(debouncedSearch || undefined, {
+    lead_source: leadSourceFilter || undefined,
+    referrer_id: leadSourceFilter === "PARTNER" ? referrerFilter || undefined : undefined,
+  });
+  const filtering = !!debouncedSearch || !!leadSourceFilter;
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -78,6 +92,11 @@ export default function ClientesPage() {
       render: (row: Cliente) => row.telefone || "—",
     },
     {
+      key: "lead_source" as const,
+      header: "Origem",
+      render: (row: Cliente) => formatLeadSource(row.lead_source, row.referrer_name),
+    },
+    {
       key: "actions" as string,
       header: "Ações",
       width: "100px",
@@ -120,21 +139,54 @@ export default function ClientesPage() {
         </Button>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por nome..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <select
+          aria-label="Filtrar por origem"
+          value={leadSourceFilter}
+          onChange={(e) => {
+            setLeadSourceFilter(e.target.value as LeadSource | "");
+            setReferrerFilter("");
+          }}
+          className="h-9 rounded-md border border-input bg-background px-3 text-sm sm:w-44"
+        >
+          <option value="">Todas as origens</option>
+          {LEAD_SOURCES.map((ls) => (
+            <option key={ls} value={ls}>
+              {LEAD_SOURCE_LABELS[ls]}
+            </option>
+          ))}
+        </select>
+        {leadSourceFilter === "PARTNER" && (
+          <select
+            aria-label="Filtrar por parceiro"
+            value={referrerFilter}
+            onChange={(e) => setReferrerFilter(e.target.value)}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm sm:w-56"
+          >
+            <option value="">Todos os parceiros</option>
+            {partners.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} — {PARTNER_TYPE_LABELS[p.type]}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       <DataTable
         columns={columns}
         data={clientes}
         isLoading={isLoading}
-        emptyMessage="Nenhum cliente encontrado."
+        emptyMessage={filtering ? "Nenhum cliente encontrado." : "Nenhum cliente cadastrado."}
         onRowClick={(row) => router.push(`/clientes/${row.id}`)}
       />
 

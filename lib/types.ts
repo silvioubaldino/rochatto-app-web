@@ -8,6 +8,27 @@ export type StatusVenda =
 
 export type StatusPagamento = "pendente" | "recebido";
 
+// Cadastros comerciais — AYD-003. Campos/rotas novos em inglês (ADR-001).
+export type PartnerType = "ARCHITECT" | "ENGINEER" | "BUILDER" | "OTHER";
+export type LeadSource = "REFERRAL" | "INSTAGRAM" | "PARTNER" | "OTHER";
+
+/** Partner (referrer) — `/partners`, substitui o legado `/vendedores-externos`. */
+export interface Partner {
+  id: string;
+  name: string;
+  phone: string | null;
+  type: PartnerType;
+  notes: string | null;
+  created_at: string;
+}
+
+/** Product category — `/product-categories` (ordem alfabética). */
+export interface ProductCategory {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
 // Entidades base
 export interface Cliente {
   id: string;
@@ -17,6 +38,10 @@ export interface Cliente {
   endereco?: string;
   cidade?: string;
   observacoes?: string;
+  // AYD-003: lead source (opcional; Customers antigos = null)
+  lead_source?: LeadSource | null;
+  referrer_id?: string | null;
+  referrer_name?: string | null;
   created_at: string;
 }
 
@@ -27,6 +52,9 @@ export interface Produto {
   preco_referencia?: number;
   custo_referencia?: number;
   unidade?: string;
+  // AYD-003: categoria (category_name vem mesmo se a categoria foi excluída)
+  category_id?: string | null;
+  category_name?: string | null;
   created_at: string;
 }
 
@@ -35,14 +63,6 @@ export interface Fornecedor {
   nome: string;
   telefone?: string;
   cidade?: string;
-  observacoes?: string;
-  created_at: string;
-}
-
-export interface VendedorExterno {
-  id: string;
-  nome: string;
-  telefone?: string;
   observacoes?: string;
   created_at: string;
 }
@@ -78,6 +98,7 @@ export interface Venda {
   id: string;
   cliente_id: string;
   cliente_nome: string;
+  // Legado: aponta para o mesmo registro do Partner (AYD-003 — mesmos IDs).
   vendedor_externo_id?: string;
   vendedor_externo_nome?: string;
   quote_id?: string;

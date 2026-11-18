@@ -445,7 +445,7 @@ export default function VendaDetalhePage() {
                 ? formatData(venda.data_entrega_prevista)
                 : "—"}
             </dd>
-            <dt className="text-muted-foreground">Vendedor</dt>
+            <dt className="text-muted-foreground">Parceiro</dt>
             <dd>{venda.vendedor_externo_nome || "—"}</dd>
             <dt className="text-muted-foreground">Status</dt>
             <dd>

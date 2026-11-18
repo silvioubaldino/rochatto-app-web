@@ -8,11 +8,11 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { api, APIError } from "@/lib/api";
-import { formatMoeda } from "@/lib/formatters";
+import { formatMoeda, PARTNER_TYPE_LABELS } from "@/lib/formatters";
 import type { Cliente, Produto } from "@/lib/types";
 import { useClientes } from "@/hooks/useClientes";
 import { useProdutos } from "@/hooks/useProdutos";
-import { useVendedoresExternos } from "@/hooks/useVendedoresExternos";
+import { usePartners } from "@/hooks/usePartners";
 import { ClienteModal } from "@/components/forms/ClienteModal";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import { Input } from "@/components/ui/input";
@@ -77,6 +77,7 @@ export default function NovoOrcamentoPage() {
     handleSubmit,
     watch,
     setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<QuoteFormData>({
     resolver: zodResolver(quoteSchema),
@@ -117,7 +118,7 @@ export default function NovoOrcamentoPage() {
 
   const { clientes, refresh: refreshClientes } = useClientes(debouncedClienteSearch || undefined);
   const { produtos } = useProdutos();
-  const { vendedoresExternos } = useVendedoresExternos();
+  const { partners } = usePartners();
 
   const filteredProdutos = useCallback(
     (index: number) => {
@@ -137,6 +138,10 @@ export default function NovoOrcamentoPage() {
 
   function handleSelectCliente(cliente: Cliente) {
     setValue("customer_id", cliente.id);
+    // Customer que veio por um Partner: sugere a mesma indicação (editável).
+    if (cliente.lead_source === "PARTNER" && cliente.referrer_id && !getValues("referrer_id")) {
+      setValue("referrer_id", cliente.referrer_id);
+    }
     setSelectedClienteNome(cliente.nome);
     setClienteSearch("");
     setShowClienteDropdown(false);
@@ -282,16 +287,16 @@ export default function NovoOrcamentoPage() {
 
             {/* Partner / lead source */}
             <div className="space-y-2">
-              <Label htmlFor="referrer_id">Indicação (Partner)</Label>
+              <Label htmlFor="referrer_id">Indicação (Parceiro)</Label>
               <select
                 id="referrer_id"
                 {...register("referrer_id")}
                 className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
                 <option value="">Nenhuma</option>
-                {vendedoresExternos.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.nome}
+                {partners.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} — {PARTNER_TYPE_LABELS[p.type]}
                   </option>
                 ))}
               </select>
