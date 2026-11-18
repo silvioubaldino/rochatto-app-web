@@ -247,6 +247,44 @@ export interface PurchaseItem {
   unit_cost: number;
 }
 
+export type PurchaseChargeKind = "FREIGHT" | "UNLOADING" | "TAX" | "OTHER";
+export type AllocationMethod = "BY_QUANTITY" | "BY_VALUE";
+export type PurchaseWarning = "OVERSETTLED";
+
+export interface PurchaseCharge {
+  id: string;
+  purchase_id: string;
+  kind: PurchaseChargeKind;
+  amount: number;
+  description: string | null;
+  payee_supplier_id: string | null;
+  payee_name: string | null;
+  obligation_id: string | null;
+  created_at?: string;
+  warnings?: PurchaseWarning[];
+}
+
+export interface PurchaseComposition {
+  goods_total: number;
+  charges: PurchaseCharge[];
+  charges_total: number;
+  total: number;
+}
+
+export interface PurchaseLine {
+  line_type: "STOCK_ITEM" | "SALE_ITEM";
+  line_id: string;
+  product_id: string | null;
+  product_name: string;
+  unit: string | null;
+  quantity: number;
+  unit_cost: number;
+  base_cost: number;
+  allocated_charges: number;
+  landed_total: number;
+  landed_unit_cost: number;
+}
+
 export interface PurchaseDetail {
   id: string;
   kind: PurchaseKind;
@@ -265,14 +303,28 @@ export interface PurchaseDetail {
   sale_items: PurchaseSaleItem[];
   items: PurchaseItem[];
   created_at?: string;
+  allocation_method: AllocationMethod;
+  composition: PurchaseComposition;
+  obligations: Obligation[];
+  open: number;
+  lines: PurchaseLine[];
+  warnings?: PurchaseWarning[];
 }
 
 /**
  * Linha de GET /purchases. ASSUNÇÃO (o AYD só diz "lista"): mesmos campos do
  * PurchaseDetail; as linhas (`sale_items`/`items`) podem vir ou não.
  */
-export type PurchaseListItem = Omit<PurchaseDetail, "sale_items" | "items"> &
-  Partial<Pick<PurchaseDetail, "sale_items" | "items">>;
+export type PurchaseListItem = Omit<
+  PurchaseDetail,
+  "sale_items" | "items" | "composition" | "obligations" | "lines" | "open" | "allocation_method"
+> &
+  Partial<
+    Pick<
+      PurchaseDetail,
+      "sale_items" | "items" | "composition" | "obligations" | "lines" | "open" | "allocation_method"
+    >
+  >;
 
 /** Resposta de PATCH /purchases/{id}/status. */
 export interface PurchaseStatusResponse {
@@ -316,6 +368,7 @@ export interface StockBalance {
   balance: number;
   last_inflow_cost: number | null;
   last_inflow_date: string | null;
+  stock_value: number;
 }
 
 export type StockMovementKind = "INFLOW" | "OUTFLOW" | "ADJUSTMENT";

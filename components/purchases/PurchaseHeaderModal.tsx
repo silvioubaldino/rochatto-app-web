@@ -51,7 +51,7 @@ export function PurchaseHeaderModal({ open, onClose, purchase, onSuccess }: Purc
 
   async function onSubmit(data: PurchaseHeaderFormData) {
     try {
-      await api.put(`/purchases/${purchase.id}`, toPurchaseHeaderPayload(data));
+      await api.put(`/purchases/${purchase.id}`, toPurchaseHeaderPayload(data, purchase.allocation_method));
       toast.success("Compra atualizada.");
       onSuccess();
       onClose();

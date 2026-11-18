@@ -48,6 +48,8 @@ export default function ComprasPage() {
   const [supplierId, setSupplierId] = useState(searchParams.get("supplier_id") || "");
   const [from, setFrom] = useState(searchParams.get("from") || "");
   const [to, setTo] = useState(searchParams.get("to") || "");
+  const [openOnly, setOpenOnly] = useState(searchParams.get("open_only") === "true");
+  const [overdue, setOverdue] = useState(searchParams.get("overdue") === "true");
   const [replenishmentOpen, setReplenishmentOpen] = useState(false);
 
   const filters = useMemo<PurchasesFilters>(
@@ -57,8 +59,10 @@ export default function ComprasPage() {
       supplier_id: supplierId || undefined,
       from: from || undefined,
       to: to || undefined,
+      open_only: openOnly || undefined,
+      overdue: overdue || undefined,
     }),
-    [kind, status, supplierId, from, to],
+    [kind, status, supplierId, from, to, openOnly, overdue],
   );
   const { purchases, isLoading } = usePurchases(filters);
 
@@ -70,9 +74,11 @@ export default function ComprasPage() {
     if (supplierId) params.set("supplier_id", supplierId);
     if (from) params.set("from", from);
     if (to) params.set("to", to);
+    if (openOnly) params.set("open_only", "true");
+    if (overdue) params.set("overdue", "true");
     const qs = params.toString();
     router.replace(qs ? `/compras?${qs}` : "/compras", { scroll: false });
-  }, [tab, kind, status, supplierId, from, to, router]);
+  }, [tab, kind, status, supplierId, from, to, openOnly, overdue, router]);
 
   const totals = useMemo(
     () => ({
@@ -183,6 +189,24 @@ export default function ComprasPage() {
               <label className="text-xs font-medium text-muted-foreground">Até</label>
               <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-8 w-36" />
             </div>
+            <label className="flex h-8 items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={openOnly}
+                onChange={(e) => setOpenOnly(e.target.checked)}
+                className="h-4 w-4"
+              />
+              Só com saldo a pagar
+            </label>
+            <label className="flex h-8 items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={overdue}
+                onChange={(e) => setOverdue(e.target.checked)}
+                className="h-4 w-4"
+              />
+              Só com conta vencida
+            </label>
           </div>
 
           <div className="overflow-x-auto">

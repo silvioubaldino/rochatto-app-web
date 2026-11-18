@@ -11,7 +11,9 @@ import type {
   ObligationStatus,
   InstallmentStatus,
   MovementCategory,
+  AllocationMethod,
   ObligationComponent,
+  PurchaseChargeKind,
   ObligationWarning,
   CounterpartyType,
   ObligationOriginType,
@@ -89,6 +91,22 @@ export const PURCHASE_KINDS: PurchaseKind[] = ["MADE_TO_ORDER", "STOCK_REPLENISH
 export const PURCHASE_KIND_LABELS: Record<PurchaseKind, string> = {
   MADE_TO_ORDER: "Sob encomenda",
   STOCK_REPLENISHMENT: "Reposição de estoque",
+};
+
+export const PURCHASE_CHARGE_KINDS: PurchaseChargeKind[] = ["FREIGHT", "UNLOADING", "TAX", "OTHER"];
+
+export const PURCHASE_CHARGE_KIND_LABELS: Record<PurchaseChargeKind, string> = {
+  FREIGHT: "Frete de compra",
+  UNLOADING: "Descarga",
+  TAX: "Imposto",
+  OTHER: "Outro",
+};
+
+export const ALLOCATION_METHODS: AllocationMethod[] = ["BY_QUANTITY", "BY_VALUE"];
+
+export const ALLOCATION_METHOD_LABELS: Record<AllocationMethod, string> = {
+  BY_QUANTITY: "Por quantidade (m²)",
+  BY_VALUE: "Por valor",
 };
 
 export const PURCHASE_STATUSES: PurchaseStatus[] = ["OPEN", "ORDERED", "RECEIVED"];

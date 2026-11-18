@@ -11,16 +11,22 @@ export interface StockBalanceFilters {
   only_negative?: boolean;
 }
 
+type StockBalanceResponse = StockBalance[] | { items: StockBalance[]; total_stock_value?: number };
+
 export function useStockBalance(filters?: StockBalanceFilters) {
   const params = new URLSearchParams();
   if (filters?.q) params.set("q", filters.q);
   if (filters?.only_negative) params.set("only_negative", "true");
   const qs = params.toString();
-  const { data, error, isLoading, mutate } = useSWR<StockBalance[]>(
+  const { data, error, isLoading, mutate } = useSWR<StockBalanceResponse>(
     qs ? `/stock/balance?${qs}` : "/stock/balance",
     api.get,
   );
-  return { balances: data ?? [], isLoading, error, refresh: mutate };
+  const balances = (Array.isArray(data) ? data : data?.items) ?? [];
+  const totalStockValue =
+    (!Array.isArray(data) ? data?.total_stock_value : undefined) ??
+    balances.reduce((sum, b) => sum + (b.stock_value ?? 0), 0);
+  return { balances, totalStockValue, isLoading, error, refresh: mutate };
 }
 
 /** Balance + extrato de um Product. */

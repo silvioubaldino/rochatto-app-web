@@ -18,6 +18,8 @@ export interface PurchasesFilters {
   supplier_id?: string;
   from?: string;
   to?: string;
+  open_only?: boolean;
+  overdue?: boolean;
 }
 
 function buildQuery(filters?: PurchasesFilters): string {
@@ -27,6 +29,8 @@ function buildQuery(filters?: PurchasesFilters): string {
   if (filters?.supplier_id) params.set("supplier_id", filters.supplier_id);
   if (filters?.from) params.set("from", filters.from);
   if (filters?.to) params.set("to", filters.to);
+  if (filters?.open_only) params.set("open_only", "true");
+  if (filters?.overdue) params.set("overdue", "true");
   const qs = params.toString();
   return qs ? `/purchases?${qs}` : "/purchases";
 }

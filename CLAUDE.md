@@ -12,7 +12,7 @@ Fornecer uma interface funcional, limpa e responsiva para:
 - Orçamentos (Quotes) e conversão em venda — toda venda nasce de um orçamento (ou da venda rápida)
 - Gerenciamento de vendas: origem de cada item (sob encomenda / de estoque) e fornecedor,
   status de entrega (a entregar / entregue / cancelada) e de pagamento (calculado)
-- Compras ao fornecedor (consolidadas por fornecedor, fila "a comprar", pagamento por compra)
+- Compras ao fornecedor (consolidadas por fornecedor, fila "a comprar"; composição do custo com custos adicionais e credor editável, rateio e custo de entrada por linha — SPEC-009; pagamento pelas contas)
 - Estoque com saldo calculado por produto (entradas, saídas, ajustes)
 - Controle de recebimentos do cliente (parciais, agendados, confirmados)
 - Visualização de indicadores financeiros no dashboard e alertas de pagamentos pendentes
@@ -48,9 +48,9 @@ app/
     dashboard/               → página inicial — KPIs do período (conversão, ticket médio), saldos em aberto com drill-down, gráfico mensal, ranking de Products e alertas (SPEC-005)
     orcamentos/              → orçamentos: listagem, emissão (e venda rápida), detalhe/conversão
     vendas/                  → listagem e detalhe (sem criação direta — nasce do orçamento)
-    compras/                 → compras ao fornecedor, fila "a comprar", detalhe/pagamento
+    compras/                 → compras ao fornecedor, fila "a comprar", detalhe: composição (custos adicionais, rateio), contas e custo de entrada (SPEC-009)
     clientes/                → CRUD de clientes
-    estoque/                 → saldo por produto, extrato e ajustes
+    estoque/                 → saldo por produto, valor em estoque, extrato e ajustes
     financeiro/              → painel: vendas do período, movimento, despesas, resultado e saldos em aberto (SPEC-004, SPEC-008)
     contas/                  → contas a pagar/receber (abas, filtros na URL, pagar várias) e detalhe /contas/[id]: componentes, parcelas, quitações (SPEC-008)
     movimentacoes/           → dinheiro executado: lista, despesa/receita avulsa, corrigir, anular (SPEC-008)
@@ -155,7 +155,7 @@ npm run dev
 
 > As fases acima (`.claude/specs/`) são o plano histórico. As entregas atuais seguem as
 > SPECs em `docs/specs/` (SPEC-001 Orçamentos, SPEC-002 Atendimento da venda, SPEC-003
-> Cadastros comerciais, SPEC-004 Financeiro, SPEC-005 Dashboard, SPEC-006 Assistant connector, SPEC-008 Contas e movimentações).
+> Cadastros comerciais, SPEC-004 Financeiro, SPEC-005 Dashboard, SPEC-006 Assistant connector, SPEC-008 Contas e movimentações, SPEC-009 Composição da compra).
 
 ## Deploy (Vercel — Free Tier)
 
