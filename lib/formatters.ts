@@ -1,5 +1,5 @@
 import { format, parseISO } from "date-fns";
-import type { StatusVenda, QuoteStatus } from "./types";
+import type { StatusVenda, QuoteStatus, PartnerType, LeadSource } from "./types";
 
 export function formatMoeda(valor: number): string {
   const v = typeof valor === "number" ? valor : (Number(valor) || 0);
@@ -40,3 +40,32 @@ export const QUOTE_STATUS_COLORS: Record<QuoteStatus, string> = {
   WON: "bg-green-100 text-green-800",
   LOST: "bg-red-100 text-red-800",
 };
+
+// AYD-003 — Partner type e Lead source (rótulos PT-BR; nunca exibir o código do enum).
+export const PARTNER_TYPES: PartnerType[] = ["ARCHITECT", "ENGINEER", "BUILDER", "OTHER"];
+
+export const PARTNER_TYPE_LABELS: Record<PartnerType, string> = {
+  ARCHITECT: "Arquiteto",
+  ENGINEER: "Engenheiro",
+  BUILDER: "Construtora",
+  OTHER: "Outro",
+};
+
+export const LEAD_SOURCES: LeadSource[] = ["REFERRAL", "INSTAGRAM", "PARTNER", "OTHER"];
+
+export const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
+  REFERRAL: "Indicação",
+  INSTAGRAM: "Instagram",
+  PARTNER: "Parceiro",
+  OTHER: "Outro",
+};
+
+/** "Parceiro · Fulano" quando a origem é um Partner; "—" quando não informada. */
+export function formatLeadSource(
+  leadSource?: LeadSource | null,
+  referrerName?: string | null,
+): string {
+  if (!leadSource) return "—";
+  const label = LEAD_SOURCE_LABELS[leadSource] ?? "—";
+  return leadSource === "PARTNER" && referrerName ? `${label} · ${referrerName}` : label;
+}

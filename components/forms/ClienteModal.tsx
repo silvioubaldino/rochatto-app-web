@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { toast } from "sonner";
 import { api, APIError } from "@/lib/api";
 import type { Cliente } from "@/lib/types";
+import { clienteSchema, toClientePayload, type ClienteFormData } from "@/lib/schemas";
+import { LEAD_SOURCES, LEAD_SOURCE_LABELS, PARTNER_TYPE_LABELS } from "@/lib/formatters";
+import { usePartners } from "@/hooks/usePartners";
 import {
   Dialog,
   DialogContent,
@@ -19,17 +21,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-
-const clienteSchema = z.object({
-  nome: z.string().min(1, "Nome é obrigatório").max(200, "Máximo 200 caracteres"),
-  telefone: z.string(),
-  email: z.string().email("E-mail inválido").or(z.literal("")),
-  endereco: z.string(),
-  cidade: z.string(),
-  observacoes: z.string(),
-});
-
-type ClienteFormData = z.infer<typeof clienteSchema>;
 
 interface ClienteModalProps {
   open: boolean;
@@ -50,10 +41,20 @@ export function ClienteModal({
     register,
     handleSubmit,
     reset,
+    control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ClienteFormData>({
     resolver: zodResolver(clienteSchema),
   });
+
+  const leadSource = useWatch({ control, name: "lead_source" });
+  const { partners } = usePartners();
+  // Partner excluído (soft-delete) ainda vinculado ao Customer: mantém a opção visível.
+  const inactiveReferrer =
+    cliente?.referrer_id && !partners.some((p) => p.id === cliente.referrer_id)
+      ? { id: cliente.referrer_id, name: cliente.referrer_name ?? "Parceiro" }
+      : null;
 
   useEffect(() => {
     if (open) {
@@ -66,6 +67,8 @@ export function ClienteModal({
               endereco: cliente.endereco ?? "",
               cidade: cliente.cidade ?? "",
               observacoes: cliente.observacoes ?? "",
+              lead_source: cliente.lead_source ?? "",
+              referrer_id: cliente.referrer_id ?? "",
             }
           : {
               nome: "",
@@ -74,6 +77,8 @@ export function ClienteModal({
               endereco: "",
               cidade: "",
               observacoes: "",
+              lead_source: "",
+              referrer_id: "",
             },
       );
     }
@@ -81,11 +86,12 @@ export function ClienteModal({
 
   async function onSubmit(data: ClienteFormData) {
     try {
+      const payload = toClientePayload(data);
       if (isEdit) {
-        await api.put(`/clientes/${cliente.id}`, data);
+        await api.put(`/clientes/${cliente.id}`, payload);
         toast.success("Cliente atualizado com sucesso.");
       } else {
-        await api.post("/clientes", data);
+        await api.post("/clientes", payload);
         toast.success("Cliente criado com sucesso.");
       }
       onSuccess();
@@ -145,6 +151,82 @@ export function ClienteModal({
               <Label htmlFor="cidade">Cidade</Label>
               <Input id="cidade" {...register("cidade")} />
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="lead_source">Origem</Label>
+              <Controller
+                control={control}
+                name="lead_source"
+                render={({ field }) => (
+                  <select
+                    id="lead_source"
+                    name={field.name}
+                    ref={field.ref}
+                    value={field.value ?? ""}
+                    onBlur={field.onBlur}
+                    onChange={(e) => {
+                      field.onChange(e.target.value);
+                      // referrer_id só existe com origem Parceiro (regra da API).
+                      if (e.target.value !== "PARTNER") {
+                        setValue("referrer_id", "", { shouldValidate: false });
+                      }
+                    }}
+                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="">Não informada</option>
+                    {LEAD_SOURCES.map((ls) => (
+                      <option key={ls} value={ls}>
+                        {LEAD_SOURCE_LABELS[ls]}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              />
+            </div>
+
+            {leadSource === "PARTNER" && (
+              <div className="space-y-2">
+                <Label htmlFor="referrer_id">Parceiro *</Label>
+                <Controller
+                  control={control}
+                  name="referrer_id"
+                  render={({ field }) => (
+                    <select
+                      id="referrer_id"
+                      name={field.name}
+                      ref={field.ref}
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      aria-invalid={!!errors.referrer_id}
+                      className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                    >
+                      <option value="">Selecione...</option>
+                      {inactiveReferrer && (
+                        <option value={inactiveReferrer.id}>
+                          {inactiveReferrer.name} (inativo)
+                        </option>
+                      )}
+                      {partners.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} — {PARTNER_TYPE_LABELS[p.type]}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                />
+                {errors.referrer_id && (
+                  <p className="text-xs text-destructive">{errors.referrer_id.message}</p>
+                )}
+                {partners.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Nenhum parceiro cadastrado — cadastre em Catálogos › Parceiros.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

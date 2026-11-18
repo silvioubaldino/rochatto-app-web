@@ -35,11 +35,15 @@ export default function LoginPage() {
     try {
       await signIn(email, password);
       toast.success("Login realizado com sucesso!");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      if (err.code === "auth/invalid-credential") {
+      const code =
+        typeof err === "object" && err !== null && "code" in err
+          ? String((err as { code: unknown }).code)
+          : "";
+      if (code === "auth/invalid-credential") {
         toast.error("E-mail ou senha incorretos.");
-      } else if (err.code === "auth/user-not-found") {
+      } else if (code === "auth/user-not-found") {
         toast.error("Usuário não cadastrado.");
       } else {
         toast.error("Erro ao fazer login. Tente novamente.");

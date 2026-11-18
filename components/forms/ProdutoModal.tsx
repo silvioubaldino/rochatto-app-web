@@ -7,6 +7,8 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { api, APIError } from "@/lib/api";
 import type { Produto } from "@/lib/types";
+import { emptyToNull } from "@/lib/schemas";
+import { useProductCategories } from "@/hooks/useProductCategories";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +29,7 @@ const produtoSchema = z.object({
   preco_referencia: z.number().min(0, "Valor deve ser >= 0"),
   custo_referencia: z.number().min(0, "Valor deve ser >= 0"),
   unidade: z.string(),
+  category_id: z.string(), // "" = sem categoria (enviado como null)
 });
 
 type ProdutoFormData = z.infer<typeof produtoSchema>;
@@ -45,6 +48,12 @@ export function ProdutoModal({
   onSuccess,
 }: ProdutoModalProps) {
   const isEdit = !!produto;
+  const { categories } = useProductCategories();
+  // Categoria excluída (soft-delete) continua vinculada ao Product: exibe como inativa.
+  const inactiveCategory =
+    produto?.category_id && !categories.some((c) => c.id === produto.category_id)
+      ? { id: produto.category_id, name: produto.category_name ?? "Categoria" }
+      : null;
 
   const {
     register,
@@ -66,6 +75,7 @@ export function ProdutoModal({
               preco_referencia: produto.preco_referencia ?? 0,
               custo_referencia: produto.custo_referencia ?? 0,
               unidade: produto.unidade ?? "",
+              category_id: produto.category_id ?? "",
             }
           : {
               nome: "",
@@ -73,6 +83,7 @@ export function ProdutoModal({
               preco_referencia: 0,
               custo_referencia: 0,
               unidade: "",
+              category_id: "",
             },
       );
     }
@@ -80,11 +91,12 @@ export function ProdutoModal({
 
   async function onSubmit(data: ProdutoFormData) {
     try {
+      const payload = { ...data, category_id: emptyToNull(data.category_id) };
       if (isEdit) {
-        await api.put(`/produtos/${produto.id}`, data);
+        await api.put(`/produtos/${produto.id}`, payload);
         toast.success("Produto atualizado com sucesso.");
       } else {
-        await api.post("/produtos", data);
+        await api.post("/produtos", payload);
         toast.success("Produto criado com sucesso.");
       }
       onSuccess();
@@ -111,6 +123,43 @@ export function ProdutoModal({
             <Input id="nome" {...register("nome")} aria-invalid={!!errors.nome} />
             {errors.nome && (
               <p className="text-xs text-destructive">{errors.nome.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category_id">Categoria</Label>
+            {/* Controlado: as opções chegam depois do reset (SWR), o valor precisa persistir. */}
+            <Controller
+              control={control}
+              name="category_id"
+              render={({ field }) => (
+                <select
+                  id="category_id"
+                  name={field.name}
+                  ref={field.ref}
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="">Sem categoria</option>
+                  {inactiveCategory && (
+                    <option value={inactiveCategory.id}>
+                      {inactiveCategory.name} (inativa)
+                    </option>
+                  )}
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            />
+            {categories.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Nenhuma categoria cadastrada — crie na aba Categorias.
+              </p>
             )}
           </div>
 

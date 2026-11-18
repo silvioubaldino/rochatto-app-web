@@ -8,12 +8,12 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { api, APIError } from "@/lib/api";
-import { formatMoeda } from "@/lib/formatters";
+import { formatMoeda, PARTNER_TYPE_LABELS } from "@/lib/formatters";
 import type { StatusVenda, Cliente, Produto, Fornecedor } from "@/lib/types";
 import { useClientes } from "@/hooks/useClientes";
 import { useProdutos } from "@/hooks/useProdutos";
 import { useFornecedores } from "@/hooks/useFornecedores";
-import { useVendedoresExternos } from "@/hooks/useVendedoresExternos";
+import { usePartners } from "@/hooks/usePartners";
 import { ClienteModal } from "@/components/forms/ClienteModal";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import { Input } from "@/components/ui/input";
@@ -144,7 +144,7 @@ export default function NovaVendaPage() {
   const { fields, append, remove } = useFieldArray({ control, name: "itens" });
 
   const watchStatus = watch("status");
-  const watchVendedorId = watch("vendedor_externo_id");
+  const watchPartnerId = watch("vendedor_externo_id");
   const watchItens = watch("itens");
   const watchFrete = watch("frete_valor");
   const watchComissao = watch("comissao_valor");
@@ -171,7 +171,7 @@ export default function NovaVendaPage() {
   const { clientes, refresh: refreshClientes } = useClientes(debouncedClienteSearch || undefined);
   const { produtos } = useProdutos();
   const { fornecedores } = useFornecedores();
-  const { vendedoresExternos } = useVendedoresExternos();
+  const { partners } = usePartners();
 
   // Filtered lists for product/supplier dropdowns
   const filteredProdutos = useCallback(
@@ -246,7 +246,8 @@ export default function NovaVendaPage() {
     try {
       const payload = {
         ...data,
-        vendedor_externo_id: data.vendedor_externo_id || undefined,
+        // Campo legado da Sale; aponta para o Partner (AYD-003). uuid|null, nunca "".
+        vendedor_externo_id: data.vendedor_externo_id || null,
         data_entrega_prevista: data.data_entrega_prevista || undefined,
         observacoes: data.observacoes || undefined,
       };
@@ -375,18 +376,18 @@ export default function NovaVendaPage() {
               </div>
             )}
 
-            {/* Vendedor Externo */}
+            {/* Parceiro (Partner) — campo legado vendedor_externo_id */}
             <div className="space-y-2">
-              <Label htmlFor="vendedor_externo_id">Vendedor Externo</Label>
+              <Label htmlFor="vendedor_externo_id">Parceiro (indicação)</Label>
               <select
                 id="vendedor_externo_id"
                 {...register("vendedor_externo_id")}
                 className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
                 <option value="">Nenhum</option>
-                {vendedoresExternos.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.nome}
+                {partners.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} — {PARTNER_TYPE_LABELS[p.type]}
                   </option>
                 ))}
               </select>
@@ -609,7 +610,7 @@ export default function NovaVendaPage() {
               />
             </div>
 
-            {watchVendedorId && (
+            {watchPartnerId && (
               <div className="space-y-2">
                 <Label>Comissão</Label>
                 <Controller
