@@ -2,34 +2,36 @@
 
 ## O que é este componente
 
-Interface web em **Next.js 14** (App Router) que serve como ponto de interação do usuário com o sistema de gestão de vendas. Autentica via Google Login (Firebase Auth), consome a API REST do backend Go e exibe dashboards, formulários e listagens.
+Interface web em **Next.js 16** (App Router, React 19) que serve como ponto de interação do usuário com o sistema de gestão de vendas. Autentica via Google Login (Firebase Auth), consome a API REST do backend Go e exibe dashboards, formulários e listagens.
 
 ## Objetivo
 
 Fornecer uma interface funcional, limpa e responsiva para:
 - Login seguro via conta Google
-- Cadastro e consulta de clientes, produtos, fornecedores e vendedores externos
-- Criação e gerenciamento completo de vendas com múltiplos itens
+- Cadastro e consulta de clientes, produtos (com categorias), fornecedores e parceiros (Partners)
+- Orçamentos (Quotes) e conversão em venda — toda venda nasce de um orçamento (ou da venda rápida)
+- Gerenciamento de vendas: origem de cada item (sob encomenda / de estoque) e fornecedor,
+  status de entrega (a entregar / entregue / cancelada) e de pagamento (calculado)
+- Compras ao fornecedor (consolidadas por fornecedor, fila "a comprar", pagamento por compra)
+- Estoque com saldo calculado por produto (entradas, saídas, ajustes)
 - Controle de recebimentos do cliente (parciais, agendados, confirmados)
-- Visualização de indicadores financeiros no dashboard
-- Controle de alertas de pagamentos pendentes
-- Módulo de estoque físico
+- Visualização de indicadores financeiros no dashboard e alertas de pagamentos pendentes
 
 ## Stack
 
 | Tecnologia | Versão | Papel |
 |---|---|---|
-| Next.js | 14+ (App Router) | Framework React com SSR/RSC |
-| React | 18+ | UI library |
+| Next.js | 16 (App Router, Turbopack) | Framework React |
+| React | 19 | UI library |
 | TypeScript | 5+ | Tipagem estática |
-| Tailwind CSS | 3+ | Estilização utilitária |
-| shadcn/ui | latest | Componentes de UI acessíveis |
-| Firebase Auth | 10+ | Autenticação Google Login |
-| Recharts | 2+ | Gráficos do dashboard |
-| React Hook Form | 7+ | Gerenciamento de formulários |
-| Zod | 3+ | Validação de schema |
-| SWR | 2+ | Data fetching e cache |
-| date-fns | 3+ | Formatação de datas |
+| Tailwind CSS | 4 | Estilização utilitária |
+| shadcn/ui (Base UI) | latest | Componentes de UI acessíveis |
+| Firebase Auth | 12 | Autenticação Google Login |
+| Recharts | 3 | Gráficos do dashboard |
+| React Hook Form | 7 | Gerenciamento de formulários |
+| Zod | 4 | Validação de schema |
+| SWR | 2 | Data fetching e cache |
+| date-fns | 4 | Formatação de datas |
 
 ## Arquitetura
 
@@ -43,19 +45,24 @@ app/
   (auth)/login/              → tela pública de login
   (app)/                     → layout protegido (redireciona se não autenticado)
     dashboard/               → página inicial — KPIs e alertas
-    vendas/                  → listagem, criação, detalhe
+    orcamentos/              → orçamentos: listagem, emissão (e venda rápida), detalhe/conversão
+    vendas/                  → listagem e detalhe (sem criação direta — nasce do orçamento)
+    compras/                 → compras ao fornecedor, fila "a comprar", detalhe/pagamento
     clientes/                → CRUD de clientes
-    estoque/                 → controle de estoque
-    catalogos/               → produtos, fornecedores, vendedores externos
+    estoque/                 → saldo por produto, extrato e ajustes
+    catalogos/               → produtos, categorias, fornecedores, parceiros
 components/
-  ui/                        → shadcn/ui (nunca editar diretamente)
+  ui/                        → shadcn/ui (nunca editar diretamente; StatusBadge/MoneyInput são nossos)
   forms/                     → formulários reutilizáveis
+  sales/ purchases/ stock/   → blocos das telas de venda, compra e estoque
   tables/                    → tabelas de listagem
   dashboard/                 → cards e gráficos
 lib/
   api.ts                     → fetch wrapper autenticado
   firebase.ts                → configuração do Firebase
-  formatters.ts              → formatação de moeda, data, status
+  formatters.ts              → formatação de moeda, data, quantidade e rótulos/cores dos enums
+  schemas.ts                 → schemas zod + montadores de payload
+  sales.ts                   → payloads da Sale/Item (PUTs legados são de substituição completa)
   types.ts                   → tipos TypeScript espelhando os contratos da API
 hooks/
   useAuth.ts                 → estado de autenticação do Firebase
@@ -93,15 +100,18 @@ hooks/
 - Espelham exatamente os contratos da API Go
 - Nunca usar `any` — usar `unknown` se necessário
 
-### Status visual das vendas
+### Status visuais (AYD-002)
 
-| Status (API) | Label | Cor de fundo |
-|---|---|---|
-| A_ENTREGAR | A Entregar | Amarelo — `bg-yellow-100` |
-| A_ENTREGAR_DATA | A Entregar em {data} | Amarelo — `bg-yellow-100` |
-| A_RETIRAR | A Retirar no Depósito | Laranja — `bg-orange-100` |
-| ENTREGUE_PARCIAL | Entregue Parcialmente | Azul — `bg-blue-100` |
-| ENTREGUE | Entregue | Verde — `bg-green-100` |
+Rótulos e cores ficam em `lib/formatters.ts`; badges em `components/status-badges.tsx`.
+
+| Enum | Valores (API → rótulo) |
+|---|---|
+| Entrega da venda (`delivery_status`, manual) | TO_DELIVER → A entregar (amarelo) · DELIVERED → Entregue (verde) · CANCELED → Cancelada (cinza; venda somente leitura) |
+| Pagamento da venda (`payment_status`, calculado) | PENDING → Pendente · PARTIAL → Parcial · PAID → Quitado |
+| Origem do item (`origin`) | MADE_TO_ORDER → Sob encomenda · FROM_STOCK → De estoque |
+| Compra (`status`) | OPEN → Aberta · ORDERED → Pedida · RECEIVED → Recebida |
+| Pagamento ao fornecedor | PENDING → Pendente · PAID → Pago |
+| Ajuste de estoque (`reason`) | INITIAL → Carga inicial · COUNT → Contagem · OTHER → Outro |
 
 ## Variáveis de ambiente
 
@@ -128,11 +138,15 @@ npm run dev
 | Fase | Arquivo | Escopo |
 |---|---|---|
 | 1 | `specs/phase-01-foundation.md` | Setup, Firebase Auth, layout protegido, tela de login |
-| 2 | `specs/phase-02-catalogs.md` | CRUD: clientes, produtos, fornecedores, vendedores externos |
+| 2 | `specs/phase-02-catalogs.md` | CRUD: clientes, produtos, fornecedores, vendedores externos (hoje Parceiros — SPEC-003) |
 | 3 | `specs/phase-03-sales.md` | Listagem, criação e detalhe de vendas |
 | 4 | `specs/phase-04-financial-panel.md` | Painel de pagamentos, totais financeiros por venda |
 | 5 | `specs/phase-05-dashboard.md` | Dashboard, KPIs, gráficos e alertas |
-| 6 | `specs/phase-06-estoque.md` | Tela de estoque físico |
+| 6 | `specs/phase-06-estoque.md` | Tela de estoque físico (substituída por SPEC-002: saldo calculado + ajustes) |
+
+> As fases acima (`.claude/specs/`) são o plano histórico. As entregas atuais seguem as
+> SPECs em `docs/specs/` (SPEC-001 Orçamentos, SPEC-002 Atendimento da venda, SPEC-003
+> Cadastros comerciais).
 
 ## Deploy (Vercel — Free Tier)
 

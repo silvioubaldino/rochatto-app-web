@@ -1,0 +1,87 @@
+import type { ItemOrigin, ItemVenda, Venda } from "./types";
+
+// Montadores de payload da Sale (rotas legadas `/vendas`, AYD-002 §1–2).
+//
+// `PUT /vendas/{id}` e `PUT /vendas/{id}/itens/{itemId}` são de substituição completa
+// (a API grava todos os campos do corpo), então a UI sempre envia o registro inteiro,
+// sobrepondo só o que mudou — nunca um corpo parcial.
+
+/** Corpo de PUT /vendas/{id}. Não envia `status` (AYD-002: entrega só via PATCH). */
+export function toSaleUpdatePayload(
+  venda: Venda,
+  overrides: Partial<{
+    data_entrega_prevista: string | null;
+    frete_valor: number;
+    frete_pago: number;
+    comissao_valor: number;
+    comissao_paga: boolean;
+    observacoes: string | null;
+  }> = {},
+) {
+  return {
+    vendedor_externo_id: venda.vendedor_externo_id || null,
+    data_entrega_prevista: venda.data_entrega_prevista
+      ? venda.data_entrega_prevista.slice(0, 10)
+      : null,
+    frete_valor: venda.frete_valor,
+    frete_pago: venda.frete_pago,
+    comissao_valor: venda.comissao_valor,
+    comissao_paga: venda.comissao_paga,
+    observacoes: venda.observacoes || null,
+    ...overrides,
+  };
+}
+
+export interface SaleItemDraft {
+  produto_id: string | null;
+  produto_nome: string;
+  fornecedor_id: string | null;
+  fornecedor_nome: string | null;
+  quantidade: number;
+  preco_venda_unit: number;
+  /** null = deixar a API preencher (FROM_STOCK → custo da última entrada, RN-16). */
+  custo_unit: number | null;
+  origin: ItemOrigin;
+}
+
+export function itemToDraft(item: ItemVenda): SaleItemDraft {
+  return {
+    produto_id: item.produto_id || null,
+    produto_nome: item.produto_nome,
+    fornecedor_id: item.fornecedor_id || null,
+    fornecedor_nome: item.fornecedor_nome || null,
+    quantidade: item.quantidade,
+    preco_venda_unit: item.preco_venda_unit,
+    custo_unit: item.custo_unit,
+    origin: item.origin ?? "MADE_TO_ORDER",
+  };
+}
+
+/**
+ * Corpo de POST/PUT /vendas/{id}/itens. Item FROM_STOCK não leva Supplier; `custo_unit`
+ * é omitido quando null para a API aplicar o custo da última entrada (AYD-002 §1).
+ */
+export function toSaleItemPayload(draft: SaleItemDraft) {
+  const fromStock = draft.origin === "FROM_STOCK";
+  return {
+    produto_id: draft.produto_id || null,
+    produto_nome: draft.produto_nome.trim(),
+    fornecedor_id: fromStock ? null : draft.fornecedor_id || null,
+    fornecedor_nome: fromStock ? null : draft.fornecedor_nome || null,
+    quantidade: draft.quantidade,
+    preco_venda_unit: draft.preco_venda_unit,
+    origin: draft.origin,
+    ...(draft.custo_unit === null ? {} : { custo_unit: draft.custo_unit }),
+  };
+}
+
+/** Valida o rascunho antes de enviar; devolve a mensagem de erro ou null. */
+export function validateSaleItemDraft(draft: SaleItemDraft): string | null {
+  if (!draft.produto_nome.trim()) return "Informe o produto.";
+  if (!(draft.quantidade > 0)) return "Quantidade deve ser maior que zero.";
+  if (draft.preco_venda_unit < 0) return "Preço não pode ser negativo.";
+  if (draft.custo_unit !== null && draft.custo_unit < 0) return "Custo não pode ser negativo.";
+  if (draft.origin === "FROM_STOCK" && !draft.produto_id)
+    return "Item de estoque precisa de um produto do catálogo (o saldo é por produto).";
+  return null;
+}

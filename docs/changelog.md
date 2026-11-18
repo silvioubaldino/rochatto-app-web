@@ -26,6 +26,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+- Implement SPEC-002: Sale fulfillment — item origin (made-to-order / from stock) and supplier per item, delivery/payment status and Sale cancellation; Purchases (list, "to buy" queue by supplier, stock replenishment, status and supplier payment); Stock balance, statement and adjustments replace the old stock entries; "New Sale" removed (Sales come from Quotes).
 - Implement SPEC-003: Partners (with type) replace external sellers; Customer lead source with partner; product categories (manage, select, filter); CI workflow (lint, typecheck, build).
 - Quote screens hardening: quote without supplier, quick sale, valid empty ids, item edits keep the product link.
 - Implement SPEC-001: Orçamentos screens (list/filter, issue form with editable item price, mark as lost, convert to Sale with redirect); Sale detail now shows its originating Quote.
