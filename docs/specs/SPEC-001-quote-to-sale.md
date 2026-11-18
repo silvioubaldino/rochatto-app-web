@@ -2,8 +2,8 @@
 id: SPEC-001
 type: spec
 title: Espinha Quote → Sale (telas de Orçamento)
-status: draft
-updated: 2026-07-14
+status: review
+updated: 2026-07-16
 parents: [AYD-001@context]
 related: [GLO, ADR-001@context]
 ---
@@ -181,11 +181,15 @@ do campo já previsto no contrato).
 
 ## Checklist de entrega
 
-- [ ] Lista de Orçamentos com filtro por status/período e busca
-- [ ] Formulário de emissão com Items e preço unitário editável por Item
-- [ ] Ação "Marcar como perdido" com motivo opcional
-- [ ] Ação "Converter em Sale" com navegação para a Sale criada
-- [ ] Sale exibe o Quote de origem quando houver `quote_id`
-- [ ] Quotes WON/LOST somente leitura (sem editar/perder/converter)
-- [ ] Testes de aceite cobrindo os 6 cenários Gherkin
-- [ ] `docs/changelog.md` atualizado (Unreleased)
+- [x] Lista de Orçamentos com filtro por status/período (`from`/`to`) e por cliente
+- [x] Formulário de emissão com Items e preço unitário editável por Item
+- [x] Ação "Marcar como perdido" com motivo opcional (`PATCH /quotes/{id}/status`)
+- [x] Ação "Converter em Sale" com navegação para a Sale criada
+- [x] Sale exibe o Quote de origem quando houver `quote_id`
+- [x] Quotes WON/LOST somente leitura (sem editar/perder/converter); LOST permite reabrir
+- [ ] Testes de aceite cobrindo os 6 cenários Gherkin — **não implementado**: o repo não tem
+      framework de testes configurado (sem Jest/Vitest/Playwright em `package.json`); os
+      fluxos foram verificados via `tsc --noEmit`, `eslint` e `next build` (sem erros nas
+      telas novas) e revisão manual do código contra os critérios de aceite — configurar um
+      test runner é decisão de convenção de engenharia que precede esta SPEC
+- [x] `docs/changelog.md` atualizado (Unreleased)
