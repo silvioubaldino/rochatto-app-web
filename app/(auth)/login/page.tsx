@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { Loader2, Lock, Mail } from "lucide-react";
 
 function LoginForm() {
-  const { user, loading, signIn } = useAuth();
+  const { user, loading, signIn, signInWithGoogle, resetPassword } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   // `?next=` (ex.: /conectar?request_id=...) — volta à mesma URL depois do login.
@@ -22,6 +22,7 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
@@ -58,6 +59,46 @@ function LoginForm() {
     }
   }
 
+  async function handleGoogle() {
+    setGoogleLoading(true);
+    try {
+      await signInWithGoogle();
+    } catch (err: unknown) {
+      console.error(err);
+      const code =
+        typeof err === "object" && err !== null && "code" in err
+          ? String((err as { code: unknown }).code)
+          : "";
+      if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
+        // usuário fechou a janela: nada a mostrar
+      } else if (code === "auth/popup-blocked") {
+        toast.error("O navegador bloqueou a janela do Google. Libere pop-ups e tente de novo.");
+      } else if (code === "auth/unauthorized-domain") {
+        toast.error("Domínio não autorizado no Firebase.");
+      } else if (code === "auth/operation-not-allowed" || code === "auth/user-not-found") {
+        toast.error("Esta conta não tem acesso ao sistema.");
+      } else {
+        toast.error("Erro ao entrar com Google. Tente novamente.");
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
+
+  async function handleResetPassword() {
+    if (!email) {
+      toast.error("Informe seu e-mail acima para receber o link.");
+      return;
+    }
+    try {
+      await resetPassword(email);
+    } catch (err) {
+      console.error(err);
+    }
+    // Mesma resposta exista a conta ou não (não revela quais e-mails são cadastrados).
+    toast.success("Se o e-mail tiver acesso, enviamos um link para definir a senha.");
+  }
+
   if (loading || user) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
@@ -86,6 +127,33 @@ function LoginForm() {
             </p>
           </CardHeader>
           <CardContent>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-11 text-base font-semibold"
+              onClick={handleGoogle}
+              disabled={googleLoading || signingIn}
+            >
+              {googleLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5a5.6 5.6 0 0 1-2.4 3.7v3h3.9c2.3-2.1 3.5-5.2 3.5-8.9z" />
+                  <path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-2.9l-3.9-3c-1.1.7-2.5 1.2-4.1 1.2-3.1 0-5.8-2.1-6.7-4.9H1.3v3.1A12 12 0 0 0 12 24z" />
+                  <path fill="#FBBC05" d="M5.3 14.4a7.2 7.2 0 0 1 0-4.8V6.5H1.3a12 12 0 0 0 0 11l4-3.1z" />
+                  <path fill="#EA4335" d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4A12 12 0 0 0 1.3 6.5l4 3.1C6.2 6.9 8.9 4.8 12 4.8z" />
+                </svg>
+              )}
+              Entrar com Google
+            </Button>
+            <div className="relative my-5 text-center">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <span className="relative bg-white px-2 text-xs text-muted-foreground">
+                ou com e-mail e senha
+              </span>
+            </div>
             <form onSubmit={handleSignIn} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">E-mail</Label>
@@ -122,7 +190,7 @@ function LoginForm() {
               <Button
                 type="submit"
                 className="w-full h-11 mt-6 text-base font-semibold shadow-lg shadow-primary/20 transition-all hover:scale-[1.01] active:scale-[0.99]"
-                disabled={signingIn}
+                disabled={signingIn || googleLoading}
               >
                 {signingIn ? (
                   <>
@@ -136,9 +204,13 @@ function LoginForm() {
             </form>
           </CardContent>
           <CardFooter className="flex flex-col border-t pt-4">
-            <p className="text-xs text-center text-muted-foreground">
-              Esqueceu sua senha? Entre em contato com o administrador.
-            </p>
+            <button
+              type="button"
+              onClick={handleResetPassword}
+              className="text-xs text-center text-muted-foreground underline underline-offset-2 hover:text-primary"
+            >
+              Esqueci / definir minha senha
+            </button>
           </CardFooter>
         </Card>
 
