@@ -1,7 +1,7 @@
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatMoeda } from "@/lib/formatters";
+import { formatMoeda, formatQuantidade } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import type { ProdutoMaisVendido } from "@/lib/types";
 
@@ -41,11 +41,12 @@ export function ProdutosTable({ produtos, isLoading }: ProdutosTableProps) {
   const top10 = safeProdutos.slice(0, 10);
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto max-w-full">
+      <table className="w-full min-w-[640px] text-sm">
         <thead>
           <tr className="border-b text-muted-foreground">
             <th className="py-2 text-left font-medium">Produto</th>
+            <th className="py-2 text-right font-medium">Vendas</th>
             <th className="py-2 text-right font-medium">Qtd Total</th>
             <th className="py-2 text-right font-medium">Receita Total</th>
             <th className="py-2 text-right font-medium">Preço Médio</th>
@@ -55,14 +56,18 @@ export function ProdutosTable({ produtos, isLoading }: ProdutosTableProps) {
         </thead>
         <tbody>
           {top10.map((p) => (
-            <tr key={p.produto_id} className="border-b last:border-0 hover:bg-muted/50">
+            <tr key={p.produto_id ?? p.produto_nome} className="border-b last:border-0 hover:bg-muted/50">
               <td className="py-2 pr-4">{p.produto_nome}</td>
-              <td className="py-2 text-right">{p.quantidade_total}</td>
-              <td className="py-2 text-right">{formatMoeda(p.receita_total)}</td>
+              <td className="py-2 text-right">{p.total_vendas}</td>
+              <td className="py-2 text-right whitespace-nowrap">
+                {formatQuantidade(p.total_quantidade)}
+                {p.unit ? ` ${p.unit}` : ""}
+              </td>
+              <td className="py-2 text-right">{formatMoeda(p.total_receita)}</td>
               <td className="py-2 text-right">{formatMoeda(p.preco_medio)}</td>
               <td className="py-2 text-right">{formatMoeda(p.custo_medio)}</td>
-              <td className={cn("py-2 text-right", margemColor(p.margem_percentual))}>
-                {(p.margem_percentual ?? 0).toFixed(1)}%
+              <td className={cn("py-2 text-right", margemColor(p.margem_media_percent))}>
+                {(p.margem_media_percent ?? 0).toFixed(1)}%
               </td>
             </tr>
           ))}
