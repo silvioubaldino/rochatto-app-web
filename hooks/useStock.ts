@@ -22,8 +22,6 @@ export function useStockBalance(filters?: StockBalanceFilters) {
     qs ? `/stock/balance?${qs}` : "/stock/balance",
     api.get,
   );
-  // AYD-008 §4 não fixa onde vem `total_stock_value` (a resposta era um array): aceita o array
-  // puro (soma `stock_value` aqui) ou um objeto `{ items, total_stock_value }`.
   const balances = (Array.isArray(data) ? data : data?.items) ?? [];
   const totalStockValue =
     (!Array.isArray(data) ? data?.total_stock_value : undefined) ??

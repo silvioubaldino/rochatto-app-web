@@ -148,12 +148,10 @@ export function toReplenishmentPurchasePayload(data: ReplenishmentPurchaseFormDa
   };
 }
 
-/** Custo adicional da compra (POST/PUT /purchases/{id}/charges) — AYD-008 §1. */
 export const purchaseChargeSchema = z.object({
   kind: z.enum(["FREIGHT", "UNLOADING", "TAX", "OTHER"]),
   amount: z.number({ error: "Informe o valor" }).gt(0, "Valor deve ser maior que zero"),
   description: z.string(),
-  /** "" = "a definir" (payee_supplier_id null). */
   payee_supplier_id: z.string(),
 });
 
@@ -183,7 +181,6 @@ export function toPurchaseHeaderPayload(
   return {
     expected_date: emptyToNull(data.expected_date),
     notes: emptyToNull(data.notes),
-    // AYD-008: o PUT é de substituição; reenvia o rateio para não voltar ao default.
     ...(allocationMethod ? { allocation_method: allocationMethod } : {}),
   };
 }

@@ -123,7 +123,6 @@ export default function CompraDetalhePage() {
     mutate(isPurchaseRelatedKey);
   }
 
-  /** AYD-007/008: mudar valor/credor pode deixar uma conta quitada demais (HTTP 200 + warnings). */
   function warn(warnings?: string[] | null) {
     if (warnings?.includes("OVERSETTLED")) {
       toast.warning(OBLIGATION_WARNING_MESSAGES.OVERSETTLED);
@@ -134,7 +133,6 @@ export default function CompraDetalhePage() {
     if (!purchase || method === purchase.allocation_method) return;
     setAllocBusy(true);
     try {
-      // PUT é de substituição: reenvia previsão e observações junto com o rateio.
       await api.put(`/purchases/${purchaseId}`, {
         expected_date: purchase.expected_date ? purchase.expected_date.slice(0, 10) : null,
         notes: purchase.notes || null,
@@ -143,7 +141,6 @@ export default function CompraDetalhePage() {
       toast.success("Rateio atualizado.");
       refreshAll();
     } catch (err) {
-      // 422: BY_QUANTITY com unidades diferentes ("use rateio por valor").
       toast.error(err instanceof APIError ? err.message : "Erro ao alterar o rateio.");
     } finally {
       setAllocBusy(false);

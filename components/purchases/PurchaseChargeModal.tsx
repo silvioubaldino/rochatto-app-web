@@ -30,17 +30,13 @@ interface PurchaseChargeModalProps {
   open: boolean;
   onClose: () => void;
   purchaseId: string;
-  /** Credor padrão do custo novo (o Supplier da compra). */
   defaultSupplierId: string;
-  /** Presente = edição (PUT de substituição completa). */
   charge?: PurchaseCharge;
-  /** `warnings` vem da resposta (ex.: OVERSETTLED). */
   onSuccess: (warnings: string[]) => void;
 }
 
 const selectClass = "h-9 w-full rounded-md border border-input bg-background px-3 text-sm";
 
-/** POST/PUT /purchases/{id}/charges — custo adicional da compra com credor editável (AYD-008 §1). */
 export function PurchaseChargeModal({
   open,
   onClose,
@@ -82,7 +78,6 @@ export function PurchaseChargeModal({
       onSuccess(res?.warnings ?? []);
       onClose();
     } catch (err) {
-      // 400 (valor ≤ 0), 404, 409 e 422 (rateio por quantidade com unidades diferentes).
       toast.error(err instanceof APIError ? err.message : "Erro ao salvar custo adicional.");
     }
   }

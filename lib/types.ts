@@ -247,29 +247,23 @@ export interface PurchaseItem {
   unit_cost: number;
 }
 
-/** AYD-008 §Enums. */
 export type PurchaseChargeKind = "FREIGHT" | "UNLOADING" | "TAX" | "OTHER";
 export type AllocationMethod = "BY_QUANTITY" | "BY_VALUE";
 export type PurchaseWarning = "OVERSETTLED";
 
-/** Custo adicional da compra (frete de compra, descarga, imposto) — AYD-008 §1. */
 export interface PurchaseCharge {
   id: string;
   purchase_id: string;
   kind: PurchaseChargeKind;
   amount: number;
   description: string | null;
-  /** Credor; null = "a definir". */
   payee_supplier_id: string | null;
   payee_name: string | null;
-  /** Conta (AYD-007) onde o custo caiu. */
   obligation_id: string | null;
   created_at?: string;
-  /** Só em respostas de POST/PUT quando a mudança deixa uma conta quitada demais. */
   warnings?: PurchaseWarning[];
 }
 
-/** Composição do custo da compra — AYD-008 §2. */
 export interface PurchaseComposition {
   goods_total: number;
   charges: PurchaseCharge[];
@@ -277,7 +271,6 @@ export interface PurchaseComposition {
   total: number;
 }
 
-/** Linha da compra com custo de entrada (Landed cost) — AYD-008 §2. */
 export interface PurchaseLine {
   line_type: "STOCK_ITEM" | "SALE_ITEM";
   line_id: string;
@@ -310,12 +303,9 @@ export interface PurchaseDetail {
   sale_items: PurchaseSaleItem[];
   items: PurchaseItem[];
   created_at?: string;
-  // AYD-008 §2 (só no detalhe)
   allocation_method: AllocationMethod;
   composition: PurchaseComposition;
-  /** Contas da compra (resumo), uma por credor (AYD-007). */
   obligations: Obligation[];
-  /** AYD-008: Σ das contas da compra (valor devido, pago e em aberto). */
   open: number;
   lines: PurchaseLine[];
   warnings?: PurchaseWarning[];
@@ -378,7 +368,6 @@ export interface StockBalance {
   balance: number;
   last_inflow_cost: number | null;
   last_inflow_date: string | null;
-  /** AYD-008 §4: max(balance, 0) × last_inflow_cost (calculado). */
   stock_value: number;
 }
 
