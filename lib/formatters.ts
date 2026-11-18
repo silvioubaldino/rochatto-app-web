@@ -189,3 +189,19 @@ export function formatPercentRate(rate: number | null | undefined): string {
   if (rate === null || rate === undefined || Number.isNaN(rate)) return "—";
   return `${Math.round(rate * 100)}%`;
 }
+
+// Assistant connector (AYD-006)
+export const CONNECTION_SCOPE_LABELS: Record<string, string> = {
+  read: "Consultar dados (clientes, orçamentos, vendas, financeiro, estoque)",
+  write: "Lançar dados (orçamentos, vendas, recebimentos, compras, ajustes de estoque)",
+};
+
+/** Rótulo de um scope; scope desconhecido aparece como veio da API. */
+export function formatConnectionScope(scope: string): string {
+  return CONNECTION_SCOPE_LABELS[scope] ?? scope;
+}
+
+/** Data e hora em pt-BR, no fuso local: "dd/MM/yyyy HH:mm". */
+export function formatDataHora(isoDate: string): string {
+  return format(parseISO(isoDate), "dd/MM/yyyy HH:mm");
+}

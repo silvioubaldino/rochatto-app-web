@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { safeNextPath } from "@/lib/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
@@ -10,9 +12,12 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, Lock, Mail } from "lucide-react";
 
-export default function LoginPage() {
+function LoginForm() {
   const { user, loading, signIn } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // `?next=` (ex.: /conectar?request_id=...) — volta à mesma URL depois do login.
+  const nextPath = safeNextPath(searchParams.get("next"));
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,9 +25,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace("/dashboard");
+      router.replace(nextPath);
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, nextPath]);
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
@@ -142,5 +147,19 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center bg-gray-50">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

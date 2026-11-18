@@ -19,6 +19,8 @@ interface DeleteConfirmDialogProps {
   onConfirm: () => Promise<void>;
   title: string;
   description: string;
+  /** Rótulo do botão de confirmação (padrão: "Excluir"). */
+  confirmLabel?: string;
 }
 
 export function DeleteConfirmDialog({
@@ -27,6 +29,7 @@ export function DeleteConfirmDialog({
   onConfirm,
   title,
   description,
+  confirmLabel = "Excluir",
 }: DeleteConfirmDialogProps) {
   const [loading, setLoading] = useState(false);
 
@@ -57,7 +60,7 @@ export function DeleteConfirmDialog({
             disabled={loading}
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            Excluir
+            {confirmLabel}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -26,6 +26,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+- Implement SPEC-006: Assistant connector — consent page `/conectar` (login with return to the same URL, approve/deny), `/integracoes` to list and revoke Connections, and menu item.
 - Implement SPEC-005: Dashboard — period KPIs (revenue, profit, average ticket, Quote → Sale conversion) and open balances with drill-down from `/dashboard/kpis`, same period presets as Financeiro, fixed monthly chart and Products ranking (real fields, units), "Venda rápida" badge on Quotes.
 - Implement SPEC-004: Finance — payment method on Receipts (required when received, asked on confirm), Sale receivable and freight payable with freight validation, Sales list filters (freight/commission pending, period), and the new Financeiro screen (period sales, cash movement, open balances with drill-down).
 - Implement SPEC-002: Sale fulfillment — item origin (made-to-order / from stock) and supplier per item, delivery/payment status and Sale cancellation; Purchases (list, "to buy" queue by supplier, stock replenishment, status and supplier payment); Stock balance, statement and adjustments replace the old stock entries; "New Sale" removed (Sales come from Quotes).
