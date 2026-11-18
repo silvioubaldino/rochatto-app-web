@@ -14,6 +14,8 @@ import type {
   AllocationMethod,
   ObligationComponent,
   PurchaseChargeKind,
+  SaleChargeKind,
+  SaleCostKind,
   ObligationWarning,
   CounterpartyType,
   ObligationOriginType,
@@ -345,4 +347,20 @@ export const NOTIFICATION_LABELS: Record<NotificacaoTipo, string> = {
   pagamento_vencendo: "Pagamento agendado",
   conta_pagar_vencida: "Conta a pagar vencida",
   conta_pagar_vencendo: "Conta a pagar vencendo",
+};
+
+export const SALE_CHARGE_KINDS: SaleChargeKind[] = ["FREIGHT", "OTHER"];
+
+export const SALE_CHARGE_KIND_LABELS: Record<SaleChargeKind, string> = {
+  FREIGHT: "Frete cobrado",
+  OTHER: "Outra cobrança",
+};
+
+export const SALE_COST_KINDS: SaleCostKind[] = ["FREIGHT", "LABOR", "COMMISSION", "OTHER"];
+
+export const SALE_COST_KIND_LABELS: Record<SaleCostKind, string> = {
+  FREIGHT: "Frete pago",
+  LABOR: "Instalador / mão de obra",
+  COMMISSION: "Comissão",
+  OTHER: "Outro",
 };

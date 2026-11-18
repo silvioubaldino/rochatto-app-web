@@ -408,3 +408,41 @@ export function toMovementPayload(data: MovementFormData) {
     description: emptyToNull(data.description),
   };
 }
+
+// --- Composição da venda (AYD-009) -------------------------------------------
+
+export const saleChargeSchema = z.object({
+  kind: z.enum(["FREIGHT", "OTHER"]),
+  amount: z.number({ error: "Informe o valor" }).gt(0, "Valor deve ser maior que zero"),
+  description: z.string(),
+});
+
+export type SaleChargeFormData = z.infer<typeof saleChargeSchema>;
+
+/** Body de POST/PUT /vendas/{id}/charges e item de `charges` do Quote. */
+export function toSaleChargePayload(data: SaleChargeFormData) {
+  return { kind: data.kind, amount: data.amount, description: emptyToNull(data.description) };
+}
+
+export const saleCostSchema = z.object({
+  kind: z.enum(["FREIGHT", "LABOR", "COMMISSION", "OTHER"]),
+  amount: z.number({ error: "Informe o valor" }).min(0, "Valor não pode ser negativo"),
+  description: z.string(),
+  /** Supplier (FREIGHT, LABOR, OTHER) ou Partner (COMMISSION); "" = a definir. */
+  payee_id: z.string(),
+});
+
+export type SaleCostFormData = z.infer<typeof saleCostSchema>;
+
+/** Body de POST/PUT /vendas/{id}/costs: COMMISSION → payee_partner_id; demais → payee_supplier_id. */
+export function toSaleCostPayload(data: SaleCostFormData, saleItemId?: string | null) {
+  const payee = emptyToNull(data.payee_id);
+  return {
+    kind: data.kind,
+    amount: data.amount,
+    description: emptyToNull(data.description),
+    payee_supplier_id: data.kind === "COMMISSION" ? null : payee,
+    payee_partner_id: data.kind === "COMMISSION" ? payee : null,
+    ...(saleItemId ? { sale_item_id: saleItemId } : {}),
+  };
+}

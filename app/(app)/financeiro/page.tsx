@@ -120,10 +120,8 @@ function SummaryView({ summary, from, to }: { summary: FinanceSummary; from: str
               <Row label="Vendas" value={String(sales.count)} />
               <Row label="Faturamento" value={formatMoeda(sales.revenue)} strong />
               <Row label="Custo" value={formatMoeda(sales.cost)} />
-              <Row label="Frete" value={formatMoeda(sales.freight)} />
             </div>
             <div>
-              <Row label="Comissão" value={formatMoeda(sales.commission)} />
               <Row
                 label="Lucro"
                 value={formatMoeda(sales.profit)}

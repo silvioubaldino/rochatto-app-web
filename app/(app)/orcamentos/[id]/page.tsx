@@ -8,6 +8,8 @@ import { useProdutos } from "@/hooks/useProdutos";
 import { api, APIError } from "@/lib/api";
 import { formatMoeda, formatData, QUOTE_STATUS_LABELS, QUOTE_STATUS_COLORS } from "@/lib/formatters";
 import type { QuoteItem } from "@/lib/types";
+import { toQuoteChargesPayload } from "@/components/sales/ChargesEditor";
+import { QuoteChargesCard } from "@/components/sales/QuoteChargesCard";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import { Input } from "@/components/ui/input";
@@ -167,7 +169,12 @@ export default function OrcamentoDetalhePage() {
   async function handleSaveGeneral() {
     setSavingGeneral(true);
     try {
-      await api.put(`/quotes/${quoteId}`, { notes: editNotes });
+      await api.put(`/quotes/${quoteId}`, {
+        notes: editNotes,
+        charges: toQuoteChargesPayload(
+          (quote?.charges ?? []).map((c) => ({ ...c, description: c.description ?? "" })),
+        ),
+      });
       toast.success("Observações atualizadas.");
       setEditGeneralOpen(false);
       refresh();
@@ -333,6 +340,14 @@ export default function OrcamentoDetalhePage() {
             Resumo
           </h2>
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+            {(quote.charges?.length ?? 0) > 0 && (
+              <>
+                <dt className="text-muted-foreground">Itens</dt>
+                <dd>{formatMoeda(quote.total_quote - (quote.charges ?? []).reduce((a, c) => a + c.amount, 0))}</dd>
+                <dt className="text-muted-foreground">Cobranças</dt>
+                <dd>{formatMoeda((quote.charges ?? []).reduce((a, c) => a + c.amount, 0))}</dd>
+              </>
+            )}
             <dt className="text-muted-foreground">Total do Orçamento</dt>
             <dd className="font-semibold">{formatMoeda(quote.total_quote)}</dd>
           </dl>
@@ -560,6 +575,8 @@ export default function OrcamentoDetalhePage() {
           </table>
         </div>
       </Card>
+
+      <QuoteChargesCard quote={quote} editable={isOpen} onChanged={refresh} />
 
       {/* Edit notes modal */}
       <Dialog open={editGeneralOpen} onOpenChange={setEditGeneralOpen}>
