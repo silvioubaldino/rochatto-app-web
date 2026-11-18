@@ -8,7 +8,6 @@ import type {
   PurchaseKind,
   PurchaseListItem,
   PurchaseStatus,
-  SupplierPaymentStatus,
 } from "@/lib/types";
 
 // Purchases — AYD-002 §3.
@@ -16,7 +15,6 @@ import type {
 export interface PurchasesFilters {
   kind?: PurchaseKind;
   status?: PurchaseStatus;
-  payment_status?: SupplierPaymentStatus;
   supplier_id?: string;
   from?: string;
   to?: string;
@@ -26,7 +24,6 @@ function buildQuery(filters?: PurchasesFilters): string {
   const params = new URLSearchParams();
   if (filters?.kind) params.set("kind", filters.kind);
   if (filters?.status) params.set("status", filters.status);
-  if (filters?.payment_status) params.set("payment_status", filters.payment_status);
   if (filters?.supplier_id) params.set("supplier_id", filters.supplier_id);
   if (filters?.from) params.set("from", filters.from);
   if (filters?.to) params.set("to", filters.to);
@@ -66,6 +63,9 @@ export function isPurchaseRelatedKey(key: unknown): boolean {
     (key.startsWith("/purchases") ||
       key.startsWith("/stock") ||
       key.startsWith("/vendas") ||
+      key.startsWith("/obligations") ||
+      key.startsWith("/financial-movements") ||
+      key.startsWith("/finance") ||
       key.startsWith("/dashboard"))
   );
 }

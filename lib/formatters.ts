@@ -6,7 +6,16 @@ import type {
   ItemOrigin,
   PurchaseKind,
   PurchaseStatus,
-  SupplierPaymentStatus,
+  SupplierKind,
+  ObligationDirection,
+  ObligationStatus,
+  InstallmentStatus,
+  MovementCategory,
+  ObligationComponent,
+  ObligationWarning,
+  CounterpartyType,
+  ObligationOriginType,
+  NotificacaoTipo,
   SaleDeliveryStatus,
   SalePaymentStatus,
   StockAdjustmentReason,
@@ -96,18 +105,6 @@ export const PURCHASE_STATUS_COLORS: Record<PurchaseStatus, string> = {
   RECEIVED: "bg-green-100 text-green-800",
 };
 
-export const SUPPLIER_PAYMENT_STATUSES: SupplierPaymentStatus[] = ["PENDING", "PAID"];
-
-export const SUPPLIER_PAYMENT_STATUS_LABELS: Record<SupplierPaymentStatus, string> = {
-  PENDING: "Pendente",
-  PAID: "Pago",
-};
-
-export const SUPPLIER_PAYMENT_STATUS_COLORS: Record<SupplierPaymentStatus, string> = {
-  PENDING: "bg-orange-100 text-orange-800",
-  PAID: "bg-green-100 text-green-800",
-};
-
 export const STOCK_ADJUSTMENT_REASONS: StockAdjustmentReason[] = ["INITIAL", "COUNT", "OTHER"];
 
 export const STOCK_ADJUSTMENT_REASON_LABELS: Record<StockAdjustmentReason, string> = {
@@ -168,7 +165,7 @@ export function formatLeadSource(
   return leadSource === "PARTNER" && referrerName ? `${label} · ${referrerName}` : label;
 }
 
-// AYD-004 — forma de pagamento do Receipt (nunca exibir o código do enum).
+// AYD-004 — forma de pagamento (nunca exibir o código do enum).
 export const PAYMENT_METHODS: PaymentMethod[] = ["PIX", "CASH", "CARD", "BOLETO", "TRANSFER"];
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
@@ -179,7 +176,7 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   TRANSFER: "Transferência",
 };
 
-/** Rótulo da forma de pagamento; null/ausente (Receipt legado ou pendente) = "Não informado". */
+/** Rótulo da forma de pagamento; null/ausente = "Não informado". */
 export function formatPaymentMethod(method?: PaymentMethod | null): string {
   return method ? (PAYMENT_METHOD_LABELS[method] ?? "Não informado") : "Não informado";
 }
@@ -205,3 +202,129 @@ export function formatConnectionScope(scope: string): string {
 export function formatDataHora(isoDate: string): string {
   return format(parseISO(isoDate), "dd/MM/yyyy HH:mm");
 }
+
+// AYD-007 — contas e movimentações (rótulos PT-BR; nunca exibir o código do enum).
+
+export const SUPPLIER_KINDS: SupplierKind[] = ["STONE", "TRANSPORT", "LABOR", "TAX_AUTHORITY", "OTHER"];
+
+export const SUPPLIER_KIND_LABELS: Record<SupplierKind, string> = {
+  STONE: "Pedra",
+  TRANSPORT: "Transporte",
+  LABOR: "Mão de obra",
+  TAX_AUTHORITY: "Órgão de imposto",
+  OTHER: "Outro",
+};
+
+export const DIRECTION_LABELS: Record<ObligationDirection, string> = {
+  PAYABLE: "A pagar",
+  RECEIVABLE: "A receber",
+};
+
+export const OBLIGATION_STATUSES: ObligationStatus[] = ["OPEN", "PARTIAL", "SETTLED"];
+
+export const OBLIGATION_STATUS_LABELS: Record<ObligationStatus, string> = {
+  OPEN: "Aberta",
+  PARTIAL: "Parcial",
+  SETTLED: "Quitada",
+};
+
+export const OBLIGATION_STATUS_COLORS: Record<ObligationStatus, string> = {
+  OPEN: "bg-yellow-100 text-yellow-800",
+  PARTIAL: "bg-blue-100 text-blue-800",
+  SETTLED: "bg-green-100 text-green-800",
+};
+
+export const INSTALLMENT_STATUS_LABELS: Record<InstallmentStatus, string> = {
+  OPEN: "Aberta",
+  PARTIAL: "Parcial",
+  COVERED: "Coberta",
+};
+
+export const INSTALLMENT_STATUS_COLORS: Record<InstallmentStatus, string> = {
+  OPEN: "bg-yellow-100 text-yellow-800",
+  PARTIAL: "bg-blue-100 text-blue-800",
+  COVERED: "bg-green-100 text-green-800",
+};
+
+export const MOVEMENT_CATEGORY_LABELS: Record<MovementCategory, string> = {
+  SALE_RECEIPT: "Recebimento de venda",
+  OTHER_INCOME: "Outra receita",
+  PURCHASE_PAYMENT: "Pagamento de compra",
+  FREIGHT: "Frete",
+  LABOR: "Mão de obra",
+  COMMISSION: "Comissão",
+  VEHICLE: "Veículo",
+  TAXES: "Impostos",
+  FIXED_COSTS: "Custos fixos",
+  MARKETING: "Marketing",
+  BANK_FEES: "Tarifas bancárias",
+  OTHER_EXPENSE: "Outra despesa",
+};
+
+/** Categorias que o dono escolhe ao lançar uma despesa (saída sem quitação). */
+export const EXPENSE_CATEGORIES: MovementCategory[] = [
+  "VEHICLE",
+  "TAXES",
+  "FIXED_COSTS",
+  "MARKETING",
+  "BANK_FEES",
+  "LABOR",
+  "OTHER_EXPENSE",
+];
+
+/** Categoria de entrada avulsa; SALE_RECEIPT só nasce de uma quitação. */
+export const INCOME_CATEGORIES: MovementCategory[] = ["OTHER_INCOME"];
+
+/** Entradas (valor > 0). As demais categorias são saídas (valor < 0) — AYD-007 §Enums. */
+export const INFLOW_CATEGORIES: MovementCategory[] = ["SALE_RECEIPT", "OTHER_INCOME"];
+
+export function isInflowCategory(category: MovementCategory): boolean {
+  return INFLOW_CATEGORIES.includes(category);
+}
+
+export const COUNTERPARTY_TYPE_LABELS: Record<CounterpartyType, string> = {
+  SUPPLIER: "Fornecedor",
+  PARTNER: "Parceiro",
+  CUSTOMER: "Cliente",
+};
+
+export const OBLIGATION_COMPONENT_LABELS: Record<string, string> = {
+  SALE_ITEMS: "Itens da venda",
+  LEGACY_FREIGHT: "Frete da venda",
+  LEGACY_COMMISSION: "Comissão",
+  PURCHASE_ITEMS: "Pedras da compra",
+};
+
+/** Rótulo do componente: o mapa conhecido, senão o `label` que a API enviou. */
+export function formatComponentLabel(component: Pick<ObligationComponent, "type" | "label">): string {
+  return OBLIGATION_COMPONENT_LABELS[component.type] ?? component.label;
+}
+
+export const OBLIGATION_ORIGIN_LABELS: Record<ObligationOriginType, string> = {
+  SALE: "Venda",
+  PURCHASE: "Compra",
+};
+
+/** Rota da origem da conta (Sale → /vendas, Purchase → /compras). */
+export function obligationOriginHref(origin: { type: ObligationOriginType; id: string }): string {
+  return origin.type === "SALE" ? `/vendas/${origin.id}` : `/compras/${origin.id}`;
+}
+
+/** Credor/devedor da conta; sem credor = "A definir". */
+export function formatCounterparty(counterparty: { name: string } | null | undefined): string {
+  return counterparty?.name ?? "A definir";
+}
+
+export const OBLIGATION_WARNING_MESSAGES: Record<ObligationWarning, string> = {
+  MIXED_COUNTERPARTIES:
+    "As contas são de credores diferentes — um Pix tem um único destinatário. Confira se é isso mesmo.",
+  OVERSETTLED:
+    "A conta ficou com mais quitação do que o valor devido. Ajuste ou desfaça a quitação.",
+};
+
+export const NOTIFICATION_LABELS: Record<NotificacaoTipo, string> = {
+  pagamento_vencido: "Pagamento vencido",
+  pagamento_vencendo: "Pagamento agendado",
+  conta_pagar_vencida: "Conta a pagar vencida",
+  conta_pagar_vencendo: "Conta a pagar vencendo",
+};

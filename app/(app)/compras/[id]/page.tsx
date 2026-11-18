@@ -14,8 +14,6 @@ import {
   RotateCcw,
   Send,
   Trash2,
-  Undo2,
-  Wallet,
 } from "lucide-react";
 import { api, APIError } from "@/lib/api";
 import { isPurchaseRelatedKey, usePurchase } from "@/hooks/usePurchases";
@@ -26,10 +24,10 @@ import {
   formatQuantidade,
 } from "@/lib/formatters";
 import type { PurchaseItem, PurchaseSaleItem, PurchaseStatus } from "@/lib/types";
-import { PurchaseStatusBadge, SupplierPaymentBadge } from "@/components/status-badges";
+import { PurchaseStatusBadge } from "@/components/status-badges";
 import { PurchaseHeaderModal } from "@/components/purchases/PurchaseHeaderModal";
 import { PurchaseItemModal } from "@/components/purchases/PurchaseItemModal";
-import { SupplierPaymentModal } from "@/components/purchases/SupplierPaymentModal";
+import { OriginObligations } from "@/components/obligations/OriginObligations";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -100,8 +98,6 @@ export default function CompraDetalhePage() {
   const [editingItem, setEditingItem] = useState<PurchaseItem | undefined>();
   const [deletingItem, setDeletingItem] = useState<PurchaseItem | null>(null);
   const [detachingSaleItem, setDetachingSaleItem] = useState<PurchaseSaleItem | null>(null);
-  const [paymentOpen, setPaymentOpen] = useState(false);
-  const [undoPaymentOpen, setUndoPaymentOpen] = useState(false);
   const [pendingTransition, setPendingTransition] = useState<Transition | null>(null);
   const [busy, setBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -123,24 +119,6 @@ export default function CompraDetalhePage() {
     } catch (err) {
       // 422 (sem linhas ao pedir) e 409 (transição ilegal) trazem a mensagem da API.
       toast.error(err instanceof APIError ? err.message : "Erro ao atualizar status.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function undoPayment() {
-    setBusy(true);
-    try {
-      await api.patch(`/purchases/${purchaseId}/payment`, {
-        payment_status: "PENDING",
-        paid_amount: null,
-        paid_at: null,
-      });
-      toast.success("Pagamento desfeito.");
-      setUndoPaymentOpen(false);
-      refreshAll();
-    } catch (err) {
-      toast.error(err instanceof APIError ? err.message : "Erro ao desfazer pagamento.");
     } finally {
       setBusy(false);
     }
@@ -223,7 +201,6 @@ export default function CompraDetalhePage() {
         <h1 className="text-2xl font-bold">Compra</h1>
         <span className="font-mono text-sm text-muted-foreground">#{purchase.id.slice(0, 8)}</span>
         <PurchaseStatusBadge status={purchase.status} />
-        <SupplierPaymentBadge status={purchase.payment_status} />
 
         <div className="ml-auto flex flex-wrap gap-2">
           {transitions.map((t) => (
@@ -265,41 +242,26 @@ export default function CompraDetalhePage() {
           </dl>
         </Card>
 
-        {/* Supplier payment — um por Purchase (RN-06) */}
+        {/* Saldos vêm das contas a pagar da compra (AYD-007 §6) */}
         <Card className="p-4 space-y-3">
           <h2 className="text-sm font-semibold uppercase text-muted-foreground">Pagamento ao fornecedor</h2>
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
             <dt className="text-muted-foreground">Custo total</dt>
             <dd className="font-semibold">{formatMoeda(purchase.total_cost)}</dd>
             <dt className="text-muted-foreground">Pago</dt>
-            <dd className="text-green-600">
-              {purchase.paid_amount !== null ? formatMoeda(purchase.paid_amount) : "—"}
-              {purchase.paid_at && (
-                <span className="text-muted-foreground"> em {formatData(purchase.paid_at)}</span>
-              )}
-            </dd>
+            <dd className="text-green-600">{formatMoeda(purchase.paid)}</dd>
             <dt className="text-muted-foreground">A pagar</dt>
-            <dd className="font-semibold text-orange-600">{formatMoeda(purchase.to_pay)}</dd>
-            <dt className="text-muted-foreground">Status</dt>
-            <dd>
-              <SupplierPaymentBadge status={purchase.payment_status} />
-            </dd>
+            <dd className="font-semibold text-orange-600">{formatMoeda(purchase.payable)}</dd>
           </dl>
-          <div className="flex gap-2 pt-1">
-            {purchase.payment_status === "PENDING" ? (
-              <Button size="sm" onClick={() => setPaymentOpen(true)}>
-                <Wallet className="h-3.5 w-3.5" />
-                Registrar pagamento
-              </Button>
-            ) : (
-              <Button size="sm" variant="outline" onClick={() => setUndoPaymentOpen(true)}>
-                <Undo2 className="h-3.5 w-3.5" />
-                Desfazer pagamento
-              </Button>
-            )}
-          </div>
         </Card>
       </div>
+
+      <OriginObligations
+        originType="PURCHASE"
+        originId={purchaseId}
+        title="Contas a pagar da compra"
+        onChanged={refreshAll}
+      />
 
       {/* Linhas */}
       {isReplenishment ? (
@@ -459,14 +421,6 @@ export default function CompraDetalhePage() {
         item={editingItem}
         onSuccess={refreshAll}
       />
-      <SupplierPaymentModal
-        open={paymentOpen}
-        onClose={() => setPaymentOpen(false)}
-        purchaseId={purchaseId}
-        totalCost={purchase.total_cost}
-        onSuccess={refreshAll}
-      />
-
       <AlertDialog open={!!pendingTransition} onOpenChange={(o) => !o && !busy && setPendingTransition(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -478,24 +432,6 @@ export default function CompraDetalhePage() {
             <Button onClick={runTransition} disabled={busy}>
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
               Confirmar
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={undoPaymentOpen} onOpenChange={(o) => !o && !busy && setUndoPaymentOpen(false)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Desfazer pagamento</AlertDialogTitle>
-            <AlertDialogDescription>
-              O pagamento volta para &quot;Pendente&quot; e o valor e a data pagos são apagados.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>Voltar</AlertDialogCancel>
-            <Button variant="destructive" onClick={undoPayment} disabled={busy}>
-              {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-              Desfazer
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -7,7 +7,6 @@ import {
   TrendingDown,
   DollarSign,
   ShoppingCart,
-  Users,
   Receipt,
   Percent,
 } from "lucide-react";
@@ -129,40 +128,28 @@ export default function DashboardPage() {
         <h2 className="text-sm font-semibold uppercase text-muted-foreground">
           Hoje · em aberto
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           <KPICard
             title="A Receber"
             value={balances ? formatMoeda(balances.receivable) : "—"}
-            subtitle="Vendas com saldo a receber"
+            subtitle="Contas a receber em aberto"
             variant="warning"
             icon={<DollarSign className="h-4 w-4" />}
             isLoading={loading}
-            onClick={() => router.push("/vendas?payment_status=PENDING,PARTIAL")}
+            onClick={() => router.push("/contas?direction=RECEIVABLE")}
           />
           <KPICard
-            title="A Pagar Fornecedores"
-            value={balances ? formatMoeda(balances.payable_to_suppliers) : "—"}
-            subtitle="Compras com pagamento pendente"
+            title="A Pagar"
+            value={balances ? formatMoeda(balances.payable) : "—"}
+            subtitle="Compras e custos de venda em aberto"
             variant="danger"
             icon={<TrendingDown className="h-4 w-4" />}
             isLoading={loading}
-            onClick={() => router.push("/compras?payment_status=PENDING")}
-          />
-          <KPICard
-            title="Comissões Pendentes"
-            value={balances ? formatMoeda(balances.commission_payable) : "—"}
-            subtitle="A pagar parceiros"
-            variant="warning"
-            icon={<Users className="h-4 w-4" />}
-            isLoading={loading}
-            onClick={() => router.push("/vendas?commission_pending=true")}
+            onClick={() => router.push("/contas?direction=PAYABLE")}
           />
           <KPICard
             title="Vendas a Entregar"
             value={kpis ? String(kpis.open_deliveries) : "—"}
-            subtitle={
-              balances ? `Frete a pagar: ${formatMoeda(balances.freight_payable)}` : undefined
-            }
             icon={<ShoppingCart className="h-4 w-4" />}
             isLoading={loading}
             onClick={() => router.push("/vendas?delivery_status=TO_DELIVER")}

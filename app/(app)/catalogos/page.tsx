@@ -10,12 +10,19 @@ import type {
   Partner,
   PartnerType,
   ProductCategory,
+  SupplierKind,
 } from "@/lib/types";
 import { useProdutos } from "@/hooks/useProdutos";
 import { useFornecedores } from "@/hooks/useFornecedores";
 import { usePartners } from "@/hooks/usePartners";
 import { useProductCategories } from "@/hooks/useProductCategories";
-import { formatMoeda, PARTNER_TYPES, PARTNER_TYPE_LABELS } from "@/lib/formatters";
+import {
+  formatMoeda,
+  PARTNER_TYPES,
+  PARTNER_TYPE_LABELS,
+  SUPPLIER_KINDS,
+  SUPPLIER_KIND_LABELS,
+} from "@/lib/formatters";
 import { DataTable } from "@/components/tables/DataTable";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { ProdutoModal } from "@/components/forms/ProdutoModal";
@@ -183,7 +190,8 @@ function ProdutosTab() {
 // --- Fornecedores Tab ---
 
 function FornecedoresTab() {
-  const { fornecedores, isLoading, refresh } = useFornecedores();
+  const [kindFilter, setKindFilter] = useState<SupplierKind | "">("");
+  const { fornecedores, isLoading, refresh } = useFornecedores(kindFilter || undefined);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Fornecedor | undefined>();
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -207,6 +215,11 @@ function FornecedoresTab() {
 
   const columns = [
     { key: "nome" as const, header: "Nome" },
+    {
+      key: "kind" as const,
+      header: "Tipo",
+      render: (row: Fornecedor) => SUPPLIER_KIND_LABELS[row.kind] ?? "—",
+    },
     {
       key: "cidade" as const,
       header: "Cidade",
@@ -252,7 +265,25 @@ function FornecedoresTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="space-y-1">
+          <label htmlFor="supplier-kind" className="text-xs font-medium text-muted-foreground">
+            Tipo
+          </label>
+          <select
+            id="supplier-kind"
+            value={kindFilter}
+            onChange={(e) => setKindFilter(e.target.value as SupplierKind | "")}
+            className="h-8 w-48 rounded-md border border-input bg-background px-3 text-sm"
+          >
+            <option value="">Todos</option>
+            {SUPPLIER_KINDS.map((k) => (
+              <option key={k} value={k}>
+                {SUPPLIER_KIND_LABELS[k]}
+              </option>
+            ))}
+          </select>
+        </div>
         <Button
           onClick={() => {
             setEditing(undefined);
@@ -260,7 +291,7 @@ function FornecedoresTab() {
           }}
         >
           <Plus className="h-4 w-4" />
-          Novo Fornecedor
+          Novo fornecedor / prestador
         </Button>
       </div>
 
@@ -563,7 +594,7 @@ export default function CatalogosPage() {
         <TabsList>
           <TabsTrigger value="produtos">Produtos</TabsTrigger>
           <TabsTrigger value="categorias">Categorias</TabsTrigger>
-          <TabsTrigger value="fornecedores">Fornecedores</TabsTrigger>
+          <TabsTrigger value="fornecedores">Fornecedores e prestadores</TabsTrigger>
           <TabsTrigger value="parceiros">Parceiros</TabsTrigger>
         </TabsList>
 

@@ -12,7 +12,13 @@ import {
   parseFinancePeriod,
   validateFinancePeriod,
 } from "@/lib/finance";
-import { formatData, formatMoeda, formatPaymentMethod } from "@/lib/formatters";
+import {
+  MOVEMENT_CATEGORY_LABELS,
+  SUPPLIER_KIND_LABELS,
+  formatData,
+  formatMoeda,
+  formatPaymentMethod,
+} from "@/lib/formatters";
 import type { FinanceSummary } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,8 +26,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-// Financeiro — AYD-004: vendas do período (competência), movimento do período (datas de
-// pagamento) e saldos em aberto hoje, cada um levando à lista que o compõe.
+// Financeiro — AYD-004/007: vendas do período (competência), movimento do período (dinheiro
+// executado), despesas e resultado, e saldos em aberto hoje, cada um levando à lista que o compõe.
 
 function Row({
   label,
@@ -97,7 +103,9 @@ function SummarySkeleton() {
 }
 
 function SummaryView({ summary, from, to }: { summary: FinanceSummary; from: string; to: string }) {
-  const { sales, cash, balances } = summary;
+  const { sales, cash, expenses, result, balances } = summary;
+  const movementsParams = new URLSearchParams({ from, to });
+  const unallocatedHref = `/movimentacoes?${new URLSearchParams({ from, to, unallocated_only: "true" }).toString()}`;
   const salesHref = `/vendas?${new URLSearchParams({ from, to }).toString()}`;
 
   return (
@@ -134,25 +142,50 @@ function SummaryView({ summary, from, to }: { summary: FinanceSummary; from: str
 
       <Section
         title="Movimento do período"
-        description="Dinheiro que entrou e saiu com data de pagamento dentro do período."
+        description="Dinheiro que entrou e saiu com data dentro do período (movimentações)."
       >
         <div className="grid gap-4 md:grid-cols-2">
           <Card className="p-4">
             <dl>
-              <Row label="Recebido dos clientes" value={formatMoeda(cash.received)} strong tone="positive" />
-              <Row label="Pago a fornecedores" value={formatMoeda(cash.paid_to_suppliers)} strong />
+              <Row label="Entradas" value={formatMoeda(cash.inflow)} strong tone="positive" />
+              <Row label="Saídas" value={formatMoeda(cash.outflow)} strong />
               <Row
                 label="Saldo do movimento"
-                value={formatMoeda(cash.received - cash.paid_to_suppliers)}
+                value={formatMoeda(cash.net)}
                 strong
-                tone={cash.received - cash.paid_to_suppliers < 0 ? "negative" : "positive"}
+                tone={cash.net < 0 ? "negative" : "positive"}
               />
             </dl>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Frete e comissão não entram aqui: não têm data de pagamento. Veja-os nos saldos em aberto.
-            </p>
+            <div className="mt-2 flex flex-wrap gap-x-4">
+              <Link
+                href={`/movimentacoes?${movementsParams.toString()}`}
+                className="inline-flex items-center text-sm text-primary hover:underline"
+              >
+                Ver movimentações <ChevronRight className="h-4 w-4" />
+              </Link>
+              <Link href={unallocatedHref} className="inline-flex items-center text-sm text-primary hover:underline">
+                Sem alocação <ChevronRight className="h-4 w-4" />
+              </Link>
+            </div>
           </Card>
           <Card className="p-4">
+            <h3 className="mb-2 text-sm font-semibold uppercase text-muted-foreground">Por categoria</h3>
+            {cash.by_category.length > 0 ? (
+              <table className="w-full text-sm">
+                <tbody>
+                  {cash.by_category.map((c) => (
+                    <tr key={c.category} className="border-b last:border-b-0">
+                      <td className="py-1.5">{MOVEMENT_CATEGORY_LABELS[c.category] ?? "—"}</td>
+                      <td className="py-1.5 text-right tabular-nums">{formatMoeda(c.amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="py-2 text-sm text-muted-foreground">Nenhuma movimentação no período.</p>
+            )}
+          </Card>
+          <Card className="p-4 md:col-span-2">
             <h3 className="mb-2 text-sm font-semibold uppercase text-muted-foreground">
               Recebido por forma de pagamento
             </h3>
@@ -174,29 +207,74 @@ function SummaryView({ summary, from, to }: { summary: FinanceSummary; from: str
         </div>
       </Section>
 
+      <Section
+        title="Despesas"
+        description="Saídas do período sem quitação de conta (combustível, impostos do mês, manutenção…)."
+      >
+        <Card className="p-4">
+          <dl>
+            <Row label="Total de despesas" value={formatMoeda(expenses.total)} strong />
+          </dl>
+          {expenses.by_category.length > 0 ? (
+            <table className="mt-2 w-full text-sm">
+              <tbody>
+                {expenses.by_category.map((c) => (
+                  <tr key={c.category} className="border-b last:border-b-0">
+                    <td className="py-1.5">{MOVEMENT_CATEGORY_LABELS[c.category] ?? "—"}</td>
+                    <td className="py-1.5 text-right tabular-nums">{formatMoeda(c.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="py-2 text-sm text-muted-foreground">Nenhuma despesa no período.</p>
+          )}
+          <Link
+            href={`/movimentacoes?${movementsParams.toString()}&direction=OUT`}
+            className="mt-2 inline-flex items-center text-sm text-primary hover:underline"
+          >
+            Ver saídas <ChevronRight className="h-4 w-4" />
+          </Link>
+        </Card>
+      </Section>
+
+      <Section title="Resultado do período" description="Lucro das vendas do período menos as despesas.">
+        <Card className="p-4">
+          <dl>
+            <Row label="Lucro das vendas" value={formatMoeda(result.sales_profit)} />
+            <Row label="Despesas" value={formatMoeda(result.expenses)} />
+            <Row
+              label="Resultado"
+              value={formatMoeda(result.net_result)}
+              strong
+              tone={result.net_result < 0 ? "negative" : "positive"}
+            />
+          </dl>
+        </Card>
+      </Section>
+
       <Section title="Saldos em aberto (hoje)" description="Não dependem do período escolhido.">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <BalanceCard
-            label="A receber"
-            value={balances.receivable}
-            href="/vendas?payment_status=PENDING,PARTIAL"
-          />
-          <BalanceCard
-            label="A pagar a fornecedores"
-            value={balances.payable_to_suppliers}
-            href="/compras?payment_status=PENDING"
-          />
-          <BalanceCard
-            label="Frete a pagar"
-            value={balances.freight_payable}
-            href="/vendas?freight_pending=true"
-          />
-          <BalanceCard
-            label="Comissões pendentes"
-            value={balances.commission_payable}
-            href="/vendas?commission_pending=true"
-          />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <BalanceCard label="A receber" value={balances.receivable} href="/contas?direction=RECEIVABLE" />
+          <BalanceCard label="A pagar" value={balances.payable} href="/contas?direction=PAYABLE" />
         </div>
+        {balances.payable_by_counterparty_kind.length > 0 && (
+          <Card className="p-4">
+            <h3 className="mb-2 text-sm font-semibold uppercase text-muted-foreground">
+              A pagar por tipo de credor
+            </h3>
+            <table className="w-full text-sm">
+              <tbody>
+                {balances.payable_by_counterparty_kind.map((k) => (
+                  <tr key={k.kind} className="border-b last:border-b-0">
+                    <td className="py-1.5">{SUPPLIER_KIND_LABELS[k.kind] ?? "—"}</td>
+                    <td className="py-1.5 text-right tabular-nums">{formatMoeda(k.open)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+        )}
       </Section>
     </div>
   );
@@ -268,7 +346,7 @@ export default function FinanceiroPage() {
         {periodError && <p className="text-xs text-destructive">{periodError}</p>}
         <p className="text-sm text-muted-foreground">
           <strong>Vendas do período</strong> usam a data da venda (competência);{" "}
-          <strong>movimento</strong> usa as datas em que os pagamentos foram feitos; os{" "}
+          <strong>movimento</strong>, <strong>despesas</strong> e <strong>resultado</strong> usam as datas das movimentações; os{" "}
           <strong>saldos em aberto</strong> são de hoje.
         </p>
       </div>
