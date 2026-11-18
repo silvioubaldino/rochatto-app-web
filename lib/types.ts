@@ -11,6 +11,8 @@ export type SupplierPaymentStatus = "PENDING" | "PAID";
 export type SaleDeliveryStatus = "TO_DELIVER" | "DELIVERED" | "CANCELED";
 /** Status de pagamento da Sale — calculado dos Receipts pela API (view), nunca enviado. */
 export type SalePaymentStatus = "PENDING" | "PARTIAL" | "PAID";
+/** Forma de pagamento do Receipt — AYD-004. Rótulos PT-BR em lib/formatters.ts. */
+export type PaymentMethod = "PIX" | "CASH" | "CARD" | "BOLETO" | "TRANSFER";
 export type StockAdjustmentReason = "INITIAL" | "COUNT" | "OTHER";
 /** Avisos não bloqueantes devolvidos ao gravar um Item de Sale. */
 export type SaleItemWarning = "INSUFFICIENT_STOCK";
@@ -103,6 +105,8 @@ export interface PagamentoCliente {
   data_pagamento?: string;
   data_agendada?: string;
   status: StatusPagamento;
+  // AYD-004: obrigatório ao receber; null em Receipts legados ou ainda pendentes.
+  payment_method: PaymentMethod | null;
   observacoes?: string;
   created_at: string;
 }
@@ -130,6 +134,11 @@ export interface Venda {
   total_recebido: number;
   a_receber: number;
   a_pagar_frete: number;
+  // AYD-004 (vw_vendas_resumo): saldos calculados, nunca enviados.
+  /** RN-05: max(total_venda − total_recebido, 0) */
+  receivable: number;
+  /** RF-10: max(frete_valor − frete_pago, 0) */
+  freight_payable: number;
   lucro: number;
   itens?: ItemVenda[];
   pagamentos?: PagamentoCliente[];
@@ -338,6 +347,45 @@ export interface StockAdjustment {
   adjusted_at: string;
   notes: string | null;
   created_at: string;
+}
+
+// Financeiro — AYD-004 (`GET /finance/summary`). Campos em inglês (ADR-001).
+
+export interface FinanceSalesBlock {
+  count: number;
+  revenue: number;
+  cost: number;
+  freight: number;
+  commission: number;
+  profit: number;
+  received: number;
+  receivable: number;
+}
+
+export interface FinanceReceivedByMethod {
+  /** null = Receipt legado "Não informado" */
+  payment_method: PaymentMethod | null;
+  amount: number;
+}
+
+export interface FinanceCashBlock {
+  received: number;
+  received_by_method: FinanceReceivedByMethod[];
+  paid_to_suppliers: number;
+}
+
+export interface FinanceBalancesBlock {
+  receivable: number;
+  payable_to_suppliers: number;
+  freight_payable: number;
+  commission_payable: number;
+}
+
+export interface FinanceSummary {
+  period: { from: string; to: string };
+  sales: FinanceSalesBlock;
+  cash: FinanceCashBlock;
+  balances: FinanceBalancesBlock;
 }
 
 // Respostas de API (Wrappers)

@@ -9,9 +9,16 @@ import { usePagamentos } from "@/hooks/usePagamentos";
 import { useProdutos } from "@/hooks/useProdutos";
 import { useFornecedores } from "@/hooks/useFornecedores";
 import { api, APIError } from "@/lib/api";
-import { formatMoeda, formatData } from "@/lib/formatters";
+import {
+  formatMoeda,
+  formatData,
+  formatPaymentMethod,
+  PAYMENT_METHODS,
+  PAYMENT_METHOD_LABELS,
+} from "@/lib/formatters";
+import { validateFreight } from "@/lib/sales";
 import { toSaleUpdatePayload } from "@/lib/sales";
-import type { PagamentoCliente } from "@/lib/types";
+import type { PagamentoCliente, PaymentMethod } from "@/lib/types";
 import { SaleDeliveryBadge, SalePaymentBadge } from "@/components/status-badges";
 import { SaleItemsCard } from "@/components/sales/SaleItemsCard";
 import { SaleDeliveryActions } from "@/components/sales/SaleDeliveryActions";
@@ -49,6 +56,7 @@ export default function VendaDetalhePage() {
   const [confirmPagamentoDialog, setConfirmPagamentoDialog] = useState(false);
   const [confirmingPagamento, setConfirmingPagamento] = useState<PagamentoCliente | null>(null);
   const [confirmDate, setConfirmDate] = useState("");
+  const [confirmMethod, setConfirmMethod] = useState<PaymentMethod | "">("");
   const [confirmingLoading, setConfirmingLoading] = useState(false);
 
   // Edit general info
@@ -92,6 +100,11 @@ export default function VendaDetalhePage() {
   }
 
   async function saveFrete() {
+    const freightError = validateFreight(fretePayload.frete_valor, fretePayload.frete_pago);
+    if (freightError) {
+      toast.error(freightError);
+      return;
+    }
     setSavingFrete(true);
     try {
       if (!venda) return;
@@ -160,15 +173,18 @@ export default function VendaDetalhePage() {
   function handleConfirmPagamentoClick(pag: PagamentoCliente) {
     setConfirmingPagamento(pag);
     setConfirmDate(pag.data_agendada ? pag.data_agendada.slice(0, 10) : "");
+    // AYD-004: pré-seleciona a forma combinada, se o Receipt já tiver uma
+    setConfirmMethod(pag.payment_method ?? "");
     setConfirmPagamentoDialog(true);
   }
 
   async function handleConfirmPagamento() {
-    if (!confirmingPagamento || !confirmDate) return;
+    if (!confirmingPagamento || !confirmDate || !confirmMethod) return;
     setConfirmingLoading(true);
     try {
       await api.post(`/vendas/${vendaId}/pagamentos/${confirmingPagamento.id}/confirmar`, {
         data_pagamento: confirmDate,
+        payment_method: confirmMethod,
       });
       toast.success("Pagamento confirmado.");
       setConfirmPagamentoDialog(false);
@@ -332,14 +348,14 @@ export default function VendaDetalhePage() {
             <dt className="text-muted-foreground">Recebido</dt>
             <dd className="text-green-600">{formatMoeda(venda.total_recebido)}</dd>
             <dt className="text-muted-foreground">A Receber</dt>
-            <dd className="font-semibold text-orange-600">{formatMoeda(venda.a_receber)}</dd>
+            <dd className="font-semibold text-orange-600">{formatMoeda(venda.receivable)}</dd>
             <dt className="text-muted-foreground">Pagamento</dt>
             <dd>
               <SalePaymentBadge status={venda.payment_status} />
             </dd>
 
             <dt className="text-muted-foreground">Frete a Pagar</dt>
-            <dd>{formatMoeda(venda.frete_valor - venda.frete_pago)}</dd>
+            <dd>{formatMoeda(venda.freight_payable)}</dd>
             <dt className="text-muted-foreground">Comissão Devida</dt>
             <dd>{venda.comissao_paga ? formatMoeda(0) : formatMoeda(venda.comissao_valor)}</dd>
 
@@ -386,6 +402,7 @@ export default function VendaDetalhePage() {
                     <th className="pb-2 pr-4 font-medium">Valor</th>
                     <th className="pb-2 pr-4 font-medium">Data</th>
                     <th className="pb-2 pr-4 font-medium">Status</th>
+                    <th className="pb-2 pr-4 font-medium">Forma</th>
                     <th className="pb-2 pr-4 font-medium">Obs</th>
                     {!readOnly && <th className="pb-2 font-medium w-28">Ações</th>}
                   </tr>
@@ -408,6 +425,7 @@ export default function VendaDetalhePage() {
                         <td className={`py-2 pr-4 font-medium ${info.color}`}>
                           {info.label}
                         </td>
+                        <td className="py-2 pr-4">{formatPaymentMethod(pag.payment_method)}</td>
                         <td className="py-2 pr-4 text-muted-foreground max-w-[150px] truncate">
                           {pag.observacoes || "—"}
                         </td>
@@ -463,7 +481,7 @@ export default function VendaDetalhePage() {
                 <span>
                   A Receber:{" "}
                   <strong className="text-orange-600">
-                    {formatMoeda(venda.a_receber)}
+                    {formatMoeda(venda.receivable)}
                   </strong>
                 </span>
               </div>
@@ -542,7 +560,7 @@ export default function VendaDetalhePage() {
                 <span>
                   A Pagar:{" "}
                   <strong className="text-orange-600">
-                    {formatMoeda(venda.frete_valor - venda.frete_pago)}
+                    {formatMoeda(venda.freight_payable)}
                   </strong>
                 </span>
                 {!readOnly && (
@@ -664,6 +682,20 @@ export default function VendaDetalhePage() {
               value={confirmDate}
               onChange={(e) => setConfirmDate(e.target.value)}
             />
+            <Label htmlFor="confirm_method">Forma de pagamento *</Label>
+            <select
+              id="confirm_method"
+              value={confirmMethod}
+              onChange={(e) => setConfirmMethod(e.target.value as PaymentMethod | "")}
+              className="h-8 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="">Selecione...</option>
+              {PAYMENT_METHODS.map((m) => (
+                <option key={m} value={m}>
+                  {PAYMENT_METHOD_LABELS[m]}
+                </option>
+              ))}
+            </select>
           </div>
           <DialogFooter>
             <Button
@@ -676,7 +708,10 @@ export default function VendaDetalhePage() {
             >
               Cancelar
             </Button>
-            <Button onClick={handleConfirmPagamento} disabled={confirmingLoading || !confirmDate}>
+            <Button
+              onClick={handleConfirmPagamento}
+              disabled={confirmingLoading || !confirmDate || !confirmMethod}
+            >
               {confirmingLoading && <Loader2 className="h-4 w-4 animate-spin" />}
               Confirmar
             </Button>
