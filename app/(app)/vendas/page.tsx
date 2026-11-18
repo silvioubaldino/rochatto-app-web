@@ -31,7 +31,12 @@ function asDeliveryStatus(v: string | null): SaleDeliveryStatus | "" {
   return v && (SALE_DELIVERY_STATUSES as string[]).includes(v) ? (v as SaleDeliveryStatus) : "";
 }
 
-function asPaymentStatus(v: string | null): SalePaymentStatus | "" {
+// "PENDING,PARTIAL" = em aberto (a receber), usado pelo card do dashboard
+const PAYMENT_OPEN = "PENDING,PARTIAL";
+type PaymentFilter = SalePaymentStatus | typeof PAYMENT_OPEN | "";
+
+function asPaymentStatus(v: string | null): PaymentFilter {
+  if (v === PAYMENT_OPEN) return PAYMENT_OPEN;
   return v && (SALE_PAYMENT_STATUSES as string[]).includes(v) ? (v as SalePaymentStatus) : "";
 }
 
@@ -43,7 +48,7 @@ export default function VendasPage() {
   const [deliveryStatus, setDeliveryStatus] = useState<SaleDeliveryStatus | "">(
     asDeliveryStatus(searchParams.get("delivery_status")),
   );
-  const [paymentStatus, setPaymentStatus] = useState<SalePaymentStatus | "">(
+  const [paymentStatus, setPaymentStatus] = useState<PaymentFilter>(
     asPaymentStatus(searchParams.get("payment_status")),
   );
   const [dataInicio, setDataInicio] = useState(searchParams.get("data_inicio") || "");
@@ -211,6 +216,7 @@ export default function VendasPage() {
             className="h-8 rounded-md border border-input bg-background px-3 text-sm"
           >
             <option value="">Todos</option>
+            <option value={PAYMENT_OPEN}>Em aberto (pendente + parcial)</option>
             {SALE_PAYMENT_STATUSES.map((s) => (
               <option key={s} value={s}>
                 {SALE_PAYMENT_STATUS_LABELS[s]}

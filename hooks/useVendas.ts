@@ -6,11 +6,11 @@ import type { Venda, SaleDeliveryStatus, SalePaymentStatus } from "@/lib/types";
 
 export interface VendasFilters {
   delivery_status?: SaleDeliveryStatus;
-  payment_status?: SalePaymentStatus;
+  /** um status ou vários separados por vírgula (ex.: "PENDING,PARTIAL") */
+  payment_status?: SalePaymentStatus | "PENDING,PARTIAL";
   data_inicio?: string;
   data_fim?: string;
   cliente_id?: string;
-  pendente?: boolean;
 }
 
 function buildQuery(filters?: VendasFilters): string {
@@ -21,7 +21,6 @@ function buildQuery(filters?: VendasFilters): string {
   if (filters.data_inicio) params.set("data_inicio", filters.data_inicio);
   if (filters.data_fim) params.set("data_fim", filters.data_fim);
   if (filters.cliente_id) params.set("cliente_id", filters.cliente_id);
-  if (filters.pendente !== undefined) params.set("pendente", String(filters.pendente));
   const qs = params.toString();
   return qs ? `/vendas?${qs}` : "/vendas";
 }
