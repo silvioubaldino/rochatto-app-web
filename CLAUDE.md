@@ -44,7 +44,7 @@ Toda a lógica de dados vai para a API Go via fetch no cliente.
 app/
   (auth)/login/              → tela pública de login
   (app)/                     → layout protegido (redireciona se não autenticado)
-    dashboard/               → página inicial — KPIs e alertas
+    dashboard/               → página inicial — KPIs do período (conversão, ticket médio), saldos em aberto com drill-down, gráfico mensal, ranking de Products e alertas (SPEC-005)
     orcamentos/              → orçamentos: listagem, emissão (e venda rápida), detalhe/conversão
     vendas/                  → listagem e detalhe (sem criação direta — nasce do orçamento)
     compras/                 → compras ao fornecedor, fila "a comprar", detalhe/pagamento
@@ -148,7 +148,7 @@ npm run dev
 
 > As fases acima (`.claude/specs/`) são o plano histórico. As entregas atuais seguem as
 > SPECs em `docs/specs/` (SPEC-001 Orçamentos, SPEC-002 Atendimento da venda, SPEC-003
-> Cadastros comerciais, SPEC-004 Financeiro).
+> Cadastros comerciais, SPEC-004 Financeiro, SPEC-005 Dashboard).
 
 ## Deploy (Vercel — Free Tier)
 

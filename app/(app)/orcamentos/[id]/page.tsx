@@ -251,13 +251,20 @@ export default function OrcamentoDetalhePage() {
           #{quote.id.slice(0, 8)}
         </span>
 
-        <span
-          className={cn(
-            "ml-auto inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-            QUOTE_STATUS_COLORS[quote.status],
+        <span className="ml-auto inline-flex items-center gap-1.5">
+          {quote.quick_sale && (
+            <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs text-muted-foreground whitespace-nowrap">
+            Venda rápida
+          </span>
           )}
-        >
-          {QUOTE_STATUS_LABELS[quote.status]}
+          <span
+            className={cn(
+              "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+              QUOTE_STATUS_COLORS[quote.status],
+            )}
+          >
+            {QUOTE_STATUS_LABELS[quote.status]}
+          </span>
         </span>
       </div>
 

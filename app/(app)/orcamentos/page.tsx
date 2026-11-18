@@ -108,13 +108,20 @@ export default function OrcamentosPage() {
       key: "status",
       header: "Status",
       render: (row: Quote) => (
-        <span
-          className={cn(
-            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap",
-            QUOTE_STATUS_COLORS[row.status],
+        <span className="inline-flex flex-wrap items-center gap-1.5">
+          <span
+            className={cn(
+              "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap",
+              QUOTE_STATUS_COLORS[row.status],
+            )}
+          >
+            {QUOTE_STATUS_LABELS[row.status]}
+          </span>
+          {row.quick_sale && (
+            <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs text-muted-foreground whitespace-nowrap">
+            Venda rápida
+          </span>
           )}
-        >
-          {QUOTE_STATUS_LABELS[row.status]}
         </span>
       ),
     },
