@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   BarChart,
   Bar,
@@ -27,7 +26,7 @@ interface VendasChartProps {
 
 function formatMes(isoDate: string): string {
   try {
-    return format(parseISO(isoDate + "-01"), "MMM/yy", { locale: ptBR });
+    return format(parseISO(isoDate), "MMM/yy", { locale: ptBR });
   } catch {
     return isoDate;
   }
@@ -42,6 +41,7 @@ interface TooltipPayloadItem {
   name: string;
   value: number;
   color: string;
+  payload?: { sales_count?: number };
 }
 
 function CustomTooltip({
@@ -57,6 +57,12 @@ function CustomTooltip({
   return (
     <div className="rounded-lg border bg-background p-3 shadow text-sm space-y-1">
       <p className="font-semibold">{label}</p>
+      {typeof payload[0].payload?.sales_count === "number" && (
+        <p className="text-muted-foreground">
+          {payload[0].payload.sales_count} venda
+          {payload[0].payload.sales_count !== 1 ? "s" : ""}
+        </p>
+      )}
       {payload.map((entry) => (
         <p key={entry.name} style={{ color: entry.color }}>
           {entry.name}: {formatMoeda(entry.value)}

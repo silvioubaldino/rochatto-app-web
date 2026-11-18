@@ -171,47 +171,74 @@ export interface Quote {
   quote_date: string;
   notes?: string;
   total_quote: number;
+  /** AYD-005: true se o Quote nasceu da venda rápida (somente leitura). */
+  quick_sale: boolean;
   items?: QuoteItem[];
   created_at: string;
 }
 
-// Dashboard
-export interface DashboardResumo {
-  total_a_receber: number;
-  total_a_pagar_fornecedor: number;
-  total_comissoes_pendentes: number;
-  lucro_periodo: number;
-  total_vendido_periodo: number;
-  vendas_abertas: number;
-  periodo: { inicio: string; fim: string };
+// Dashboard — AYD-005
+
+/** `GET /dashboard/kpis?from&to` (blocos `sales` e `balances` = os de `/finance/summary`). */
+export interface DashboardKpis {
+  period: { from: string; to: string };
+  sales: {
+    count: number;
+    revenue: number;
+    profit: number;
+    /** revenue / count; 0 se count = 0. */
+    average_ticket: number;
+  };
+  /** Coorte de Quotes emitidos no período, sem vendas rápidas. */
+  quotes: {
+    created: number;
+    won: number;
+    lost: number;
+    open: number;
+    /** won / created (0..1); null se created = 0. */
+    conversion_rate: number | null;
+  };
+  balances: {
+    receivable: number;
+    payable_to_suppliers: number;
+    commission_payable: number;
+    freight_payable: number;
+  };
+  open_deliveries: number;
 }
 
 export interface Notificacao {
   id: string;
   tipo: "pagamento_vencido" | "pagamento_vencendo";
-  venda_id: string;
-  pagamento_id: string;
+  venda_id: string | null;
   cliente_nome: string;
   valor: number;
   data_ref: string;
-  dias_restantes: number;
+  dias_restantes: number | null;
   lida: boolean;
 }
 
 export interface VendasPorMes {
+  /** Primeiro dia do mês, `YYYY-MM-01`. */
   mes: string;
   total_venda: number;
   lucro: number;
+  sales_count: number;
 }
 
 export interface ProdutoMaisVendido {
-  produto_id: string;
+  /** null = Item legado sem Product (agrupado por nome). */
+  produto_id: string | null;
   produto_nome: string;
-  quantidade_total: number;
-  receita_total: number;
+  /** Nº de Sales distintas. */
+  total_vendas: number;
+  total_quantidade: number;
+  total_receita: number;
   preco_medio: number;
   custo_medio: number;
-  margem_percentual: number | null;
+  margem_media_percent: number;
+  /** Unidade do Product; null em Item legado. */
+  unit: string | null;
 }
 
 // Purchase — AYD-002 §3 (`/purchases`).

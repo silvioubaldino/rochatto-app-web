@@ -3,25 +3,20 @@
 import useSWR from "swr";
 import { api } from "@/lib/api";
 import type {
-  DashboardResumo,
-  Notificacao,
-  VendasPorMes,
-  ProdutoMaisVendido,
+  DashboardKpis,
   NotificacoesResponse,
   VendasPorMesResponse,
   ProdutosMaisVendidosResponse,
 } from "@/lib/types";
 
-export function useDashboardResumo(dataInicio: string, dataFim: string) {
+export function useDashboardKpis(from: string, to: string, enabled = true) {
   const key =
-    dataInicio && dataFim
-      ? `/dashboard/resumo?data_inicio=${dataInicio}&data_fim=${dataFim}`
-      : null;
-  const { data, error, isLoading, mutate } = useSWR<DashboardResumo>(
+    enabled && from && to ? `/dashboard/kpis?from=${from}&to=${to}` : null;
+  const { data, error, isLoading, mutate } = useSWR<DashboardKpis>(
     key,
     api.get,
   );
-  return { resumo: data ?? null, isLoading, error, refresh: mutate };
+  return { kpis: data ?? null, isLoading, error, refresh: mutate };
 }
 
 export function useNotificacoes() {
@@ -47,14 +42,19 @@ export function useVendasPorMes(meses: number) {
 }
 
 export function useProdutosMaisVendidos(
-  dataInicio?: string,
-  dataFim?: string,
+  from?: string,
+  to?: string,
+  enabled = true,
 ) {
   const params = new URLSearchParams();
-  if (dataInicio) params.set("data_inicio", dataInicio);
-  if (dataFim) params.set("data_fim", dataFim);
+  if (from) params.set("from", from);
+  if (to) params.set("to", to);
   const qs = params.toString();
-  const key = qs ? `/relatorios/produtos?${qs}` : "/relatorios/produtos";
+  const key = enabled
+    ? qs
+      ? `/relatorios/produtos?${qs}`
+      : "/relatorios/produtos"
+    : null;
 
   const { data, error, isLoading, mutate } = useSWR<ProdutosMaisVendidosResponse>(
     key,

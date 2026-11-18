@@ -183,3 +183,9 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
 export function formatPaymentMethod(method?: PaymentMethod | null): string {
   return method ? (PAYMENT_METHOD_LABELS[method] ?? "Não informado") : "Não informado";
 }
+
+/** Taxa 0..1 → "42%" (arredondada); null → "—" (ex.: conversão Quote → Sale sem Quotes). */
+export function formatPercentRate(rate: number | null | undefined): string {
+  if (rate === null || rate === undefined || Number.isNaN(rate)) return "—";
+  return `${Math.round(rate * 100)}%`;
+}
