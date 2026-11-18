@@ -21,6 +21,7 @@ import {
   BookOpen,
   Truck,
   Wallet,
+  Plug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +40,7 @@ const mainNav: NavItem[] = [
   { label: "Clientes", href: "/clientes", icon: <Users className="h-4 w-4" /> },
   { label: "Catálogos", href: "/catalogos", icon: <BookOpen className="h-4 w-4" /> },
   { label: "Estoque", href: "/estoque", icon: <Package className="h-4 w-4" /> },
+  { label: "Integrações", href: "/integracoes", icon: <Plug className="h-4 w-4" /> },
 ];
 
 function SidebarContent({

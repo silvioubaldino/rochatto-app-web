@@ -42,7 +42,8 @@ Toda a lógica de dados vai para a API Go via fetch no cliente.
 
 ```
 app/
-  (auth)/login/              → tela pública de login
+  (auth)/login/              → tela pública de login (aceita ?next= interno para voltar após o login)
+  conectar/                  → consentimento do Assistant connector (?request_id=); FORA de (app) para preservar a query no login (SPEC-006)
   (app)/                     → layout protegido (redireciona se não autenticado)
     dashboard/               → página inicial — KPIs do período (conversão, ticket médio), saldos em aberto com drill-down, gráfico mensal, ranking de Products e alertas (SPEC-005)
     orcamentos/              → orçamentos: listagem, emissão (e venda rápida), detalhe/conversão
@@ -52,6 +53,7 @@ app/
     estoque/                 → saldo por produto, extrato e ajustes
     financeiro/              → painel entra × sai: vendas do período, movimento, saldos em aberto (SPEC-004)
     catalogos/               → produtos, categorias, fornecedores, parceiros
+    integracoes/             → Connections do Assistant connector: listar e desconectar (SPEC-006)
 components/
   ui/                        → shadcn/ui (nunca editar diretamente; StatusBadge/MoneyInput são nossos)
   forms/                     → formulários reutilizáveis
@@ -148,7 +150,7 @@ npm run dev
 
 > As fases acima (`.claude/specs/`) são o plano histórico. As entregas atuais seguem as
 > SPECs em `docs/specs/` (SPEC-001 Orçamentos, SPEC-002 Atendimento da venda, SPEC-003
-> Cadastros comerciais, SPEC-004 Financeiro, SPEC-005 Dashboard).
+> Cadastros comerciais, SPEC-004 Financeiro, SPEC-005 Dashboard, SPEC-006 Assistant connector).
 
 ## Deploy (Vercel — Free Tier)
 

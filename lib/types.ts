@@ -428,3 +428,30 @@ export interface VendasPorMesResponse {
 export interface ProdutosMaisVendidosResponse {
   dados: ProdutoMaisVendido[];
 }
+
+// Assistant connector (AYD-006 §2.3–2.7)
+export type ConnectionScope = "read" | "write";
+
+/** `GET /oauth/authorization-requests/{id}` — pedido de conexão a consentir. */
+export interface AuthorizationRequest {
+  id: string;
+  client_name: string;
+  /** Host do `redirect_uri`, para o dono conferir. */
+  redirect_host: string;
+  scopes: ConnectionScope[];
+  expires_at: string;
+}
+
+/** Resposta de `approve` / `deny`: o web navega para `redirect_to`. */
+export interface AuthorizationDecision {
+  redirect_to: string;
+}
+
+/** `GET /oauth/connections` — Connection ativa (não revogada). */
+export interface Connection {
+  id: string;
+  client_name: string;
+  scopes: ConnectionScope[];
+  created_at: string;
+  last_used_at: string | null;
+}
