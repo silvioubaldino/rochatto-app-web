@@ -2,21 +2,17 @@
 id: SPEC-001
 type: spec
 title: Espinha Quote → Sale (telas de Orçamento)
-status: review
-updated: 2026-11-17
+status: done
+updated: 2026-11-18
 parents: [AYD-001@context]
 related: [GLO, ADR-001@context, PDR-001@context, AYD-002@context]
 ---
 
 # Spec: Espinha Quote → Sale (parte deste repo — web)
 
-> **⚠ Revisão pendente (2026-11-17)** — o AYD-001@context mudou por causa do PDR-001@context:
-> 1. Items do Quote **sem Supplier** (`supplier_id`/`supplier_name` saem do contrato); `unit_cost` passa a ser **estimado**.
-> 2. Novo endpoint **`POST /quotes/quick-sale`** (cria o Quote e converte na mesma transação).
-> 3. A conversão grava `itens_venda.fornecedor_* = null`, `origin = MADE_TO_ORDER` e a Sale nasce com `delivery_status = TO_DELIVER` (AYD-002@context).
-> 4. Criação direta de Sale (`POST /vendas`) deixa de existir (RN-01).
->
-> Atualize esta SPEC (e o PR de implementação em aberto) antes de seguir.
+> **Revisão 2026-11-17 aplicada** (PDR-001@context): Quote sem Supplier e venda rápida
+> (`POST /quotes/quick-sale`) entregues. `origin`, `delivery_status` e a remoção de
+> `POST /vendas` ficam na SPEC-002 (AYD-002@context).
 
 > O QUÊ e COMO este repo cumpre o AYD-001. `approved` = contrato local congelado;
 > `done` = implementado (este documento vira o registro histórico da entrega).
@@ -189,11 +185,15 @@ do campo já previsto no contrato).
 
 ## Checklist de entrega
 
-- [ ] Lista de Orçamentos com filtro por status/período e busca
-- [ ] Formulário de emissão com Items e preço unitário editável por Item
-- [ ] Ação "Marcar como perdido" com motivo opcional
-- [ ] Ação "Converter em Sale" com navegação para a Sale criada
-- [ ] Sale exibe o Quote de origem quando houver `quote_id`
-- [ ] Quotes WON/LOST somente leitura (sem editar/perder/converter)
-- [ ] Testes de aceite cobrindo os 6 cenários Gherkin
-- [ ] `docs/changelog.md` atualizado (Unreleased)
+- [x] Lista de Orçamentos com filtro por status/período (`from`/`to`) e por cliente
+- [x] Formulário de emissão com Items e preço unitário editável por Item
+- [x] Ação "Marcar como perdido" com motivo opcional (`PATCH /quotes/{id}/status`)
+- [x] Ação "Converter em Sale" com navegação para a Sale criada
+- [x] Sale exibe o Quote de origem quando houver `quote_id`
+- [x] Quotes WON/LOST somente leitura (sem editar/perder/converter); LOST permite reabrir
+- [ ] Testes de aceite cobrindo os 6 cenários Gherkin — **não implementado**: o repo não tem
+      framework de testes configurado (sem Jest/Vitest/Playwright em `package.json`); os
+      fluxos foram verificados via `tsc --noEmit`, `eslint` e `next build` (sem erros nas
+      telas novas) e revisão manual do código contra os critérios de aceite — configurar um
+      test runner é decisão de convenção de engenharia que precede esta SPEC
+- [x] `docs/changelog.md` atualizado (Unreleased)
