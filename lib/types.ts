@@ -1,17 +1,14 @@
 // Enums
-export type StatusPagamento = "pendente" | "recebido";
-
 // Atendimento da Sale — AYD-002. Enums do contrato em inglês (ADR-001); rótulos PT-BR em
 // lib/formatters.ts (nunca exibir o código do enum).
 export type ItemOrigin = "MADE_TO_ORDER" | "FROM_STOCK";
 export type PurchaseKind = "MADE_TO_ORDER" | "STOCK_REPLENISHMENT";
 export type PurchaseStatus = "OPEN" | "ORDERED" | "RECEIVED";
-export type SupplierPaymentStatus = "PENDING" | "PAID";
 /** Status de entrega da Sale (manual) — substitui o `status_venda` legado. */
 export type SaleDeliveryStatus = "TO_DELIVER" | "DELIVERED" | "CANCELED";
-/** Status de pagamento da Sale — calculado dos Receipts pela API (view), nunca enviado. */
+/** Status de pagamento da Sale — calculado pela API a partir da conta a receber, nunca enviado. */
 export type SalePaymentStatus = "PENDING" | "PARTIAL" | "PAID";
-/** Forma de pagamento do Receipt — AYD-004. Rótulos PT-BR em lib/formatters.ts. */
+/** Forma de pagamento — AYD-004. Rótulos PT-BR em lib/formatters.ts. */
 export type PaymentMethod = "PIX" | "CASH" | "CARD" | "BOLETO" | "TRANSFER";
 export type StockAdjustmentReason = "INITIAL" | "COUNT" | "OTHER";
 /** Avisos não bloqueantes devolvidos ao gravar um Item de Sale. */
@@ -70,6 +67,8 @@ export interface Produto {
 export interface Fornecedor {
   id: string;
   nome: string;
+  /** AYD-007: tipo do credor (Fornecedores e prestadores). */
+  kind: SupplierKind;
   telefone?: string;
   cidade?: string;
   observacoes?: string;
@@ -98,19 +97,6 @@ export interface ItemVendaWriteResponse extends ItemVenda {
   warnings?: SaleItemWarning[] | null;
 }
 
-export interface PagamentoCliente {
-  id: string;
-  venda_id: string;
-  valor: number;
-  data_pagamento?: string;
-  data_agendada?: string;
-  status: StatusPagamento;
-  // AYD-004: obrigatório ao receber; null em Receipts legados ou ainda pendentes.
-  payment_method: PaymentMethod | null;
-  observacoes?: string;
-  created_at: string;
-}
-
 export interface Venda {
   id: string;
   cliente_id: string;
@@ -125,23 +111,17 @@ export interface Venda {
   data_venda: string;
   data_entrega_prevista?: string;
   frete_valor: number;
-  frete_pago: number;
   comissao_valor: number;
-  comissao_paga: boolean;
   observacoes?: string;
   total_venda: number;
   total_custo: number;
+  // AYD-007 §6: saldos vêm da conta RECEIVABLE da Sale (calculados, nunca enviados).
   total_recebido: number;
   a_receber: number;
-  a_pagar_frete: number;
-  // AYD-004 (vw_vendas_resumo): saldos calculados, nunca enviados.
   /** RN-05: max(total_venda − total_recebido, 0) */
   receivable: number;
-  /** RF-10: max(frete_valor − frete_pago, 0) */
-  freight_payable: number;
   lucro: number;
   itens?: ItemVenda[];
-  pagamentos?: PagamentoCliente[];
   created_at: string;
 }
 
@@ -198,19 +178,24 @@ export interface DashboardKpis {
     /** won / created (0..1); null se created = 0. */
     conversion_rate: number | null;
   };
-  balances: {
-    receivable: number;
-    payable_to_suppliers: number;
-    commission_payable: number;
-    freight_payable: number;
-  };
+  /** Mesmo bloco `balances` de `/finance/summary` (AYD-007 §6). */
+  balances: FinanceBalancesBlock;
   open_deliveries: number;
 }
 
+export type NotificacaoTipo =
+  | "pagamento_vencido"
+  | "pagamento_vencendo"
+  | "conta_pagar_vencida"
+  | "conta_pagar_vencendo";
+
 export interface Notificacao {
   id: string;
-  tipo: "pagamento_vencido" | "pagamento_vencendo";
+  tipo: NotificacaoTipo;
   venda_id: string | null;
+  /** AYD-007: conta a que o alerta se refere (abre /contas/{id}); installment_id quando vem de parcela. */
+  obligation_id?: string | null;
+  installment_id?: string | null;
   cliente_nome: string;
   valor: number;
   data_ref: string;
@@ -272,11 +257,11 @@ export interface PurchaseDetail {
   notes: string | null;
   ordered_at: string | null;
   received_at: string | null;
-  payment_status: SupplierPaymentStatus;
-  paid_amount: number | null;
-  paid_at: string | null;
   total_cost: number;
-  to_pay: number;
+  /** AYD-007 §6: Σ em aberto das contas PAYABLE da compra (calculado). */
+  payable: number;
+  /** AYD-007 §6: Σ quitado das contas PAYABLE da compra (calculado). */
+  paid: number;
   sale_items: PurchaseSaleItem[];
   items: PurchaseItem[];
   created_at?: string;
@@ -295,15 +280,6 @@ export interface PurchaseStatusResponse {
   status: PurchaseStatus;
   ordered_at: string | null;
   received_at: string | null;
-}
-
-/** Resposta de PATCH /purchases/{id}/payment. */
-export interface PurchasePaymentResponse {
-  id: string;
-  payment_status: SupplierPaymentStatus;
-  paid_amount: number | null;
-  paid_at: string | null;
-  to_pay: number;
 }
 
 /**
@@ -390,29 +366,202 @@ export interface FinanceSalesBlock {
 }
 
 export interface FinanceReceivedByMethod {
-  /** null = Receipt legado "Não informado" */
+  /** null = movimentação sem forma de pagamento ("Não informado") */
   payment_method: PaymentMethod | null;
   amount: number;
 }
 
-export interface FinanceCashBlock {
-  received: number;
-  received_by_method: FinanceReceivedByMethod[];
-  paid_to_suppliers: number;
+/** ASSUNÇÃO (o AYD diz só `by_category[]`): `{ category, amount }`. */
+export interface FinanceCategoryAmount {
+  category: MovementCategory;
+  amount: number;
 }
 
+/** AYD-007 §6: movimentações do período. */
+export interface FinanceCashBlock {
+  inflow: number;
+  outflow: number;
+  net: number;
+  by_category: FinanceCategoryAmount[];
+  received_by_method: FinanceReceivedByMethod[];
+}
+
+/** Movimentações SEM quitação de categoria de despesa. */
+export interface FinanceExpensesBlock {
+  total: number;
+  by_category: FinanceCategoryAmount[];
+}
+
+/** RN-17: resultado do período = Profit das Sales − despesas. */
+export interface FinanceResultBlock {
+  sales_profit: number;
+  expenses: number;
+  net_result: number;
+}
+
+export interface FinancePayableByKind {
+  kind: SupplierKind;
+  open: number;
+}
+
+/** Σ `open` das contas (PAYABLE = compras + custos de venda). */
 export interface FinanceBalancesBlock {
   receivable: number;
-  payable_to_suppliers: number;
-  freight_payable: number;
-  commission_payable: number;
+  payable: number;
+  payable_by_counterparty_kind: FinancePayableByKind[];
 }
 
 export interface FinanceSummary {
   period: { from: string; to: string };
   sales: FinanceSalesBlock;
   cash: FinanceCashBlock;
+  expenses: FinanceExpensesBlock;
+  result: FinanceResultBlock;
   balances: FinanceBalancesBlock;
+}
+
+// Contas e movimentações — AYD-007. Enums do contrato em inglês (ADR-001); rótulos PT-BR em
+// lib/formatters.ts (nunca exibir o código do enum).
+export type SupplierKind = "STONE" | "TRANSPORT" | "LABOR" | "TAX_AUTHORITY" | "OTHER";
+export type ObligationDirection = "PAYABLE" | "RECEIVABLE";
+/** Calculado pela API: quitado = 0 / parcial / ≥ valor. */
+export type ObligationStatus = "OPEN" | "PARTIAL" | "SETTLED";
+/** Calculado pela API por cobertura. */
+export type InstallmentStatus = "OPEN" | "PARTIAL" | "COVERED";
+export type MovementCategory =
+  | "SALE_RECEIPT"
+  | "OTHER_INCOME"
+  | "PURCHASE_PAYMENT"
+  | "FREIGHT"
+  | "LABOR"
+  | "COMMISSION"
+  | "VEHICLE"
+  | "TAXES"
+  | "FIXED_COSTS"
+  | "MARKETING"
+  | "BANK_FEES"
+  | "OTHER_EXPENSE";
+export type ObligationOriginType = "SALE" | "PURCHASE";
+export type CounterpartyType = "SUPPLIER" | "PARTNER" | "CUSTOMER";
+/** Fontes de componentes antes do AYD-008/009 (§7a); os AYDs seguintes acrescentam tipos. */
+export type ObligationComponentType =
+  | "SALE_ITEMS"
+  | "LEGACY_FREIGHT"
+  | "LEGACY_COMMISSION"
+  | "PURCHASE_ITEMS";
+/** Avisos não bloqueantes (HTTP 2xx com `warnings[]`). */
+export type ObligationWarning = "MIXED_COUNTERPARTIES" | "OVERSETTLED";
+
+export interface ObligationComponent {
+  /** Um `ObligationComponentType`; tipos futuros (AYD-008/009) chegam como string e usam `label`. */
+  type: ObligationComponentType | (string & {});
+  id: string;
+  label: string;
+  amount: number;
+}
+
+export interface Installment {
+  id: string;
+  due_date: string;
+  amount: number;
+  payment_method: PaymentMethod | null;
+  notes: string | null;
+  covered: number;
+  status: InstallmentStatus;
+  overdue: boolean;
+}
+
+/** Linha do plano enviada em `PUT /obligations/{id}/installments`. */
+export interface InstallmentInput {
+  due_date: string;
+  amount: number;
+  payment_method?: PaymentMethod;
+  notes?: string;
+}
+
+export interface MovementSettlement {
+  id: string;
+  obligation_id: string;
+  amount: number;
+}
+
+export interface FinancialMovement {
+  id: string;
+  occurred_on: string;
+  /** > 0 entrada, < 0 saída, ≠ 0 */
+  amount: number;
+  category: MovementCategory;
+  payment_method: PaymentMethod | null;
+  counterparty_name: string | null;
+  description: string | null;
+  settlements: MovementSettlement[];
+  /** |amount| − Σ settlements (≥ 0) */
+  unallocated: number;
+  created_at: string;
+  corrected_at: string | null;
+}
+
+/** Quitação como aparece no detalhe da conta (movimentação em resumo). */
+export interface ObligationSettlement {
+  id: string;
+  amount: number;
+  movement: Pick<
+    FinancialMovement,
+    "id" | "occurred_on" | "amount" | "category" | "payment_method"
+  > &
+    Partial<Pick<FinancialMovement, "counterparty_name" | "description">>;
+}
+
+export interface Obligation {
+  id: string;
+  direction: ObligationDirection;
+  origin: { type: ObligationOriginType; id: string; label: string };
+  /** null = credor "a definir". */
+  counterparty: { type: CounterpartyType; id: string; name: string } | null;
+  amount: number;
+  settled: number;
+  open: number;
+  status: ObligationStatus;
+  due_date: string | null;
+  overdue: boolean;
+  next_installment: { due_date: string; amount_open: number } | null;
+  notes: string | null;
+  // só no detalhe
+  components?: ObligationComponent[];
+  installments?: Installment[];
+  settlements?: ObligationSettlement[];
+  warnings?: ObligationWarning[];
+}
+
+/** Lista paginada do AYD-007 (`total`, `offset`, `has_more` + `totals` por recurso). */
+export interface Paged<T, Totals> {
+  items: T[];
+  totals: Totals;
+  total: number;
+  offset: number;
+  has_more: boolean;
+}
+
+export interface ObligationTotals {
+  amount: number;
+  settled: number;
+  open: number;
+}
+
+export interface MovementTotals {
+  inflow: number;
+  outflow: number;
+  net: number;
+}
+
+export type ObligationList = Paged<Obligation, ObligationTotals>;
+export type FinancialMovementList = Paged<FinancialMovement, MovementTotals>;
+
+/** Resposta (201) de `POST /settlements` e de `POST /obligations/{id}/settle`. */
+export interface SettlementResponse {
+  movement: FinancialMovement;
+  obligations: Obligation[];
+  warnings?: ObligationWarning[];
 }
 
 // Respostas de API (Wrappers)

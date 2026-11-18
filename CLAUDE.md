@@ -51,13 +51,16 @@ app/
     compras/                 → compras ao fornecedor, fila "a comprar", detalhe/pagamento
     clientes/                → CRUD de clientes
     estoque/                 → saldo por produto, extrato e ajustes
-    financeiro/              → painel entra × sai: vendas do período, movimento, saldos em aberto (SPEC-004)
+    financeiro/              → painel: vendas do período, movimento, despesas, resultado e saldos em aberto (SPEC-004, SPEC-008)
+    contas/                  → contas a pagar/receber (abas, filtros na URL, pagar várias) e detalhe /contas/[id]: componentes, parcelas, quitações (SPEC-008)
+    movimentacoes/           → dinheiro executado: lista, despesa/receita avulsa, corrigir, anular (SPEC-008)
     catalogos/               → produtos, categorias, fornecedores, parceiros
     integracoes/             → Connections do Assistant connector: listar e desconectar (SPEC-006)
 components/
   ui/                        → shadcn/ui (nunca editar diretamente; StatusBadge/MoneyInput são nossos)
   forms/                     → formulários reutilizáveis
   sales/ purchases/ stock/   → blocos das telas de venda, compra e estoque
+  obligations/ movements/    → diálogos Pagar/Receber, pagar várias, parcelas e movimentações (SPEC-008)
   tables/                    → tabelas de listagem
   dashboard/                 → cards e gráficos
 lib/
@@ -113,7 +116,9 @@ Rótulos e cores ficam em `lib/formatters.ts`; badges em `components/status-badg
 | Pagamento da venda (`payment_status`, calculado) | PENDING → Pendente · PARTIAL → Parcial · PAID → Quitado |
 | Origem do item (`origin`) | MADE_TO_ORDER → Sob encomenda · FROM_STOCK → De estoque |
 | Compra (`status`) | OPEN → Aberta · ORDERED → Pedida · RECEIVED → Recebida |
-| Pagamento ao fornecedor | PENDING → Pendente · PAID → Pago |
+| Conta (`status`, calculado, AYD-007) | OPEN → Aberta · PARTIAL → Parcial · SETTLED → Quitada (+ selo "Vencida" quando `overdue`) |
+| Parcela (`status`, calculado) | OPEN → Aberta · PARTIAL → Parcial · COVERED → Coberta |
+| Tipo do fornecedor (`kind`) | STONE → Pedra · TRANSPORT → Transporte · LABOR → Mão de obra · TAX_AUTHORITY → Órgão de imposto · OTHER → Outro |
 | Ajuste de estoque (`reason`) | INITIAL → Carga inicial · COUNT → Contagem · OTHER → Outro |
 | Forma de pagamento (`payment_method`, AYD-004) | PIX → Pix · CASH → Dinheiro · CARD → Cartão · BOLETO → Boleto · TRANSFER → Transferência · null → Não informado |
 
@@ -150,7 +155,7 @@ npm run dev
 
 > As fases acima (`.claude/specs/`) são o plano histórico. As entregas atuais seguem as
 > SPECs em `docs/specs/` (SPEC-001 Orçamentos, SPEC-002 Atendimento da venda, SPEC-003
-> Cadastros comerciais, SPEC-004 Financeiro, SPEC-005 Dashboard, SPEC-006 Assistant connector).
+> Cadastros comerciais, SPEC-004 Financeiro, SPEC-005 Dashboard, SPEC-006 Assistant connector, SPEC-008 Contas e movimentações).
 
 ## Deploy (Vercel — Free Tier)
 

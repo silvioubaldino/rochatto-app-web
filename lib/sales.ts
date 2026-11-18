@@ -12,9 +12,7 @@ export function toSaleUpdatePayload(
   overrides: Partial<{
     data_entrega_prevista: string | null;
     frete_valor: number;
-    frete_pago: number;
     comissao_valor: number;
-    comissao_paga: boolean;
     observacoes: string | null;
   }> = {},
 ) {
@@ -24,9 +22,7 @@ export function toSaleUpdatePayload(
       ? venda.data_entrega_prevista.slice(0, 10)
       : null,
     frete_valor: venda.frete_valor,
-    frete_pago: venda.frete_pago,
     comissao_valor: venda.comissao_valor,
-    comissao_paga: venda.comissao_paga,
     observacoes: venda.observacoes || null,
     ...overrides,
   };
@@ -87,12 +83,10 @@ export function validateSaleItemDraft(draft: SaleItemDraft): string | null {
 }
 
 /**
- * Valida o Freight antes de PUT /vendas/{id} (AYD-004: a API devolve 400 se
- * frete_valor < 0, frete_pago < 0 ou frete_pago > frete_valor). Retorna a mensagem ou null.
+ * Valida o Freight antes de PUT /vendas/{id} (a API devolve 400 se frete_valor < 0).
+ * O pago do frete (e da comissão) agora é quitação da conta PAYABLE da Sale (AYD-007 §6).
  */
-export function validateFreight(freteValor: number, fretePago: number): string | null {
+export function validateFreight(freteValor: number): string | null {
   if (freteValor < 0) return "Frete não pode ser negativo.";
-  if (fretePago < 0) return "Frete pago não pode ser negativo.";
-  if (fretePago > freteValor) return "Frete pago não pode ser maior que o frete.";
   return null;
 }

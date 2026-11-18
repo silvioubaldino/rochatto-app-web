@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { InstallmentInput, MovementCategory, Obligation, PaymentMethod } from "./types";
+import { isInflowCategory } from "./formatters";
 
 // Schemas zod dos cadastros comerciais (AYD-003@context). Espelham as validações da API
 // para validar no cliente antes de enviar; a API continua sendo a fonte da verdade.
@@ -159,14 +161,6 @@ export function toPurchaseHeaderPayload(data: PurchaseHeaderFormData) {
   };
 }
 
-/** PATCH /purchases/{id}/payment com PAID. */
-export const supplierPaymentSchema = z.object({
-  paid_amount: nonNegativeMoney,
-  paid_at: z.string().min(1, "Informe a data do pagamento"),
-});
-
-export type SupplierPaymentFormData = z.infer<typeof supplierPaymentSchema>;
-
 /** POST /stock/adjustments — quantidade ± (≠ 0), custo opcional. */
 export const stockAdjustmentSchema = z.object({
   product_id: z.string().min(1, "Selecione o produto"),
@@ -206,46 +200,187 @@ export function toStockAdjustmentPayload(data: StockAdjustmentFormData) {
   };
 }
 
-// --- Receipt (AYD-004) -------------------------------------------------------
+// --- Contas e movimentações (AYD-007) ----------------------------------------
 
-/**
- * Receipt do Customer. Recebido → data e payment method obrigatórios; agendado → data
- * agendada obrigatória, payment method opcional (forma combinada).
- */
-export const receiptSchema = z
-  .object({
-    valor: z.number().min(0.01, "Valor deve ser maior que 0"),
-    tipo: z.enum(["recebido", "agendar"]),
-    data_pagamento: z.string().optional(),
-    data_agendada: z.string().optional(),
-    // "" = não informado (valor vazio do select)
-    payment_method: z.enum(["", "PIX", "CASH", "CARD", "BOLETO", "TRANSFER"]),
-    observacoes: z.string().optional(),
-  })
-  .refine((d) => d.tipo !== "recebido" || !!d.data_pagamento, {
-    message: "Data do recebimento é obrigatória",
-    path: ["data_pagamento"],
-  })
-  .refine((d) => d.tipo !== "recebido" || d.payment_method !== "", {
-    message: "Forma de pagamento é obrigatória para recebimentos",
-    path: ["payment_method"],
-  })
-  .refine((d) => d.tipo !== "agendar" || !!d.data_agendada, {
-    message: "Data agendada é obrigatória",
-    path: ["data_agendada"],
-  });
+const PAYMENT_METHOD_VALUES = ["PIX", "CASH", "CARD", "BOLETO", "TRANSFER"] as const;
+const MOVEMENT_CATEGORY_VALUES = [
+  "SALE_RECEIPT",
+  "OTHER_INCOME",
+  "PURCHASE_PAYMENT",
+  "FREIGHT",
+  "LABOR",
+  "COMMISSION",
+  "VEHICLE",
+  "TAXES",
+  "FIXED_COSTS",
+  "MARKETING",
+  "BANK_FEES",
+  "OTHER_EXPENSE",
+] as const;
 
-export type ReceiptFormData = z.infer<typeof receiptSchema>;
+const positiveMoney = z.number().min(0.01, "Valor deve ser maior que zero");
+const requiredDate = z.string().min(1, "Informe a data");
+// "" = valor vazio do select; nas formas obrigatórias a mensagem explica
+const requiredMethod = z
+  .string()
+  .pipe(z.enum(PAYMENT_METHOD_VALUES, { error: "Forma de pagamento é obrigatória" }));
+const optionalMethod = z.enum(["", ...PAYMENT_METHOD_VALUES]);
 
-/** Body de POST/PUT /vendas/{id}/pagamentos (`status` é exigido só pelo PUT; enviado nos dois). */
-export function toReceiptPayload(data: ReceiptFormData) {
-  const received = data.tipo === "recebido";
+/** Pagar / Receber uma conta: `POST /obligations/{id}/settle`. */
+export const settleSchema = z.object({
+  amount: positiveMoney,
+  occurred_on: requiredDate,
+  payment_method: requiredMethod,
+});
+
+export type SettleFormInput = z.input<typeof settleSchema>;
+export type SettleFormData = z.output<typeof settleSchema>;
+
+export function toSettlePayload(data: SettleFormData) {
   return {
-    valor: data.valor,
-    status: received ? "recebido" : "pendente",
-    data_pagamento: received ? data.data_pagamento : undefined,
-    data_agendada: received ? undefined : data.data_agendada,
-    payment_method: data.payment_method === "" ? undefined : data.payment_method,
-    observacoes: data.observacoes || undefined,
+    amount: data.amount,
+    movement: { occurred_on: data.occurred_on, payment_method: data.payment_method },
+  };
+}
+
+/** Pagar várias contas com uma movimentação: `POST /settlements`. */
+export const bulkSettleSchema = z.object({
+  occurred_on: requiredDate,
+  payment_method: requiredMethod,
+  allocations: z
+    .array(
+      z.object({
+        obligation_id: z.string().min(1),
+        amount: positiveMoney,
+      }),
+    )
+    .min(1, "Selecione ao menos uma conta"),
+});
+
+export type BulkSettleFormInput = z.input<typeof bulkSettleSchema>;
+export type BulkSettleFormData = z.output<typeof bulkSettleSchema>;
+
+export function toBulkSettlePayload(data: BulkSettleFormData) {
+  return {
+    movement: { occurred_on: data.occurred_on, payment_method: data.payment_method },
+    allocations: data.allocations.map((a) => ({ obligation_id: a.obligation_id, amount: a.amount })),
+  };
+}
+
+/** Plano de parcelas: `PUT /obligations/{id}/installments`. */
+export const installmentsSchema = z.object({
+  installments: z.array(
+    z.object({
+      due_date: z.string().min(1, "Informe o vencimento"),
+      amount: positiveMoney,
+      payment_method: optionalMethod,
+      notes: z.string(),
+    }),
+  ),
+});
+
+export type InstallmentsFormInput = z.input<typeof installmentsSchema>;
+export type InstallmentsFormData = z.output<typeof installmentsSchema>;
+
+export function toInstallmentsPayload(data: InstallmentsFormData): { installments: InstallmentInput[] } {
+  return {
+    installments: data.installments.map((i) => ({
+      due_date: i.due_date,
+      amount: i.amount,
+      ...(i.payment_method ? { payment_method: i.payment_method as PaymentMethod } : {}),
+      ...(i.notes.trim() ? { notes: i.notes.trim() } : {}),
+    })),
+  };
+}
+
+const wholeNumber = (min: number, max: number | null, empty: string, range: string) =>
+  z
+    .string()
+    .transform(parseDecimal)
+    .pipe(
+      z
+        .number({ error: empty })
+        .refine((v) => Number.isInteger(v) && v >= min && (max === null || v <= max), range),
+    );
+
+/** Gerar parcelas iguais: `POST /obligations/{id}/installments/generate`. */
+export const generateInstallmentsSchema = z.object({
+  count: wholeNumber(2, 24, "Informe o número de parcelas", "Use de 2 a 24 parcelas"),
+  first_due_date: requiredDate,
+  // vazio = padrão da API (1 mês)
+  interval_months: z
+    .string()
+    .transform((v) => (v.trim() ? parseDecimal(v) : null))
+    .pipe(
+      z
+        .number({ error: "Intervalo inválido" })
+        .refine((v) => Number.isInteger(v) && v >= 1, "Intervalo deve ser de 1 mês ou mais")
+        .nullable(),
+    ),
+  // 0 = padrão da API (o que está em aberto)
+  amount: z.number().min(0, "Valor não pode ser negativo"),
+});
+
+export type GenerateInstallmentsFormInput = z.input<typeof generateInstallmentsSchema>;
+export type GenerateInstallmentsFormData = z.output<typeof generateInstallmentsSchema>;
+
+export function toGenerateInstallmentsPayload(data: GenerateInstallmentsFormData) {
+  return {
+    count: data.count,
+    first_due_date: data.first_due_date,
+    ...(data.interval_months !== null ? { interval_months: data.interval_months } : {}),
+    ...(data.amount > 0 ? { amount: data.amount } : {}),
+  };
+}
+
+/** Prazo e observações da conta: `PATCH /obligations/{id}`. */
+export const obligationPatchSchema = z.object({
+  due_date: z.string(),
+  notes: z.string(),
+});
+
+export type ObligationPatchFormData = z.infer<typeof obligationPatchSchema>;
+
+/** Só os campos alterados; `null` limpa o prazo/observações. Vazio = nada a enviar. */
+export function toObligationPatchPayload(
+  data: ObligationPatchFormData,
+  original: Pick<Obligation, "due_date" | "notes">,
+): { due_date?: string | null; notes?: string | null } {
+  const payload: { due_date?: string | null; notes?: string | null } = {};
+  const dueDate = emptyToNull(data.due_date);
+  const notes = emptyToNull(data.notes);
+  if (dueDate !== (original.due_date ? original.due_date.slice(0, 10) : null)) payload.due_date = dueDate;
+  if (notes !== (original.notes ?? null)) payload.notes = notes;
+  return payload;
+}
+
+/** Movimentação avulsa (despesa ou OTHER_INCOME) e sua correção. O valor é digitado sem sinal. */
+export const movementSchema = z.object({
+  category: z.string().pipe(z.enum(MOVEMENT_CATEGORY_VALUES, { error: "Categoria é obrigatória" })),
+  amount: positiveMoney,
+  occurred_on: requiredDate,
+  payment_method: optionalMethod,
+  counterparty_name: z.string(),
+  description: z.string(),
+});
+
+export type MovementFormInput = z.input<typeof movementSchema>;
+export type MovementFormData = z.output<typeof movementSchema>;
+
+/** Sinal exigido pela categoria: entrada > 0, saída < 0 (AYD-007). */
+export function signedMovementAmount(category: MovementCategory, magnitude: number): number {
+  return isInflowCategory(category) ? Math.abs(magnitude) : -Math.abs(magnitude);
+}
+
+/** Corpo de POST e PUT /financial-movements (o PUT usa o mesmo corpo do POST). */
+export function toMovementPayload(data: MovementFormData) {
+  const category = data.category as MovementCategory;
+  return {
+    occurred_on: data.occurred_on,
+    amount: signedMovementAmount(category, data.amount),
+    category,
+    payment_method: data.payment_method === "" ? null : data.payment_method,
+    counterparty_name: emptyToNull(data.counterparty_name),
+    description: emptyToNull(data.description),
   };
 }

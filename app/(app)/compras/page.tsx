@@ -11,8 +11,6 @@ import {
   PURCHASE_KIND_LABELS,
   PURCHASE_STATUSES,
   PURCHASE_STATUS_LABELS,
-  SUPPLIER_PAYMENT_STATUSES,
-  SUPPLIER_PAYMENT_STATUS_LABELS,
   formatData,
   formatMoeda,
 } from "@/lib/formatters";
@@ -20,10 +18,9 @@ import type {
   PurchaseKind,
   PurchaseListItem,
   PurchaseStatus,
-  SupplierPaymentStatus,
 } from "@/lib/types";
 import { DataTable } from "@/components/tables/DataTable";
-import { PurchaseStatusBadge, SupplierPaymentBadge } from "@/components/status-badges";
+import { PurchaseStatusBadge } from "@/components/status-badges";
 import { PendingSaleItemsQueue } from "@/components/purchases/PendingSaleItemsQueue";
 import { ReplenishmentPurchaseModal } from "@/components/purchases/ReplenishmentPurchaseModal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -48,9 +45,6 @@ export default function ComprasPage() {
   const [status, setStatus] = useState<PurchaseStatus | "">(
     pick(searchParams.get("status"), PURCHASE_STATUSES),
   );
-  const [paymentStatus, setPaymentStatus] = useState<SupplierPaymentStatus | "">(
-    pick(searchParams.get("payment_status"), SUPPLIER_PAYMENT_STATUSES),
-  );
   const [supplierId, setSupplierId] = useState(searchParams.get("supplier_id") || "");
   const [from, setFrom] = useState(searchParams.get("from") || "");
   const [to, setTo] = useState(searchParams.get("to") || "");
@@ -60,12 +54,11 @@ export default function ComprasPage() {
     () => ({
       kind: kind || undefined,
       status: status || undefined,
-      payment_status: paymentStatus || undefined,
       supplier_id: supplierId || undefined,
       from: from || undefined,
       to: to || undefined,
     }),
-    [kind, status, paymentStatus, supplierId, from, to],
+    [kind, status, supplierId, from, to],
   );
   const { purchases, isLoading } = usePurchases(filters);
 
@@ -74,18 +67,17 @@ export default function ComprasPage() {
     if (tab !== "compras") params.set("tab", tab);
     if (kind) params.set("kind", kind);
     if (status) params.set("status", status);
-    if (paymentStatus) params.set("payment_status", paymentStatus);
     if (supplierId) params.set("supplier_id", supplierId);
     if (from) params.set("from", from);
     if (to) params.set("to", to);
     const qs = params.toString();
     router.replace(qs ? `/compras?${qs}` : "/compras", { scroll: false });
-  }, [tab, kind, status, paymentStatus, supplierId, from, to, router]);
+  }, [tab, kind, status, supplierId, from, to, router]);
 
   const totals = useMemo(
     () => ({
       cost: purchases.reduce((s, p) => s + (p.total_cost ?? 0), 0),
-      toPay: purchases.reduce((s, p) => s + (p.to_pay ?? 0), 0),
+      toPay: purchases.reduce((s, p) => s + (p.payable ?? 0), 0),
     }),
     [purchases],
   );
@@ -118,16 +110,11 @@ export default function ComprasPage() {
       render: (row: PurchaseListItem) => formatMoeda(row.total_cost),
     },
     {
-      key: "payment_status",
-      header: "Pagamento",
-      render: (row: PurchaseListItem) => <SupplierPaymentBadge status={row.payment_status} />,
-    },
-    {
       key: "to_pay",
       header: "A pagar",
       render: (row: PurchaseListItem) => (
-        <span className={row.to_pay > 0 ? "font-medium text-orange-600" : "text-muted-foreground"}>
-          {formatMoeda(row.to_pay)}
+        <span className={row.payable > 0 ? "font-medium text-orange-600" : "text-muted-foreground"}>
+          {formatMoeda(row.payable)}
         </span>
       ),
     },
@@ -173,21 +160,6 @@ export default function ComprasPage() {
                 {PURCHASE_STATUSES.map((s) => (
                   <option key={s} value={s}>
                     {PURCHASE_STATUS_LABELS[s]}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Pagamento</label>
-              <select
-                value={paymentStatus}
-                onChange={(e) => setPaymentStatus(pick(e.target.value, SUPPLIER_PAYMENT_STATUSES))}
-                className={selectClass}
-              >
-                <option value="">Todos</option>
-                {SUPPLIER_PAYMENT_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {SUPPLIER_PAYMENT_STATUS_LABELS[s]}
                   </option>
                 ))}
               </select>

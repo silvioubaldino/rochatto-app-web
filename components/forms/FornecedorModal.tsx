@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { api, APIError } from "@/lib/api";
+import { SUPPLIER_KINDS, SUPPLIER_KIND_LABELS } from "@/lib/formatters";
 import type { Fornecedor } from "@/lib/types";
 import {
   Dialog,
@@ -22,6 +23,7 @@ import { Loader2 } from "lucide-react";
 
 const fornecedorSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
+  kind: z.enum(["STONE", "TRANSPORT", "LABOR", "TAX_AUTHORITY", "OTHER"]),
   cidade: z.string(),
   telefone: z.string(),
   observacoes: z.string(),
@@ -59,11 +61,12 @@ export function FornecedorModal({
         fornecedor
           ? {
               nome: fornecedor.nome,
+              kind: fornecedor.kind ?? "STONE",
               cidade: fornecedor.cidade ?? "",
               telefone: fornecedor.telefone ?? "",
               observacoes: fornecedor.observacoes ?? "",
             }
-          : { nome: "", cidade: "", telefone: "", observacoes: "" },
+          : { nome: "", kind: "STONE", cidade: "", telefone: "", observacoes: "" },
       );
     }
   }, [open, fornecedor, reset]);
@@ -91,7 +94,7 @@ export function FornecedorModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? "Editar Fornecedor" : "Novo Fornecedor"}
+            {isEdit ? "Editar fornecedor / prestador" : "Novo fornecedor / prestador"}
           </DialogTitle>
         </DialogHeader>
 
@@ -102,6 +105,21 @@ export function FornecedorModal({
             {errors.nome && (
               <p className="text-xs text-destructive">{errors.nome.message}</p>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="kind">Tipo *</Label>
+            <select
+              id="kind"
+              {...register("kind")}
+              className="h-8 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              {SUPPLIER_KINDS.map((k) => (
+                <option key={k} value={k}>
+                  {SUPPLIER_KIND_LABELS[k]}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

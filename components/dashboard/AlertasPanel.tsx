@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AlertTriangle, Calendar, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatMoeda, formatData } from "@/lib/formatters";
+import { NOTIFICATION_LABELS, formatMoeda, formatData } from "@/lib/formatters";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { Notificacao } from "@/lib/types";
@@ -54,7 +54,7 @@ export function AlertasPanel({
   return (
     <div className="space-y-3">
       {visiveis.map((n) => {
-        const vencido = n.tipo === "pagamento_vencido";
+        const vencido = n.tipo === "pagamento_vencido" || n.tipo === "conta_pagar_vencida";
         const dias = n.dias_restantes;
         const diasTexto =
           dias === null
@@ -87,7 +87,7 @@ export function AlertasPanel({
               ) : (
                 <Calendar className="h-4 w-4 text-yellow-600" />
               )}
-              {vencido ? "Pagamento Vencido" : "Pagamento Agendado"}
+              {NOTIFICATION_LABELS[n.tipo] ?? "Alerta"}
             </div>
 
             <p className="font-medium">
@@ -95,16 +95,28 @@ export function AlertasPanel({
             </p>
             <p className="text-muted-foreground text-xs">{diasTexto}</p>
 
-            {n.venda_id && (
+            {(n.obligation_id || n.venda_id) && (
               <div className="flex gap-2 mt-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs"
-                  onClick={() => router.push(`/vendas/${n.venda_id}`)}
-                >
-                  Ver Venda
-                </Button>
+                {n.obligation_id && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    onClick={() => router.push(`/contas/${n.obligation_id}`)}
+                  >
+                    Ver Conta
+                  </Button>
+                )}
+                {n.venda_id && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    onClick={() => router.push(`/vendas/${n.venda_id}`)}
+                  >
+                    Ver Venda
+                  </Button>
+                )}
               </div>
             )}
           </div>

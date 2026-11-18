@@ -22,6 +22,8 @@ import {
   Truck,
   Wallet,
   Plug,
+  Landmark,
+  ArrowLeftRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +39,8 @@ const mainNav: NavItem[] = [
   { label: "Vendas", href: "/vendas", icon: <ShoppingCart className="h-4 w-4" /> },
   { label: "Compras", href: "/compras", icon: <Truck className="h-4 w-4" /> },
   { label: "Financeiro", href: "/financeiro", icon: <Wallet className="h-4 w-4" /> },
+  { label: "Contas", href: "/contas", icon: <Landmark className="h-4 w-4" /> },
+  { label: "Movimentações", href: "/movimentacoes", icon: <ArrowLeftRight className="h-4 w-4" /> },
   { label: "Clientes", href: "/clientes", icon: <Users className="h-4 w-4" /> },
   { label: "Catálogos", href: "/catalogos", icon: <BookOpen className="h-4 w-4" /> },
   { label: "Estoque", href: "/estoque", icon: <Package className="h-4 w-4" /> },
