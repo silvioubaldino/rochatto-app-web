@@ -7,6 +7,8 @@ import Link from "next/link";
 import { useVenda } from "@/hooks/useVenda";
 import { useProdutos } from "@/hooks/useProdutos";
 import { useFornecedores } from "@/hooks/useFornecedores";
+import { useServices } from "@/hooks/useServices";
+import { isServiceOnlySale } from "@/lib/formatters";
 import { api, APIError } from "@/lib/api";
 import { formatMoeda, formatData } from "@/lib/formatters";
 import { toSaleUpdatePayload } from "@/lib/sales";
@@ -36,6 +38,7 @@ export default function VendaDetalhePage() {
   const { venda, isLoading, refresh } = useVenda(vendaId);
   const { produtos } = useProdutos();
   const { fornecedores } = useFornecedores();
+  const { services } = useServices();
 
   // Edit general info
   const [editGeneralOpen, setEditGeneralOpen] = useState(false);
@@ -80,6 +83,7 @@ export default function VendaDetalhePage() {
   const margem = venda.total_venda > 0 ? (venda.lucro / venda.total_venda) * 100 : 0;
   // AYD-002: Sale cancelada é terminal e somente leitura (a API responde 409 a alterações).
   const readOnly = venda.delivery_status === "CANCELED";
+  const serviceOnly = isServiceOnlySale(venda.itens);
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -93,13 +97,14 @@ export default function VendaDetalhePage() {
           #{venda.id.slice(0, 8)}
         </span>
 
-        <SaleDeliveryBadge status={venda.delivery_status} />
+        <SaleDeliveryBadge status={venda.delivery_status} serviceOnly={serviceOnly} />
         <SalePaymentBadge status={venda.payment_status} />
 
         <div className="ml-auto">
           <SaleDeliveryActions
             vendaId={vendaId}
             status={venda.delivery_status}
+            serviceOnly={serviceOnly}
             onChanged={refresh}
           />
         </div>
@@ -152,7 +157,7 @@ export default function VendaDetalhePage() {
             <dd>{venda.vendedor_externo_nome || "—"}</dd>
             <dt className="text-muted-foreground">Entrega</dt>
             <dd>
-              <SaleDeliveryBadge status={venda.delivery_status} />
+              <SaleDeliveryBadge status={venda.delivery_status} serviceOnly={serviceOnly} />
             </dd>
             <dt className="text-muted-foreground">Observações</dt>
             <dd>{venda.observacoes || "—"}</dd>
@@ -208,6 +213,7 @@ export default function VendaDetalhePage() {
         itens={venda.itens ?? []}
         readOnly={readOnly}
         produtos={produtos}
+        services={services}
         fornecedores={fornecedores}
         onChanged={refresh}
       />

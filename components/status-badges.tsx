@@ -11,7 +11,7 @@ import {
   PURCHASE_STATUS_COLORS,
   PURCHASE_STATUS_LABELS,
   SALE_DELIVERY_STATUS_COLORS,
-  SALE_DELIVERY_STATUS_LABELS,
+  saleDeliveryLabel,
   SALE_PAYMENT_STATUS_COLORS,
   SALE_PAYMENT_STATUS_LABELS,
   OBLIGATION_STATUS_COLORS,
@@ -23,10 +23,17 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 
 // Badges dos status do AYD-002 e AYD-007 (rótulo + cor vindos dos mapas de lib/formatters.ts).
 
-export function SaleDeliveryBadge({ status }: { status: SaleDeliveryStatus }) {
+/** `serviceOnly`: Sale só de serviço lê "A executar / Executado" (AYD-010 §3). */
+export function SaleDeliveryBadge({
+  status,
+  serviceOnly = false,
+}: {
+  status: SaleDeliveryStatus;
+  serviceOnly?: boolean;
+}) {
   return (
     <StatusBadge
-      label={SALE_DELIVERY_STATUS_LABELS[status] ?? "—"}
+      label={saleDeliveryLabel(status, serviceOnly)}
       colorClassName={SALE_DELIVERY_STATUS_COLORS[status] ?? ""}
       title="Status de entrega"
     />

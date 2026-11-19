@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Ban, CheckCircle2, Loader2, RotateCcw, AlertTriangle } from "lucide-react";
 import { api, APIError } from "@/lib/api";
 import type { SaleDeliveryStatus } from "@/lib/types";
-import { SALE_DELIVERY_STATUS_LABELS } from "@/lib/formatters";
+import { saleDeliveryLabel } from "@/lib/formatters";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -20,6 +20,8 @@ import {
 interface SaleDeliveryActionsProps {
   vendaId: string;
   status: SaleDeliveryStatus;
+  /** Sale só de serviço: rótulos A executar / Executado (AYD-010 §3). */
+  serviceOnly?: boolean;
   onChanged: () => void;
 }
 
@@ -47,7 +49,7 @@ const CONFIRM_TEXT: Record<SaleDeliveryStatus, { title: string; description: str
 };
 
 /** Status de entrega da Sale (manual) e cancelamento — PATCH /vendas/{id}/delivery-status. */
-export function SaleDeliveryActions({ vendaId, status, onChanged }: SaleDeliveryActionsProps) {
+export function SaleDeliveryActions({ vendaId, status, serviceOnly = false, onChanged }: SaleDeliveryActionsProps) {
   const [pending, setPending] = useState<PendingAction>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +67,7 @@ export function SaleDeliveryActions({ vendaId, status, onChanged }: SaleDelivery
     setError(null);
     try {
       await api.patch(`/vendas/${vendaId}/delivery-status`, { delivery_status: pending });
-      toast.success(`Venda: ${SALE_DELIVERY_STATUS_LABELS[pending]}.`);
+      toast.success(`Venda: ${saleDeliveryLabel(pending, serviceOnly)}.`);
       setPending(null);
       onChanged();
     } catch (err) {
@@ -78,7 +80,13 @@ export function SaleDeliveryActions({ vendaId, status, onChanged }: SaleDelivery
     }
   }
 
-  const text = pending ? CONFIRM_TEXT[pending] : null;
+  const base = pending ? CONFIRM_TEXT[pending] : null;
+  const text =
+    base && serviceOnly && pending !== "CANCELED"
+      ? pending === "DELIVERED"
+        ? { title: "Marcar como executado", description: "Confirma que o serviço foi executado?", cta: "Marcar como executado" }
+        : { title: "Voltar para a executar", description: "A venda volta para o status \"A executar\".", cta: "Voltar para a executar" }
+      : base;
 
   return (
     <>
@@ -86,13 +94,13 @@ export function SaleDeliveryActions({ vendaId, status, onChanged }: SaleDelivery
         {status === "TO_DELIVER" && (
           <Button size="sm" onClick={() => open("DELIVERED")}>
             <CheckCircle2 className="h-3.5 w-3.5" />
-            Marcar como entregue
+            {serviceOnly ? "Marcar como executado" : "Marcar como entregue"}
           </Button>
         )}
         {status === "DELIVERED" && (
           <Button size="sm" variant="outline" onClick={() => open("TO_DELIVER")}>
             <RotateCcw className="h-3.5 w-3.5" />
-            Voltar para a entregar
+            {serviceOnly ? "Voltar para a executar" : "Voltar para a entregar"}
           </Button>
         )}
         <Button size="sm" variant="destructive" onClick={() => open("CANCELED")}>

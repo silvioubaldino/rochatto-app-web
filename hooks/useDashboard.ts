@@ -7,6 +7,7 @@ import type {
   NotificacoesResponse,
   VendasPorMesResponse,
   ProdutosMaisVendidosResponse,
+  ServicosMaisVendidosResponse,
 } from "@/lib/types";
 
 export function useDashboardKpis(from: string, to: string, enabled = true) {
@@ -66,4 +67,16 @@ export function useProdutosMaisVendidos(
     error,
     refresh: mutate,
   };
+}
+
+/** Serviços vendidos no período (AYD-010 §3); fora do ranking de Products. */
+export function useServicosMaisVendidos(from?: string, to?: string, enabled = true) {
+  const params = new URLSearchParams();
+  if (from) params.set("from", from);
+  if (to) params.set("to", to);
+  const qs = params.toString();
+  const key = enabled ? (qs ? `/relatorios/servicos?${qs}` : "/relatorios/servicos") : null;
+
+  const { data, error, isLoading, mutate } = useSWR<ServicosMaisVendidosResponse>(key, api.get);
+  return { servicos: data?.dados ?? [], isLoading, error, refresh: mutate };
 }

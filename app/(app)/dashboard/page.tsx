@@ -14,12 +14,14 @@ import { KPICard } from "@/components/dashboard/KPICard";
 import { PeriodSelector } from "@/components/dashboard/PeriodSelector";
 import { VendasChart } from "@/components/dashboard/VendasChart";
 import { ProdutosTable } from "@/components/dashboard/ProdutosTable";
+import { ServicosTable } from "@/components/dashboard/ServicosTable";
 import { AlertasPanel } from "@/components/dashboard/AlertasPanel";
 import {
   useDashboardKpis,
   useNotificacoes,
   useVendasPorMes,
   useProdutosMaisVendidos,
+  useServicosMaisVendidos,
 } from "@/hooks/useDashboard";
 import {
   financePresetPeriod,
@@ -49,6 +51,12 @@ export default function DashboardPage() {
   const { notificacoes, isLoading: notifLoading } = useNotificacoes();
   const { vendasPorMes, isLoading: chartLoading } = useVendasPorMes(meses);
   const { produtos, isLoading: produtosLoading } = useProdutosMaisVendidos(
+    period.from,
+    period.to,
+    periodOk,
+  );
+
+  const { servicos, isLoading: servicosLoading } = useServicosMaisVendidos(
     period.from,
     period.to,
     periodOk,
@@ -189,6 +197,12 @@ export default function DashboardPage() {
       <div className="rounded-lg border p-4 min-w-0">
         <h2 className="font-semibold text-sm mb-3">Produtos Mais Vendidos</h2>
         <ProdutosTable produtos={produtos} isLoading={produtosLoading} />
+      </div>
+
+      {/* Serviços (AYD-010) — fora do ranking de Products */}
+      <div className="rounded-lg border p-4 min-w-0">
+        <h2 className="font-semibold text-sm mb-3">Serviços</h2>
+        <ServicosTable servicos={servicos} isLoading={servicosLoading} />
       </div>
     </div>
   );

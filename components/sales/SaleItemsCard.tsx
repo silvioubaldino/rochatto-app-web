@@ -8,6 +8,7 @@ import { api, APIError } from "@/lib/api";
 import {
   ITEM_ORIGINS,
   ITEM_ORIGIN_LABELS,
+  isServiceItem,
   SALE_ITEM_WARNING_LABELS,
   formatMoeda,
   formatQuantidade,
@@ -25,6 +26,7 @@ import type {
   ItemVendaWriteResponse,
   Produto,
   SaleItemWarning,
+  Service,
 } from "@/lib/types";
 import { parseDecimal } from "@/lib/schemas";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
@@ -33,6 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ProductPicker } from "./ProductPicker";
+import { ServicePicker } from "./ServicePicker";
 
 const EMPTY_DRAFT: SaleItemDraft = {
   produto_id: null,
@@ -43,7 +46,21 @@ const EMPTY_DRAFT: SaleItemDraft = {
   preco_venda_unit: 0,
   custo_unit: 0,
   origin: "MADE_TO_ORDER",
+  kind: "PRODUCT",
+  service_id: null,
 };
+
+const EMPTY_SERVICE_DRAFT: SaleItemDraft = {
+  ...EMPTY_DRAFT,
+  kind: "SERVICE",
+  origin: "MADE_TO_ORDER", // ignorado em Item de serviço (sem origem)
+};
+
+const serviceBadge = (
+  <span className="ml-2 rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
+    Serviço
+  </span>
+);
 
 const selectClass = "h-7 rounded-md border border-input bg-background px-2 text-sm";
 
@@ -53,6 +70,7 @@ interface SaleItemsCardProps {
   /** Sale CANCELED: somente leitura (a API responde 409 a qualquer alteração). */
   readOnly: boolean;
   produtos: Produto[];
+  services: Service[];
   fornecedores: Fornecedor[];
   onChanged: () => void;
 }
@@ -66,6 +84,7 @@ export function SaleItemsCard({
   itens,
   readOnly,
   produtos,
+  services,
   fornecedores,
   onChanged,
 }: SaleItemsCardProps) {
@@ -89,9 +108,9 @@ export function SaleItemsCard({
     setQtyText(String(item.quantidade).replace(".", ","));
   }
 
-  function startAdd() {
+  function startAdd(kind: "PRODUCT" | "SERVICE" = "PRODUCT") {
     setEditingId(null);
-    setDraft(EMPTY_DRAFT);
+    setDraft(kind === "SERVICE" ? EMPTY_SERVICE_DRAFT : EMPTY_DRAFT);
     setQtyText("");
     setAdding(true);
   }
@@ -127,6 +146,15 @@ export function SaleItemsCard({
     }));
   }
 
+  function selectService(sv: Service) {
+    setDraft((d) => ({
+      ...d,
+      service_id: sv.id,
+      produto_nome: sv.name,
+      preco_venda_unit: sv.reference_price ?? d.preco_venda_unit,
+    }));
+  }
+
   async function save() {
     const current: SaleItemDraft = { ...draft, quantidade: parseDecimal(qtyText) };
     const errorMsg = validateSaleItemDraft(current);
@@ -149,7 +177,8 @@ export function SaleItemsCard({
         for (const code of w) {
           toast.warning(SALE_ITEM_WARNING_LABELS[code] ?? code);
         }
-        const filled = current.custo_unit === null && current.origin === "FROM_STOCK";
+        const filled =
+          current.kind !== "SERVICE" && current.custo_unit === null && current.origin === "FROM_STOCK";
         setAutoCost((prev) => ({ ...prev, [itemId]: filled }));
         if (filled && res) {
           toast.info(
@@ -244,6 +273,7 @@ export function SaleItemsCard({
   }
 
   function purchaseCell(item: ItemVenda) {
+    if (isServiceItem(item)) return <span className="text-xs text-muted-foreground">—</span>;
     if (item.purchase_id) {
       return (
         <Link
@@ -271,10 +301,16 @@ export function SaleItemsCard({
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase text-muted-foreground">Itens da Venda</h2>
         {!readOnly && (
-          <Button variant="outline" size="sm" onClick={startAdd} disabled={adding}>
-            <Plus className="h-3.5 w-3.5" />
-            Adicionar item
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => startAdd("PRODUCT")} disabled={adding}>
+              <Plus className="h-3.5 w-3.5" />
+              Adicionar item
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => startAdd("SERVICE")} disabled={adding}>
+              <Plus className="h-3.5 w-3.5" />
+              Adicionar serviço
+            </Button>
+          </div>
         )}
       </div>
 
@@ -296,7 +332,7 @@ export function SaleItemsCard({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-left text-muted-foreground">
-              <th className="pb-2 pr-3 font-medium">Produto</th>
+              <th className="pb-2 pr-3 font-medium">Produto / serviço</th>
               <th className="pb-2 pr-3 font-medium">Origem</th>
               <th className="pb-2 pr-3 font-medium">Fornecedor</th>
               <th className="pb-2 pr-3 font-medium text-right">Qtd</th>
@@ -317,13 +353,19 @@ export function SaleItemsCard({
             )}
             {itens.map((item) => {
               const itemWarnings = warnings[item.id] ?? [];
+              const isService = isServiceItem(item);
               if (editingId === item.id) {
                 return (
                   <tr key={item.id} className="border-b bg-muted/20">
-                    <td className="py-2 pr-3">{item.produto_nome}</td>
                     <td className="py-2 pr-3">
-                      {locked ? (
-                        ITEM_ORIGIN_LABELS[item.origin]
+                      {item.produto_nome}
+                      {isService && serviceBadge}
+                    </td>
+                    <td className="py-2 pr-3">
+                      {isService ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : locked ? (
+                        item.origin ? ITEM_ORIGIN_LABELS[item.origin] : "—"
                       ) : (
                         <select
                           value={draft.origin}
@@ -339,7 +381,9 @@ export function SaleItemsCard({
                       )}
                     </td>
                     <td className="py-2 pr-3">
-                      {locked
+                      {isService
+                        ? "—"
+                        : locked
                         ? item.fornecedor_nome || "—"
                         : draft.origin === "FROM_STOCK"
                           ? <span className="text-muted-foreground">Estoque</span>
@@ -368,7 +412,13 @@ export function SaleItemsCard({
                       />
                     </td>
                     <td className="py-2 pr-3 text-right">
-                      {locked ? formatMoeda(item.custo_unit) : costInput()}
+                      {isService ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : locked ? (
+                        formatMoeda(item.custo_unit)
+                      ) : (
+                        costInput()
+                      )}
                     </td>
                     <td className="py-2 pr-3 text-right text-muted-foreground">—</td>
                     <td className="py-2 pr-3">{purchaseCell(item)}</td>
@@ -380,6 +430,7 @@ export function SaleItemsCard({
                 <tr key={item.id} className="border-b last:border-b-0 align-top">
                   <td className="py-2 pr-3">
                     {item.produto_nome}
+                    {isService && serviceBadge}
                     {itemWarnings.length > 0 && (
                       <p className="mt-1 flex items-center gap-1 text-xs text-amber-700">
                         <AlertTriangle className="h-3 w-3" />
@@ -387,9 +438,13 @@ export function SaleItemsCard({
                       </p>
                     )}
                   </td>
-                  <td className="py-2 pr-3 whitespace-nowrap">{ITEM_ORIGIN_LABELS[item.origin] ?? "—"}</td>
+                  <td className="py-2 pr-3 whitespace-nowrap">
+                    {isService ? "Serviço" : item.origin ? (ITEM_ORIGIN_LABELS[item.origin] ?? "—") : "—"}
+                  </td>
                   <td className="py-2 pr-3">
-                    {item.origin === "FROM_STOCK" ? (
+                    {isService ? (
+                      <span className="text-muted-foreground">—</span>
+                    ) : item.origin === "FROM_STOCK" ? (
                       <span className="text-muted-foreground">Estoque</span>
                     ) : (
                       item.fornecedor_nome || <span className="text-muted-foreground">—</span>
@@ -398,7 +453,16 @@ export function SaleItemsCard({
                   <td className="py-2 pr-3 text-right">{formatQuantidade(item.quantidade)}</td>
                   <td className="py-2 pr-3 text-right">{formatMoeda(item.preco_venda_unit)}</td>
                   <td className="py-2 pr-3 text-right">
-                    {formatMoeda(item.custo_unit)}
+                    {isService ? (
+                      <span
+                        className="text-muted-foreground"
+                        title="O custo do serviço fica nos custos da venda (instalador)"
+                      >
+                        —
+                      </span>
+                    ) : (
+                      formatMoeda(item.custo_unit)
+                    )}
                     {autoCost[item.id] && (
                       <p className="text-xs text-muted-foreground">última entrada</p>
                     )}
@@ -440,17 +504,32 @@ export function SaleItemsCard({
             {adding && (
               <tr className="border-b bg-muted/20">
                 <td className="py-2 pr-3 min-w-40">
-                  <ProductPicker
-                    produtos={produtos}
-                    value={draft.produto_nome}
-                    onTextChange={(text) =>
-                      setDraft((d) => ({ ...d, produto_nome: text, produto_id: null }))
-                    }
-                    onSelect={selectProduct}
-                    className="h-7 text-sm"
-                  />
+                  {draft.kind === "SERVICE" ? (
+                    <ServicePicker
+                      services={services}
+                      value={draft.produto_nome}
+                      onTextChange={(text) =>
+                        setDraft((d) => ({ ...d, produto_nome: text, service_id: null }))
+                      }
+                      onSelect={selectService}
+                      className="h-7 text-sm"
+                    />
+                  ) : (
+                    <ProductPicker
+                      produtos={produtos}
+                      value={draft.produto_nome}
+                      onTextChange={(text) =>
+                        setDraft((d) => ({ ...d, produto_nome: text, produto_id: null }))
+                      }
+                      onSelect={selectProduct}
+                      className="h-7 text-sm"
+                    />
+                  )}
                 </td>
                 <td className="py-2 pr-3">
+                  {draft.kind === "SERVICE" ? (
+                    <span className="text-muted-foreground">Serviço</span>
+                  ) : (
                   <select
                     value={draft.origin}
                     onChange={(e) => changeOrigin(e.target.value as ItemOrigin)}
@@ -462,9 +541,12 @@ export function SaleItemsCard({
                       </option>
                     ))}
                   </select>
+                  )}
                 </td>
                 <td className="py-2 pr-3">
-                  {draft.origin === "FROM_STOCK" ? (
+                  {draft.kind === "SERVICE" ? (
+                    <span className="text-muted-foreground">—</span>
+                  ) : draft.origin === "FROM_STOCK" ? (
                     <span className="text-muted-foreground">Estoque</span>
                   ) : (
                     supplierSelect()
@@ -489,7 +571,15 @@ export function SaleItemsCard({
                     className="h-7 w-24 text-right text-sm"
                   />
                 </td>
-                <td className="py-2 pr-3 text-right">{costInput()}</td>
+                <td className="py-2 pr-3 text-right">
+                  {draft.kind === "SERVICE" ? (
+                    <span className="text-xs text-muted-foreground" title="Defina o custo e o instalador nos custos da venda">
+                      nos custos da venda
+                    </span>
+                  ) : (
+                    costInput()
+                  )}
+                </td>
                 <td className="py-2 pr-3" />
                 <td className="py-2 pr-3" />
                 <td className="py-2">{editActions()}</td>

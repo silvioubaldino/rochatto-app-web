@@ -3,6 +3,7 @@ import type {
   QuoteStatus,
   PartnerType,
   LeadSource,
+  ItemKind,
   ItemOrigin,
   PurchaseKind,
   PurchaseStatus,
@@ -87,6 +88,33 @@ export const ITEM_ORIGIN_LABELS: Record<ItemOrigin, string> = {
   MADE_TO_ORDER: "Sob encomenda",
   FROM_STOCK: "De estoque",
 };
+
+// AYD-010 — tipo do Item (Product × Service).
+
+export const ITEM_KIND_LABELS: Record<ItemKind, string> = {
+  PRODUCT: "Produto",
+  SERVICE: "Serviço",
+};
+
+/** Item de serviço? (`kind` ausente = PRODUCT, respostas anteriores ao AYD-010.) */
+export function isServiceItem(item: { kind?: ItemKind | null }): boolean {
+  return item.kind === "SERVICE";
+}
+
+/** Sale só de serviço: A entregar / Entregue leem-se como A executar / Executado (AYD-010 §3). */
+export function isServiceOnlySale(itens: { kind?: ItemKind | null }[] | undefined): boolean {
+  return !!itens && itens.length > 0 && itens.every(isServiceItem);
+}
+
+const SERVICE_ONLY_DELIVERY_LABELS: Partial<Record<SaleDeliveryStatus, string>> = {
+  TO_DELIVER: "A executar",
+  DELIVERED: "Executado",
+};
+
+/** Rótulo do status de entrega; `serviceOnly` troca por A executar / Executado. */
+export function saleDeliveryLabel(status: SaleDeliveryStatus, serviceOnly = false): string {
+  return (serviceOnly && SERVICE_ONLY_DELIVERY_LABELS[status]) || SALE_DELIVERY_STATUS_LABELS[status] || "—";
+}
 
 export const PURCHASE_KINDS: PurchaseKind[] = ["MADE_TO_ORDER", "STOCK_REPLENISHMENT"];
 
