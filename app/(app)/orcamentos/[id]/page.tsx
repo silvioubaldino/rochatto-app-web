@@ -7,7 +7,10 @@ import { useQuote } from "@/hooks/useQuote";
 import { useProdutos } from "@/hooks/useProdutos";
 import { api, APIError } from "@/lib/api";
 import { formatMoeda, formatData, QUOTE_STATUS_LABELS, QUOTE_STATUS_COLORS } from "@/lib/formatters";
-import type { QuoteItem } from "@/lib/types";
+import type { ItemKind, QuoteItem } from "@/lib/types";
+import { ServicePicker } from "@/components/sales/ServicePicker";
+import { useServices } from "@/hooks/useServices";
+import { isServiceItem } from "@/lib/formatters";
 import { toQuoteChargesPayload } from "@/components/sales/ChargesEditor";
 import { QuoteChargesCard } from "@/components/sales/QuoteChargesCard";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
@@ -43,6 +46,7 @@ export default function OrcamentoDetalhePage() {
   const quoteId = params.id as string;
   const { quote, isLoading, refresh } = useQuote(quoteId);
   const { produtos } = useProdutos();
+  const { services } = useServices();
 
   const isOpen = quote?.status === "OPEN";
 
@@ -52,9 +56,19 @@ export default function OrcamentoDetalhePage() {
 
   // Add item
   const [addingItem, setAddingItem] = useState(false);
-  const [newItem, setNewItem] = useState({
+  const [newItem, setNewItem] = useState<{
+    kind: ItemKind;
+    product_name: string;
+    product_id: string;
+    service_id: string;
+    quantity: number;
+    unit_price: number;
+    unit_cost: number;
+  }>({
+    kind: "PRODUCT",
     product_name: "",
     product_id: "",
+    service_id: "",
     quantity: 0,
     unit_price: 0,
     unit_cost: 0,
@@ -102,7 +116,9 @@ export default function OrcamentoDetalhePage() {
       if (!current) return;
       // A api substitui o item inteiro: enviar todos os campos preserva o vínculo com o Product.
       await api.put(`/quotes/${quoteId}/items/${itemId}`, {
+        kind: current.kind ?? "PRODUCT",
         product_id: current.product_id ?? null,
+        service_id: current.service_id ?? null,
         product_name: editItemData.product_name ?? current.product_name,
         quantity: editItemData.quantity ?? current.quantity,
         unit_price: editItemData.unit_price ?? current.unit_price,
@@ -139,20 +155,24 @@ export default function OrcamentoDetalhePage() {
 
   async function handleSaveNewItem() {
     if (!newItem.product_name) {
-      toast.error("Informe o produto.");
+      toast.error(newItem.kind === "SERVICE" ? "Informe o serviço." : "Informe o produto.");
       return;
     }
     setSavingNewItem(true);
     try {
       await api.post(`/quotes/${quoteId}/items`, {
         ...newItem,
-        product_id: newItem.product_id || null, // a api rejeita string vazia
+        // a api rejeita string vazia; Item de serviço não leva product_id (AYD-010)
+        product_id: newItem.kind === "SERVICE" ? null : newItem.product_id || null,
+        service_id: newItem.kind === "SERVICE" ? newItem.service_id || null : null,
       });
       toast.success("Item adicionado.");
       setAddingItem(false);
       setNewItem({
+        kind: "PRODUCT",
         product_name: "",
         product_id: "",
+        service_id: "",
         quantity: 0,
         unit_price: 0,
         unit_cost: 0,
@@ -361,15 +381,34 @@ export default function OrcamentoDetalhePage() {
             Itens do Orçamento
           </h2>
           {isOpen && (
+            <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setAddingItem(true)}
+              onClick={() => {
+                setNewItem((prev) => ({ ...prev, kind: "PRODUCT" }));
+                setNewItemProdutoSearch("");
+                setAddingItem(true);
+              }}
               disabled={addingItem}
             >
               <Plus className="h-3.5 w-3.5" />
-              Add Item
+              Add Produto
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setNewItem((prev) => ({ ...prev, kind: "SERVICE" }));
+                setNewItemProdutoSearch("");
+                setAddingItem(true);
+              }}
+              disabled={addingItem}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add Serviço
+            </Button>
+            </div>
           )}
         </div>
 
@@ -387,7 +426,14 @@ export default function OrcamentoDetalhePage() {
             <tbody>
               {(quote.items || []).map((item) => (
                 <tr key={item.id} className="border-b last:border-b-0">
-                  <td className="py-2 pr-4">{item.product_name}</td>
+                  <td className="py-2 pr-4">
+                    {item.product_name}
+                    {isServiceItem(item) && (
+                      <span className="ml-2 rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
+                        Serviço
+                      </span>
+                    )}
+                  </td>
                   {editingItemId === item.id ? (
                     <>
                       <td className="py-2 pr-4 text-right">
@@ -470,6 +516,25 @@ export default function OrcamentoDetalhePage() {
               {addingItem && (
                 <tr className="border-b bg-muted/20">
                   <td className="py-2 pr-4">
+                    {newItem.kind === "SERVICE" ? (
+                      <ServicePicker
+                        services={services}
+                        value={newItem.product_name}
+                        onTextChange={(text) =>
+                          setNewItem((prev) => ({ ...prev, product_name: text, service_id: "" }))
+                        }
+                        onSelect={(sv) =>
+                          setNewItem((prev) => ({
+                            ...prev,
+                            service_id: sv.id,
+                            product_name: sv.name,
+                            unit_price: sv.reference_price ?? prev.unit_price,
+                            unit_cost: sv.reference_cost ?? prev.unit_cost,
+                          }))
+                        }
+                        className="h-7 text-sm"
+                      />
+                    ) : (
                     <div className="relative">
                       <Input
                         placeholder="Produto..."
@@ -517,6 +582,7 @@ export default function OrcamentoDetalhePage() {
                         </div>
                       )}
                     </div>
+                    )}
                   </td>
                   <td className="py-2 pr-4 text-right">
                     <Input

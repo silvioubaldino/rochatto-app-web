@@ -1,4 +1,4 @@
-import type { ItemOrigin, ItemVenda, Venda } from "./types";
+import type { ItemKind, ItemOrigin, ItemVenda, Venda } from "./types";
 
 // AYD-009: PUT /vendas/{id} não aceita mais frete_* nem comissao_* (viram cobranças e custos).
 // Montadores de payload da Sale (rotas legadas `/vendas`, AYD-002 §1–2).
@@ -35,6 +35,9 @@ export interface SaleItemDraft {
   /** null = deixar a API preencher (FROM_STOCK → custo da última entrada, RN-16). */
   custo_unit: number | null;
   origin: ItemOrigin;
+  /** AYD-010: SERVICE não tem Product, origem, Supplier nem custo no Item (custo = custo da venda LABOR). */
+  kind: ItemKind;
+  service_id: string | null;
 }
 
 export function itemToDraft(item: ItemVenda): SaleItemDraft {
@@ -47,6 +50,8 @@ export function itemToDraft(item: ItemVenda): SaleItemDraft {
     preco_venda_unit: item.preco_venda_unit,
     custo_unit: item.custo_unit,
     origin: item.origin ?? "MADE_TO_ORDER",
+    kind: item.kind ?? "PRODUCT",
+    service_id: item.service_id ?? null,
   };
 }
 
@@ -55,8 +60,23 @@ export function itemToDraft(item: ItemVenda): SaleItemDraft {
  * é omitido quando null para a API aplicar o custo da última entrada (AYD-002 §1).
  */
 export function toSaleItemPayload(draft: SaleItemDraft) {
+  if (draft.kind === "SERVICE") {
+    // AYD-010 §2: sem produto/origem/fornecedor; custo_unit sempre 0 (o custo vive no custo da venda LABOR).
+    return {
+      kind: "SERVICE" as const,
+      service_id: draft.service_id || null,
+      produto_id: null,
+      produto_nome: draft.produto_nome.trim(),
+      fornecedor_id: null,
+      quantidade: draft.quantidade,
+      preco_venda_unit: draft.preco_venda_unit,
+      custo_unit: 0,
+    };
+  }
   const fromStock = draft.origin === "FROM_STOCK";
   return {
+    kind: "PRODUCT" as const,
+    service_id: null,
     produto_id: draft.produto_id || null,
     produto_nome: draft.produto_nome.trim(),
     fornecedor_id: fromStock ? null : draft.fornecedor_id || null,
@@ -70,9 +90,11 @@ export function toSaleItemPayload(draft: SaleItemDraft) {
 
 /** Valida o rascunho antes de enviar; devolve a mensagem de erro ou null. */
 export function validateSaleItemDraft(draft: SaleItemDraft): string | null {
-  if (!draft.produto_nome.trim()) return "Informe o produto.";
+  if (!draft.produto_nome.trim())
+    return draft.kind === "SERVICE" ? "Informe o serviço." : "Informe o produto.";
   if (!(draft.quantidade > 0)) return "Quantidade deve ser maior que zero.";
   if (draft.preco_venda_unit < 0) return "Preço não pode ser negativo.";
+  if (draft.kind === "SERVICE") return null;
   if (draft.custo_unit !== null && draft.custo_unit < 0) return "Custo não pode ser negativo.";
   if (draft.origin === "FROM_STOCK" && !draft.produto_id)
     return "Item de estoque precisa de um produto do catálogo (o saldo é por produto).";

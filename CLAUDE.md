@@ -15,6 +15,7 @@ Fornecer uma interface funcional, limpa e responsiva para:
 - Compras ao fornecedor (consolidadas por fornecedor, fila "a comprar"; composição do custo com custos adicionais e credor editável, rateio e custo de entrada por linha — SPEC-009; pagamento pelas contas)
 - Estoque com saldo calculado por produto (entradas, saídas, ajustes)
 - Composição da venda: frete cobrado no orçamento/venda, custos da venda (frete pago, instalador, comissão, outro) com credor e lucro previsto — SPEC-010
+- Serviços na venda: catálogo de Services e Items de serviço no orçamento/venda (sem origem/fornecedor; custo nos custos da venda), bloco "Serviços" no dashboard — SPEC-011
 - Controle de recebimentos do cliente (parciais, agendados, confirmados)
 - Visualização de indicadores financeiros no dashboard e alertas de pagamentos pendentes
 
@@ -55,7 +56,7 @@ app/
     financeiro/              → painel: vendas do período, movimento, despesas, resultado e saldos em aberto (SPEC-004, SPEC-008)
     contas/                  → contas a pagar/receber (abas, filtros na URL, pagar várias) e detalhe /contas/[id]: componentes, parcelas, quitações (SPEC-008)
     movimentacoes/           → dinheiro executado: lista, despesa/receita avulsa, corrigir, anular (SPEC-008)
-    catalogos/               → produtos, categorias, fornecedores, parceiros
+    catalogos/               → produtos, serviços (SPEC-011), categorias, fornecedores, parceiros
     integracoes/             → Connections do Assistant connector: listar e desconectar (SPEC-006)
 components/
   ui/                        → shadcn/ui (nunca editar diretamente; StatusBadge/MoneyInput são nossos)
@@ -156,7 +157,7 @@ npm run dev
 
 > As fases acima (`.claude/specs/`) são o plano histórico. As entregas atuais seguem as
 > SPECs em `docs/specs/` (SPEC-001 Orçamentos, SPEC-002 Atendimento da venda, SPEC-003
-> Cadastros comerciais, SPEC-004 Financeiro, SPEC-005 Dashboard, SPEC-006 Assistant connector, SPEC-008 Contas e movimentações, SPEC-009 Composição da compra, SPEC-010 Composição da venda).
+> Cadastros comerciais, SPEC-004 Financeiro, SPEC-005 Dashboard, SPEC-006 Assistant connector, SPEC-008 Contas e movimentações, SPEC-009 Composição da compra, SPEC-010 Composição da venda, SPEC-011 Serviços na venda).
 
 ## Deploy (Vercel — Free Tier)
 

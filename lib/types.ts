@@ -2,6 +2,8 @@
 // Atendimento da Sale — AYD-002. Enums do contrato em inglês (ADR-001); rótulos PT-BR em
 // lib/formatters.ts (nunca exibir o código do enum).
 export type ItemOrigin = "MADE_TO_ORDER" | "FROM_STOCK";
+/** Tipo do Item de Quote/Sale (AYD-010): Product (pedra) ou Service (instalação, consultoria). */
+export type ItemKind = "PRODUCT" | "SERVICE";
 export type PurchaseKind = "MADE_TO_ORDER" | "STOCK_REPLENISHMENT";
 export type PurchaseStatus = "OPEN" | "ORDERED" | "RECEIVED";
 /** Status de entrega da Sale (manual) — substitui o `status_venda` legado. */
@@ -64,6 +66,17 @@ export interface Produto {
   created_at: string;
 }
 
+/** Service (Serviço) do catálogo — AYD-010 §1. */
+export interface Service {
+  id: string;
+  name: string;
+  unit: string | null;
+  reference_price: number | null;
+  reference_cost: number | null;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface Fornecedor {
   id: string;
   nome: string;
@@ -88,8 +101,12 @@ export interface ItemVenda {
   total_venda: number;
   total_custo: number;
   // AYD-002: origem do Item e Purchase que o atende (só leitura; setado pela Purchase).
-  origin: ItemOrigin;
+  // AYD-010: Item de serviço não tem origem (null), Supplier nem Purchase.
+  origin: ItemOrigin | null;
   purchase_id: string | null;
+  /** AYD-010: ausente em respostas antigas = PRODUCT. */
+  kind?: ItemKind;
+  service_id?: string | null;
 }
 
 /** Resposta de POST/PUT /vendas/{id}/itens[/{itemId}] — o Item + avisos (AYD-002 §1). */
@@ -182,6 +199,9 @@ export interface QuoteItem {
   unit_price: number;
   unit_cost: number;
   total_price: number;
+  /** AYD-010: ausente em respostas antigas = PRODUCT. */
+  kind?: ItemKind;
+  service_id?: string | null;
   created_at: string;
 }
 
@@ -271,6 +291,24 @@ export interface ProdutoMaisVendido {
   margem_media_percent: number;
   /** Unidade do Product; null em Item legado. */
   unit: string | null;
+}
+
+/** Linha de `GET /relatorios/servicos?from&to` (AYD-010 §3). */
+export interface ServicoMaisVendido {
+  /** null = Item de serviço em texto livre (agrupado por nome). */
+  service_id: string | null;
+  service_name: string;
+  unit: string | null;
+  total_vendas: number;
+  total_quantidade: number;
+  total_receita: number;
+  preco_medio: number;
+  custo_medio: number;
+  margem_media_percent: number;
+}
+
+export interface ServicosMaisVendidosResponse {
+  dados: ServicoMaisVendido[];
 }
 
 // Purchase — AYD-002 §3 (`/purchases`).

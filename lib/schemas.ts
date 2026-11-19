@@ -446,3 +446,26 @@ export function toSaleCostPayload(data: SaleCostFormData, saleItemId?: string | 
     ...(saleItemId ? { sale_item_id: saleItemId } : {}),
   };
 }
+
+// --- Service (AYD-010) -----------------------------------------------------
+
+export const serviceSchema = z.object({
+  name: z.string().trim().min(1, "Nome é obrigatório"),
+  unit: z.string(),
+  reference_price: z.number().min(0, "Valor deve ser >= 0"),
+  reference_cost: z.number().min(0, "Valor deve ser >= 0"),
+  notes: z.string(),
+});
+
+export type ServiceFormData = z.infer<typeof serviceSchema>;
+
+/** Corpo de POST/PUT /services. Referências 0 = sem sugestão (null). */
+export function toServicePayload(data: ServiceFormData) {
+  return {
+    name: data.name.trim(),
+    unit: emptyToNull(data.unit),
+    reference_price: data.reference_price > 0 ? data.reference_price : null,
+    reference_cost: data.reference_cost > 0 ? data.reference_cost : null,
+    notes: emptyToNull(data.notes),
+  };
+}

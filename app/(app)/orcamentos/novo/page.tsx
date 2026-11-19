@@ -9,9 +9,11 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { api, APIError } from "@/lib/api";
 import { formatMoeda, PARTNER_TYPE_LABELS } from "@/lib/formatters";
-import type { Cliente, Produto } from "@/lib/types";
+import type { Cliente, Produto, Service } from "@/lib/types";
 import { useClientes } from "@/hooks/useClientes";
 import { useProdutos } from "@/hooks/useProdutos";
+import { useServices } from "@/hooks/useServices";
+import { ServicePicker } from "@/components/sales/ServicePicker";
 import { usePartners } from "@/hooks/usePartners";
 import { ChargesEditor, toQuoteChargesPayload, type ChargeDraft } from "@/components/sales/ChargesEditor";
 import { ClienteModal } from "@/components/forms/ClienteModal";
@@ -24,8 +26,10 @@ import { Card } from "@/components/ui/card";
 import { Loader2, Plus, Trash2, ArrowLeft, Search } from "lucide-react";
 
 const itemSchema = z.object({
+  kind: z.enum(["PRODUCT", "SERVICE"]),
   product_id: z.string().optional(),
-  product_name: z.string().min(1, "Produto é obrigatório"),
+  service_id: z.string().optional(),
+  product_name: z.string().min(1, "Produto ou serviço é obrigatório"),
   quantity: z.number().min(0.01, "Quantidade deve ser maior que 0"),
   unit_price: z.number().min(0, "Preço inválido"),
   unit_cost: z.number().min(0, "Custo inválido"),
@@ -89,7 +93,9 @@ export default function NovoOrcamentoPage() {
       notes: "",
       items: [
         {
+          kind: "PRODUCT",
           product_id: "",
+          service_id: "",
           product_name: "",
           quantity: 0,
           unit_price: 0,
@@ -120,6 +126,7 @@ export default function NovoOrcamentoPage() {
 
   const { clientes, refresh: refreshClientes } = useClientes(debouncedClienteSearch || undefined);
   const { produtos } = useProdutos();
+  const { services } = useServices();
   const { partners } = usePartners();
 
   const filteredProdutos = useCallback(
@@ -160,9 +167,18 @@ export default function NovoOrcamentoPage() {
     setShowProdutoDropdown((prev) => ({ ...prev, [index]: false }));
   }
 
-  function addItem() {
+  function handleSelectService(index: number, service: Service) {
+    setValue(`items.${index}.service_id`, service.id);
+    setValue(`items.${index}.product_name`, service.name);
+    if (service.reference_price) setValue(`items.${index}.unit_price`, service.reference_price);
+    if (service.reference_cost) setValue(`items.${index}.unit_cost`, service.reference_cost);
+  }
+
+  function addItem(kind: "PRODUCT" | "SERVICE" = "PRODUCT") {
     append({
+      kind,
       product_id: "",
+      service_id: "",
       product_name: "",
       quantity: 0,
       unit_price: 0,
@@ -177,7 +193,12 @@ export default function NovoOrcamentoPage() {
       notes: data.notes || null,
       charges: toQuoteChargesPayload(charges),
       // A api espera UUID ou null — string vazia é rejeitada (400).
-      items: data.items.map((item) => ({ ...item, product_id: item.product_id || null })),
+      // AYD-010: Item de serviço não leva product_id; service_id é opcional (texto livre).
+      items: data.items.map((item) =>
+        item.kind === "SERVICE"
+          ? { ...item, product_id: null, service_id: item.service_id || null }
+          : { ...item, product_id: item.product_id || null, service_id: null },
+      ),
     };
   }
 
@@ -316,7 +337,7 @@ export default function NovoOrcamentoPage() {
           </h2>
 
           <div className="hidden sm:grid sm:grid-cols-[1fr_80px_110px_110px_32px] gap-2 text-xs font-medium text-muted-foreground px-1">
-            <span>Produto</span>
+            <span>Produto / serviço</span>
             <span>Qtd</span>
             <span>Preço Venda</span>
             <span>Custo estimado</span>
@@ -328,9 +349,24 @@ export default function NovoOrcamentoPage() {
               key={field.id}
               className="grid grid-cols-1 sm:grid-cols-[1fr_80px_110px_110px_32px] gap-2 items-start rounded-md border p-2 sm:border-0 sm:p-0"
             >
-              {/* Produto */}
+              {/* Produto ou serviço */}
               <div className="relative">
-                <label className="text-xs text-muted-foreground sm:hidden">Produto</label>
+                <label className="text-xs text-muted-foreground sm:hidden">
+                  {watchItems?.[index]?.kind === "SERVICE" ? "Serviço" : "Produto"}
+                </label>
+                {watchItems?.[index]?.kind === "SERVICE" ? (
+                  <ServicePicker
+                    services={services}
+                    value={watchItems?.[index]?.product_name || ""}
+                    onTextChange={(text) => {
+                      setValue(`items.${index}.product_name`, text);
+                      setValue(`items.${index}.service_id`, "");
+                    }}
+                    onSelect={(sv) => handleSelectService(index, sv)}
+                    className="h-8 text-sm"
+                  />
+                ) : (
+                <>
                 <Input
                   placeholder="Buscar produto..."
                   value={
@@ -363,6 +399,8 @@ export default function NovoOrcamentoPage() {
                   onSelect={(p) => handleSelectProduto(index, p)}
                   renderLabel={(p) => p.nome}
                 />
+                </>
+                )}
                 {errors.items?.[index]?.product_name && (
                   <p className="text-xs text-destructive">
                     {errors.items[index].product_name?.message}
@@ -443,10 +481,16 @@ export default function NovoOrcamentoPage() {
             <p className="text-xs text-destructive">{errors.items.root.message}</p>
           )}
 
-          <Button type="button" variant="outline" size="sm" onClick={addItem}>
-            <Plus className="h-3.5 w-3.5" />
-            Adicionar Produto
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => addItem("PRODUCT")}>
+              <Plus className="h-3.5 w-3.5" />
+              Adicionar Produto
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => addItem("SERVICE")}>
+              <Plus className="h-3.5 w-3.5" />
+              Adicionar Serviço
+            </Button>
+          </div>
         </Card>
 
         {/* COBRANÇAS AO CLIENTE (AYD-009) */}
