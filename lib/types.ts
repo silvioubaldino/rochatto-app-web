@@ -110,8 +110,6 @@ export interface Venda {
   payment_status: SalePaymentStatus;
   data_venda: string;
   data_entrega_prevista?: string;
-  frete_valor: number;
-  comissao_valor: number;
   observacoes?: string;
   total_venda: number;
   total_custo: number;
@@ -122,7 +120,54 @@ export interface Venda {
   receivable: number;
   lucro: number;
   itens?: ItemVenda[];
+  // AYD-009 §3: composição do preço e dos custos; `costs_paid`/`costs_open` somam as contas a pagar.
+  composition?: SaleComposition;
+  costs_paid?: number;
+  costs_open?: number;
+  obligations?: Obligation[];
   created_at: string;
+}
+
+// Composição da venda — AYD-009 (RF-40). Contrato em inglês (ADR-001).
+export type SaleChargeKind = "FREIGHT" | "OTHER";
+export type SaleCostKind = "FREIGHT" | "LABOR" | "COMMISSION" | "OTHER";
+
+/** Cobrança adicional ao cliente (Sale charge / Quote charge), ex.: frete cobrado. */
+export interface SaleCharge {
+  id: string;
+  kind: SaleChargeKind;
+  amount: number;
+  description: string | null;
+}
+
+export interface SalePayee {
+  type: "SUPPLIER" | "PARTNER";
+  id: string;
+  name: string;
+}
+
+/** Custo da venda (Sale cost): previsto e editável; `payee` null = "a definir". */
+export interface SaleCost {
+  id: string;
+  sale_id: string;
+  kind: SaleCostKind;
+  amount: number;
+  description: string | null;
+  payee: SalePayee | null;
+  sale_item_id: string | null;
+  obligation_id: string | null;
+  /** 200 com avisos quando o novo valor/credor deixa a conta com quitado > devido. */
+  warnings?: ObligationWarning[];
+}
+
+export interface SaleComposition {
+  items_total: number;
+  charges: SaleCharge[];
+  charges_total: number;
+  /** items_total + charges_total (= total_venda). */
+  price_total: number;
+  costs: SaleCost[];
+  costs_total: number;
 }
 
 // Quote (Orçamento) — AYD-001. Contrato em inglês (ADR-001), rótulos em PT-BR na UI.
@@ -151,6 +196,8 @@ export interface Quote {
   quote_date: string;
   notes?: string;
   total_quote: number;
+  /** AYD-009: cobranças ao cliente (frete cobrado); `total_quote` inclui as cobranças. */
+  charges?: SaleCharge[];
   /** AYD-005: true se o Quote nasceu da venda rápida (somente leitura). */
   quick_sale: boolean;
   items?: QuoteItem[];
@@ -411,8 +458,6 @@ export interface FinanceSalesBlock {
   count: number;
   revenue: number;
   cost: number;
-  freight: number;
-  commission: number;
   profit: number;
   received: number;
   receivable: number;

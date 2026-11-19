@@ -13,6 +13,7 @@ import type { Cliente, Produto } from "@/lib/types";
 import { useClientes } from "@/hooks/useClientes";
 import { useProdutos } from "@/hooks/useProdutos";
 import { usePartners } from "@/hooks/usePartners";
+import { ChargesEditor, toQuoteChargesPayload, type ChargeDraft } from "@/components/sales/ChargesEditor";
 import { ClienteModal } from "@/components/forms/ClienteModal";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import { Input } from "@/components/ui/input";
@@ -101,6 +102,7 @@ export default function NovoOrcamentoPage() {
   const { fields, append, remove } = useFieldArray({ control, name: "items" });
 
   const watchItems = watch("items");
+  const [charges, setCharges] = useState<ChargeDraft[]>([]);
 
   const [clienteSearch, setClienteSearch] = useState("");
   const [debouncedClienteSearch, setDebouncedClienteSearch] = useState("");
@@ -129,12 +131,14 @@ export default function NovoOrcamentoPage() {
     [produtos, produtoSearches],
   );
 
-  const totalQuote = useMemo(() => {
+  const itemsTotal = useMemo(() => {
     return (watchItems || []).reduce(
       (acc, item) => acc + (item.quantity || 0) * (item.unit_price || 0),
       0,
     );
   }, [watchItems]);
+  const chargesTotal = charges.reduce((acc, c) => acc + (c.amount || 0), 0);
+  const totalQuote = itemsTotal + chargesTotal;
 
   function handleSelectCliente(cliente: Cliente) {
     setValue("customer_id", cliente.id);
@@ -171,6 +175,7 @@ export default function NovoOrcamentoPage() {
       ...data,
       referrer_id: data.referrer_id || null,
       notes: data.notes || null,
+      charges: toQuoteChargesPayload(charges),
       // A api espera UUID ou null — string vazia é rejeitada (400).
       items: data.items.map((item) => ({ ...item, product_id: item.product_id || null })),
     };
@@ -444,6 +449,19 @@ export default function NovoOrcamentoPage() {
           </Button>
         </Card>
 
+        {/* COBRANÇAS AO CLIENTE (AYD-009) */}
+        <Card className="p-4 space-y-4">
+          <div>
+            <h2 className="text-sm font-semibold uppercase text-muted-foreground">
+              Frete cobrado e outras cobranças
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Somam ao preço ao cliente e viram parte da conta a receber.
+            </p>
+          </div>
+          <ChargesEditor value={charges} onChange={setCharges} />
+        </Card>
+
         {/* NOTAS */}
         <Card className="p-4 space-y-4">
           <div className="space-y-2">
@@ -461,7 +479,10 @@ export default function NovoOrcamentoPage() {
           <h2 className="text-sm font-semibold uppercase text-muted-foreground mb-3">
             Resumo
           </h2>
-          <div>
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">
+              Itens {formatMoeda(itemsTotal)} + cobranças {formatMoeda(chargesTotal)}
+            </p>
             <p className="text-muted-foreground text-sm">Total do Orçamento</p>
             <p className="text-lg font-semibold">{formatMoeda(totalQuote)}</p>
           </div>

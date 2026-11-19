@@ -1,5 +1,6 @@
 import type { ItemOrigin, ItemVenda, Venda } from "./types";
 
+// AYD-009: PUT /vendas/{id} não aceita mais frete_* nem comissao_* (viram cobranças e custos).
 // Montadores de payload da Sale (rotas legadas `/vendas`, AYD-002 §1–2).
 //
 // `PUT /vendas/{id}` e `PUT /vendas/{id}/itens/{itemId}` são de substituição completa
@@ -11,8 +12,6 @@ export function toSaleUpdatePayload(
   venda: Venda,
   overrides: Partial<{
     data_entrega_prevista: string | null;
-    frete_valor: number;
-    comissao_valor: number;
     observacoes: string | null;
   }> = {},
 ) {
@@ -21,8 +20,6 @@ export function toSaleUpdatePayload(
     data_entrega_prevista: venda.data_entrega_prevista
       ? venda.data_entrega_prevista.slice(0, 10)
       : null,
-    frete_valor: venda.frete_valor,
-    comissao_valor: venda.comissao_valor,
     observacoes: venda.observacoes || null,
     ...overrides,
   };
@@ -79,14 +76,5 @@ export function validateSaleItemDraft(draft: SaleItemDraft): string | null {
   if (draft.custo_unit !== null && draft.custo_unit < 0) return "Custo não pode ser negativo.";
   if (draft.origin === "FROM_STOCK" && !draft.produto_id)
     return "Item de estoque precisa de um produto do catálogo (o saldo é por produto).";
-  return null;
-}
-
-/**
- * Valida o Freight antes de PUT /vendas/{id} (a API devolve 400 se frete_valor < 0).
- * O pago do frete (e da comissão) agora é quitação da conta PAYABLE da Sale (AYD-007 §6).
- */
-export function validateFreight(freteValor: number): string | null {
-  if (freteValor < 0) return "Frete não pode ser negativo.";
   return null;
 }
