@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { Fragment, useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuotes } from "@/hooks/useQuotes";
 import { useClientes } from "@/hooks/useClientes";
@@ -15,8 +15,18 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { summarizeQuotes } from "@/lib/customer-city";
+import { useCityView } from "@/hooks/useCityView";
+import { CityControls, CityGroupToggle, CustomerWithCity } from "@/components/tables/city-view";
 
 const ALL_QUOTE_STATUSES: QuoteStatus[] = ["OPEN", "WON", "LOST"];
+const quoteCustomerId = (q: Quote) => q.customer_id;
+// Resumo do grupo por status, só os não-zero: "2 abertos · 3 ganhos".
+const QUOTE_STATUS_COUNT_LABELS: Record<QuoteStatus, [string, string]> = {
+  OPEN: ["aberto", "abertos"],
+  WON: ["ganho", "ganhos"],
+  LOST: ["perdido", "perdidos"],
+};
 
 export default function OrcamentosPage() {
   const router = useRouter();
@@ -49,7 +59,17 @@ export default function OrcamentosPage() {
     return Object.keys(f).length > 0 ? f : undefined;
   }, [status, from, to, customerId]);
 
-  const { quotes, isLoading } = useQuotes(filters as Parameters<typeof useQuotes>[0]);
+  const { quotes: apiQuotes, isLoading: quotesLoading } = useQuotes(
+    filters as Parameters<typeof useQuotes>[0],
+  );
+
+  // SPEC-012: cidade (do Customer) — filtro e agrupamento no cliente, persistidos na URL.
+  const city = useCityView(apiQuotes, quoteCustomerId, {
+    cidade: searchParams.get("cidade") || "",
+    grouped: searchParams.get("agrupar") === "cidade",
+  });
+  const quotes = city.visible;
+  const isLoading = quotesLoading || city.loading;
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -57,9 +77,11 @@ export default function OrcamentosPage() {
     if (from) params.set("from", from);
     if (to) params.set("to", to);
     if (customerId) params.set("customer_id", customerId);
+    if (city.cidade) params.set("cidade", city.cidade);
+    if (city.grouped) params.set("agrupar", "cidade");
     const qs = params.toString();
     router.replace(qs ? `/orcamentos?${qs}` : "/orcamentos", { scroll: false });
-  }, [status, from, to, customerId, router]);
+  }, [status, from, to, customerId, city.cidade, city.grouped, router]);
 
   function handleSelectCliente(id: string, nome: string) {
     setCustomerId(id);
@@ -90,7 +112,7 @@ export default function OrcamentosPage() {
     {
       key: "customer_name",
       header: "Cliente",
-      render: (row: Quote) => row.customer_name,
+      render: (row: Quote) => <CustomerWithCity name={row.customer_name} city={city.rowCity(row)} />,
     },
     {
       key: "produtos",
@@ -126,6 +148,22 @@ export default function OrcamentosPage() {
       ),
     },
   ];
+
+  function renderRow(quote: Quote) {
+    return (
+      <tr
+        key={quote.id}
+        onClick={() => router.push(`/orcamentos/${quote.id}`)}
+        className="border-b last:border-b-0 cursor-pointer transition-colors hover:bg-muted/40"
+      >
+        {columns.map((col) => (
+          <td key={col.key} className="px-4 py-3">
+            {col.render(quote)}
+          </td>
+        ))}
+      </tr>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -219,10 +257,22 @@ export default function OrcamentosPage() {
             </>
           )}
         </div>
+
+        {/* City filter + grouping (SPEC-012) */}
+        <CityControls
+          cidade={city.cidade}
+          onCidadeChange={city.setCidade}
+          options={city.options}
+          grouped={city.grouped}
+          onGroupedChange={city.setGrouped}
+          groupCount={city.groups.length}
+          allCollapsed={city.allCollapsed}
+          onToggleAll={city.toggleAll}
+        />
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border overflow-hidden">
+      <div className="rounded-lg border overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-muted/50 border-b">
@@ -253,20 +303,47 @@ export default function OrcamentosPage() {
                   Nenhum orçamento encontrado.
                 </td>
               </tr>
+            ) : city.grouped ? (
+              city.groups.map((g) => {
+                const open = city.isOpen(g.key);
+                const sum = summarizeQuotes(g.rows);
+                return (
+                  <Fragment key={g.key}>
+                    <tr className="border-b bg-muted/30">
+                      <td colSpan={3} className="px-2 py-2">
+                        <CityGroupToggle
+                          label={g.label}
+                          count={g.rows.length}
+                          noun={["orçamento", "orçamentos"]}
+                          open={open}
+                          onToggle={() => city.toggleGroup(g.key)}
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        {sum.byStatus.OPEN > 0 ? (
+                          <>
+                            <p className="font-medium">{formatMoeda(sum.openTotal)}</p>
+                            <p className="text-xs text-muted-foreground">em aberto</p>
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2 text-xs text-muted-foreground">
+                        {ALL_QUOTE_STATUSES.filter((s) => sum.byStatus[s] > 0)
+                          .map((s) => {
+                            const n = sum.byStatus[s];
+                            return `${n} ${QUOTE_STATUS_COUNT_LABELS[s][n === 1 ? 0 : 1]}`;
+                          })
+                          .join(" · ")}
+                      </td>
+                    </tr>
+                    {open && g.rows.map((quote) => renderRow(quote))}
+                  </Fragment>
+                );
+              })
             ) : (
-              quotes.map((quote) => (
-                <tr
-                  key={quote.id}
-                  onClick={() => router.push(`/orcamentos/${quote.id}`)}
-                  className="border-b last:border-b-0 cursor-pointer transition-colors hover:bg-muted/40"
-                >
-                  {columns.map((col) => (
-                    <td key={col.key} className="px-4 py-3">
-                      {col.render(quote)}
-                    </td>
-                  ))}
-                </tr>
-              ))
+              quotes.map((quote) => renderRow(quote))
             )}
           </tbody>
         </table>

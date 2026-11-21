@@ -1,8 +1,8 @@
-import type { Cliente, Venda } from "@/lib/types";
+import type { Cliente, Quote, QuoteStatus, Venda } from "@/lib/types";
 
 /**
- * Cidade da Sale = `cidade` do Customer (RF-01: cidade/endereço da obra), juntada no cliente
- * por `cliente_id` — `GET /vendas` não traz a cidade (SPEC-012). Texto livre: agrupa e filtra
+ * Cidade de uma Sale/Quote = `cidade` do Customer (RF-01: cidade/endereço da obra), juntada no
+ * cliente pelo id do Customer — `GET /vendas` e `GET /quotes` não trazem a cidade (SPEC-012). Texto livre: agrupa e filtra
  * por uma chave normalizada (sem acento, caixa ou espaços extras) e exibe a grafia mais usada.
  */
 
@@ -50,8 +50,9 @@ export function buildCityIndex(clientes: Cliente[]): CityIndex {
   return { keyByCustomer, labelByKey };
 }
 
-export function saleCityKey(venda: Venda, index: CityIndex): string {
-  return index.keyByCustomer.get(venda.cliente_id) ?? NO_CITY;
+/** Chave da cidade do Customer (desconhecido → NO_CITY). */
+export function customerCityKey(customerId: string, index: CityIndex): string {
+  return index.keyByCustomer.get(customerId) ?? NO_CITY;
 }
 
 export function cityLabel(key: string, index: CityIndex): string {
@@ -72,13 +73,18 @@ export interface CityOption {
 }
 
 /**
- * Opções do filtro: cidades presentes nas Sales já filtradas pelos demais filtros, com a
- * contagem. A cidade selecionada entra mesmo sem Sales (count 0), para não sumir do select.
+ * Opções do filtro: cidades presentes nas linhas já filtradas pelos demais filtros, com a
+ * contagem. A cidade selecionada entra mesmo sem linhas (count 0), para não sumir do select.
  */
-export function cityOptions(vendas: Venda[], index: CityIndex, selected: string): CityOption[] {
+export function cityOptions<T>(
+  rows: T[],
+  getCustomerId: (row: T) => string,
+  index: CityIndex,
+  selected: string,
+): CityOption[] {
   const counts = new Map<string, number>();
-  for (const v of vendas) {
-    const key = saleCityKey(v, index);
+  for (const r of rows) {
+    const key = customerCityKey(getCustomerId(r), index);
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
   if (selected && !counts.has(selected)) counts.set(selected, 0);
@@ -87,10 +93,32 @@ export function cityOptions(vendas: Venda[], index: CityIndex, selected: string)
     .sort(compareCities);
 }
 
-export interface CityGroup {
+export interface CityGroup<T> {
   key: string;
   label: string;
-  vendas: Venda[];
+  rows: T[];
+}
+
+/** Agrupa mantendo a ordem da API dentro de cada cidade. */
+export function groupByCity<T>(
+  rows: T[],
+  getCustomerId: (row: T) => string,
+  index: CityIndex,
+): CityGroup<T>[] {
+  const groups = new Map<string, CityGroup<T>>();
+  for (const r of rows) {
+    const key = customerCityKey(getCustomerId(r), index);
+    let g = groups.get(key);
+    if (!g) {
+      g = { key, label: cityLabel(key, index), rows: [] };
+      groups.set(key, g);
+    }
+    g.rows.push(r);
+  }
+  return [...groups.values()].sort(compareCities);
+}
+
+export interface SalesSummary {
   /** Somas sem as Sales canceladas (RN-04: canceladas não entram em totais). */
   total: number;
   receivable: number;
@@ -98,22 +126,29 @@ export interface CityGroup {
   toDeliver: number;
 }
 
-/** Agrupa mantendo a ordem da API dentro de cada cidade. */
-export function groupByCity(vendas: Venda[], index: CityIndex): CityGroup[] {
-  const groups = new Map<string, CityGroup>();
+export function summarizeSales(vendas: Venda[]): SalesSummary {
+  const s: SalesSummary = { total: 0, receivable: 0, profit: 0, toDeliver: 0 };
   for (const v of vendas) {
-    const key = saleCityKey(v, index);
-    let g = groups.get(key);
-    if (!g) {
-      g = { key, label: cityLabel(key, index), vendas: [], total: 0, receivable: 0, profit: 0, toDeliver: 0 };
-      groups.set(key, g);
-    }
-    g.vendas.push(v);
     if (v.delivery_status === "CANCELED") continue;
-    g.total += v.total_venda;
-    g.receivable += v.receivable;
-    g.profit += v.lucro;
-    if (v.delivery_status === "TO_DELIVER") g.toDeliver += 1;
+    s.total += v.total_venda;
+    s.receivable += v.receivable;
+    s.profit += v.lucro;
+    if (v.delivery_status === "TO_DELIVER") s.toDeliver += 1;
   }
-  return [...groups.values()].sort(compareCities);
+  return s;
+}
+
+export interface QuotesSummary {
+  /** Σ total dos Quotes abertos (o que ainda está em negociação). */
+  openTotal: number;
+  byStatus: Record<QuoteStatus, number>;
+}
+
+export function summarizeQuotes(quotes: Quote[]): QuotesSummary {
+  const s: QuotesSummary = { openTotal: 0, byStatus: { OPEN: 0, WON: 0, LOST: 0 } };
+  for (const q of quotes) {
+    s.byStatus[q.status] += 1;
+    if (q.status === "OPEN") s.openTotal += q.total_quote;
+  }
+  return s;
 }

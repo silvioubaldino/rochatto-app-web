@@ -26,7 +26,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
-- Implement SPEC-012: Sales by city — customer city under the customer name, city filter with counts, and collapsible group-by-city view with per-city totals (front-end only).
+- Implement SPEC-012: Sales and quotes by city — customer city under the customer name, city filter with counts, and collapsible group-by-city view with per-city summaries on Vendas and Orçamentos (front-end only).
 - Implement SPEC-011: Services on sale (AYD-010) — Services catalog, service Items in quote/quick sale/sale (no origin or supplier), "A executar / Executado" labels for service-only sales, and a Services block on the dashboard.
 - Implement SPEC-010: Sale composition (AYD-009) — quote form/detail with charged freight (Sale charges), sale detail with "Preço ao cliente" (items + charges), "Custos da venda" with editable payee and linked account, expected profit; removes Sale freight/commission fields and Financeiro freight/commission rows.
 - Implement SPEC-009: Purchase composition (AYD-008) — purchase detail with goods + additional costs (Purchase charges, editable payee, "a definir"), allocation method selector, per-line landed cost, OVERSETTLED warning; purchase list filters `open_only`/`overdue`; allocation method on replenishment creation; stock value column and total on `/estoque`.
