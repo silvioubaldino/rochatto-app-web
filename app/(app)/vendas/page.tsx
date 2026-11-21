@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { Fragment, useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useVendas } from "@/hooks/useVendas";
 import { useClientes } from "@/hooks/useClientes";
@@ -19,6 +19,11 @@ import { SaleDeliveryBadge, SalePaymentBadge } from "@/components/status-badges"
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FileText, Search, X } from "lucide-react";
+import { summarizeSales } from "@/lib/customer-city";
+import { useCityView } from "@/hooks/useCityView";
+import { CityControls, CityGroupToggle, CustomerWithCity } from "@/components/tables/city-view";
+
+const saleCustomerId = (v: Venda) => v.cliente_id;
 import { cn } from "@/lib/utils";
 
 const ROW_COLORS: Record<SaleDeliveryStatus, string> = {
@@ -84,7 +89,15 @@ export default function VendasPage() {
     return Object.keys(f).length > 0 ? f : undefined;
   }, [deliveryStatus, paymentStatus, dataInicio, dataFim, clienteId]);
 
-  const { vendas, isLoading } = useVendas(filters);
+  const { vendas: apiVendas, isLoading: vendasLoading } = useVendas(filters);
+
+  // SPEC-012: cidade (do Customer) — filtro e agrupamento no cliente, persistidos na URL.
+  const city = useCityView(apiVendas, saleCustomerId, {
+    cidade: searchParams.get("cidade") || "",
+    grouped: searchParams.get("agrupar") === "cidade",
+  });
+  const vendas = city.visible;
+  const isLoading = vendasLoading || city.loading;
 
   // Update URL on filter change
   useEffect(() => {
@@ -94,9 +107,11 @@ export default function VendasPage() {
     if (dataInicio) params.set("from", dataInicio);
     if (dataFim) params.set("to", dataFim);
     if (clienteId) params.set("cliente_id", clienteId);
+    if (city.cidade) params.set("cidade", city.cidade);
+    if (city.grouped) params.set("agrupar", "cidade");
     const qs = params.toString();
     router.replace(qs ? `/vendas?${qs}` : "/vendas", { scroll: false });
-  }, [deliveryStatus, paymentStatus, dataInicio, dataFim, clienteId, router]);
+  }, [deliveryStatus, paymentStatus, dataInicio, dataFim, clienteId, city.cidade, city.grouped, router]);
 
   function handleSelectCliente(id: string, nome: string) {
     setClienteId(id);
@@ -128,7 +143,7 @@ export default function VendasPage() {
     {
       key: "cliente_nome",
       header: "Cliente",
-      render: (row: Venda) => row.cliente_nome,
+      render: (row: Venda) => <CustomerWithCity name={row.cliente_nome} city={city.rowCity(row)} />,
     },
     {
       key: "produtos",
@@ -176,6 +191,25 @@ export default function VendasPage() {
       render: (row: Venda) => <SalePaymentBadge status={row.payment_status} />,
     },
   ];
+
+  function renderRow(venda: Venda) {
+    return (
+      <tr
+        key={venda.id}
+        onClick={() => router.push(`/vendas/${venda.id}`)}
+        className={cn(
+          "border-b last:border-b-0 cursor-pointer transition-colors hover:opacity-80",
+          ROW_COLORS[venda.delivery_status],
+        )}
+      >
+        {columns.map((col) => (
+          <td key={col.key} className="px-4 py-3">
+            {col.render(venda)}
+          </td>
+        ))}
+      </tr>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -297,6 +331,18 @@ export default function VendasPage() {
             </>
           )}
         </div>
+
+        {/* City filter + grouping (SPEC-012) */}
+        <CityControls
+          cidade={city.cidade}
+          onCidadeChange={city.setCidade}
+          options={city.options}
+          grouped={city.grouped}
+          onGroupedChange={city.setGrouped}
+          groupCount={city.groups.length}
+          allCollapsed={city.allCollapsed}
+          onToggleAll={city.toggleAll}
+        />
       </div>
 
       {/* Table with row coloring */}
@@ -332,23 +378,39 @@ export default function VendasPage() {
                   Nenhuma venda encontrada.
                 </td>
               </tr>
+            ) : city.grouped ? (
+              city.groups.map((g) => {
+                const open = city.isOpen(g.key);
+                const sum = summarizeSales(g.rows);
+                return (
+                  <Fragment key={g.key}>
+                    <tr className="border-b bg-muted/30">
+                      <td colSpan={3} className="px-2 py-2">
+                        <CityGroupToggle
+                          label={g.label}
+                          count={g.rows.length}
+                          noun={["venda", "vendas"]}
+                          open={open}
+                          onToggle={() => city.toggleGroup(g.key)}
+                        />
+                      </td>
+                      <td className="px-4 py-2 font-medium">{formatMoeda(sum.total)}</td>
+                      <td className="px-4 py-2 font-medium">{formatMoeda(sum.receivable)}</td>
+                      <td
+                        className={cn("px-4 py-2 font-medium", sum.profit < 0 && "text-destructive")}
+                      >
+                        {formatMoeda(sum.profit)}
+                      </td>
+                      <td colSpan={2} className="px-4 py-2 text-xs text-muted-foreground">
+                        {sum.toDeliver > 0 && `${sum.toDeliver} a entregar`}
+                      </td>
+                    </tr>
+                    {open && g.rows.map((venda) => renderRow(venda))}
+                  </Fragment>
+                );
+              })
             ) : (
-              vendas.map((venda) => (
-                <tr
-                  key={venda.id}
-                  onClick={() => router.push(`/vendas/${venda.id}`)}
-                  className={cn(
-                    "border-b last:border-b-0 cursor-pointer transition-colors hover:opacity-80",
-                    ROW_COLORS[venda.delivery_status],
-                  )}
-                >
-                  {columns.map((col) => (
-                    <td key={col.key} className="px-4 py-3">
-                      {col.render(venda)}
-                    </td>
-                  ))}
-                </tr>
-              ))
+              vendas.map((venda) => renderRow(venda))
             )}
           </tbody>
         </table>
