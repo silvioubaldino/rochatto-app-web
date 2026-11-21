@@ -49,7 +49,7 @@ app/
   (app)/                     → layout protegido (redireciona se não autenticado)
     dashboard/               → página inicial — KPIs do período (conversão, ticket médio), saldos em aberto com drill-down, gráfico mensal, ranking de Products e alertas (SPEC-005)
     orcamentos/              → orçamentos: listagem, emissão (e venda rápida), detalhe/conversão
-    vendas/                  → listagem e detalhe (sem criação direta — nasce do orçamento): preço ao cliente (itens + frete cobrado) e custos da venda com credor e conta (SPEC-010)
+    vendas/                  → listagem e detalhe (sem criação direta — nasce do orçamento): preço ao cliente (itens + frete cobrado) e custos da venda com credor e conta (SPEC-010); lista com cidade do cliente, filtro e agrupamento recolhível por cidade (SPEC-012)
     compras/                 → compras ao fornecedor, fila "a comprar", detalhe: composição (custos adicionais, rateio), contas e custo de entrada (SPEC-009)
     clientes/                → CRUD de clientes
     estoque/                 → saldo por produto, valor em estoque, extrato e ajustes
@@ -157,7 +157,7 @@ npm run dev
 
 > As fases acima (`.claude/specs/`) são o plano histórico. As entregas atuais seguem as
 > SPECs em `docs/specs/` (SPEC-001 Orçamentos, SPEC-002 Atendimento da venda, SPEC-003
-> Cadastros comerciais, SPEC-004 Financeiro, SPEC-005 Dashboard, SPEC-006 Assistant connector, SPEC-008 Contas e movimentações, SPEC-009 Composição da compra, SPEC-010 Composição da venda, SPEC-011 Serviços na venda).
+> Cadastros comerciais, SPEC-004 Financeiro, SPEC-005 Dashboard, SPEC-006 Assistant connector, SPEC-008 Contas e movimentações, SPEC-009 Composição da compra, SPEC-010 Composição da venda, SPEC-011 Serviços na venda, SPEC-012 Vendas por cidade).
 
 ## Deploy (Vercel — Free Tier)
 

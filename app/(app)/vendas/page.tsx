@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { Fragment, useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useVendas } from "@/hooks/useVendas";
 import { useClientes } from "@/hooks/useClientes";
@@ -18,7 +18,15 @@ import {
 import { SaleDeliveryBadge, SalePaymentBadge } from "@/components/status-badges";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { FileText, Search, X } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, Layers, Search, X } from "lucide-react";
+import {
+  NO_CITY,
+  buildCityIndex,
+  cityLabel,
+  cityOptions,
+  groupByCity,
+  saleCityKey,
+} from "@/lib/sales-by-city";
 import { cn } from "@/lib/utils";
 
 const ROW_COLORS: Record<SaleDeliveryStatus, string> = {
@@ -64,6 +72,10 @@ export default function VendasPage() {
   const [clienteId, setClienteId] = useState(searchParams.get("cliente_id") || "");
   const [clienteNome, setClienteNome] = useState("");
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
+  // SPEC-012: cidade (do Customer) — filtro e agrupamento no cliente, persistidos na URL.
+  const [cidade, setCidade] = useState(searchParams.get("cidade") || "");
+  const [groupByCityOn, setGroupByCityOn] = useState(searchParams.get("agrupar") === "cidade");
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
 
   // Debounce client search
   useEffect(() => {
@@ -84,7 +96,43 @@ export default function VendasPage() {
     return Object.keys(f).length > 0 ? f : undefined;
   }, [deliveryStatus, paymentStatus, dataInicio, dataFim, clienteId]);
 
-  const { vendas, isLoading } = useVendas(filters);
+  const { vendas: apiVendas, isLoading: vendasLoading } = useVendas(filters);
+
+  // Todos os Customers (GET /clientes, sem paginação) → cidade por cliente_id.
+  const { clientes: allClientes, isLoading: clientesLoading } = useClientes();
+  const cityIndex = useMemo(() => buildCityIndex(allClientes), [allClientes]);
+  const needsCities = groupByCityOn || cidade !== "";
+  const isLoading = vendasLoading || (needsCities && clientesLoading);
+
+  // Opções contam as Sales dos demais filtros (antes do filtro de cidade).
+  const cidadeOptions = useMemo(
+    () => cityOptions(apiVendas, cityIndex, cidade),
+    [apiVendas, cityIndex, cidade],
+  );
+  const vendas = useMemo(
+    () => (cidade ? apiVendas.filter((v) => saleCityKey(v, cityIndex) === cidade) : apiVendas),
+    [apiVendas, cityIndex, cidade],
+  );
+  const groups = useMemo(
+    () => (groupByCityOn ? groupByCity(vendas, cityIndex) : []),
+    [groupByCityOn, vendas, cityIndex],
+  );
+  // Cidade embaixo do Cliente só quando não é redundante (sem agrupar e sem filtro de cidade).
+  const showCityInRow = !groupByCityOn && !cidade;
+  const allCollapsed = groups.length > 0 && groups.every((g) => collapsed.has(g.key));
+
+  function toggleGroup(key: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  function toggleAllGroups() {
+    setCollapsed(allCollapsed ? new Set() : new Set(groups.map((g) => g.key)));
+  }
 
   // Update URL on filter change
   useEffect(() => {
@@ -94,9 +142,11 @@ export default function VendasPage() {
     if (dataInicio) params.set("from", dataInicio);
     if (dataFim) params.set("to", dataFim);
     if (clienteId) params.set("cliente_id", clienteId);
+    if (cidade) params.set("cidade", cidade);
+    if (groupByCityOn) params.set("agrupar", "cidade");
     const qs = params.toString();
     router.replace(qs ? `/vendas?${qs}` : "/vendas", { scroll: false });
-  }, [deliveryStatus, paymentStatus, dataInicio, dataFim, clienteId, router]);
+  }, [deliveryStatus, paymentStatus, dataInicio, dataFim, clienteId, cidade, groupByCityOn, router]);
 
   function handleSelectCliente(id: string, nome: string) {
     setClienteId(id);
@@ -128,7 +178,17 @@ export default function VendasPage() {
     {
       key: "cliente_nome",
       header: "Cliente",
-      render: (row: Venda) => row.cliente_nome,
+      render: (row: Venda) => {
+        const key = saleCityKey(row, cityIndex);
+        return (
+          <div>
+            <p>{row.cliente_nome}</p>
+            {showCityInRow && key !== NO_CITY && (
+              <p className="text-xs text-muted-foreground">{cityLabel(key, cityIndex)}</p>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "produtos",
@@ -176,6 +236,25 @@ export default function VendasPage() {
       render: (row: Venda) => <SalePaymentBadge status={row.payment_status} />,
     },
   ];
+
+  function renderRow(venda: Venda) {
+    return (
+      <tr
+        key={venda.id}
+        onClick={() => router.push(`/vendas/${venda.id}`)}
+        className={cn(
+          "border-b last:border-b-0 cursor-pointer transition-colors hover:opacity-80",
+          ROW_COLORS[venda.delivery_status],
+        )}
+      >
+        {columns.map((col) => (
+          <td key={col.key} className="px-4 py-3">
+            {col.render(venda)}
+          </td>
+        ))}
+      </tr>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -297,6 +376,42 @@ export default function VendasPage() {
             </>
           )}
         </div>
+
+        {/* City filter (SPEC-012) */}
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">Cidade</label>
+          <select
+            value={cidade}
+            onChange={(e) => setCidade(e.target.value)}
+            className="h-8 max-w-48 rounded-md border border-input bg-background px-3 text-sm"
+          >
+            <option value="">Todas</option>
+            {cidadeOptions.map((o) => (
+              <option key={o.key} value={o.key}>
+                {o.label} ({o.count})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Group by city (SPEC-012) */}
+        <div className="flex items-end gap-2">
+          <Button
+            variant={groupByCityOn ? "secondary" : "outline"}
+            size="sm"
+            className="h-8"
+            aria-pressed={groupByCityOn}
+            onClick={() => setGroupByCityOn((v) => !v)}
+          >
+            <Layers className="h-4 w-4" />
+            Agrupar por cidade
+          </Button>
+          {groupByCityOn && groups.length > 1 && (
+            <Button variant="ghost" size="sm" className="h-8" onClick={toggleAllGroups}>
+              {allCollapsed ? "Expandir tudo" : "Recolher tudo"}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Table with row coloring */}
@@ -332,23 +447,47 @@ export default function VendasPage() {
                   Nenhuma venda encontrada.
                 </td>
               </tr>
+            ) : groupByCityOn ? (
+              groups.map((g) => {
+                const open = !collapsed.has(g.key);
+                return (
+                  <Fragment key={g.key}>
+                    <tr className="border-b bg-muted/30">
+                      <td colSpan={3} className="px-2 py-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleGroup(g.key)}
+                          aria-expanded={open}
+                          className="flex w-full items-center gap-2 rounded px-2 py-1 text-left hover:bg-muted"
+                        >
+                          {open ? (
+                            <ChevronDown className="h-4 w-4 shrink-0" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 shrink-0" />
+                          )}
+                          <span className="font-semibold">{g.label}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {g.vendas.length} {g.vendas.length === 1 ? "venda" : "vendas"}
+                          </span>
+                        </button>
+                      </td>
+                      <td className="px-4 py-2 font-medium">{formatMoeda(g.total)}</td>
+                      <td className="px-4 py-2 font-medium">{formatMoeda(g.receivable)}</td>
+                      <td
+                        className={cn("px-4 py-2 font-medium", g.profit < 0 && "text-destructive")}
+                      >
+                        {formatMoeda(g.profit)}
+                      </td>
+                      <td colSpan={2} className="px-4 py-2 text-xs text-muted-foreground">
+                        {g.toDeliver > 0 && `${g.toDeliver} a entregar`}
+                      </td>
+                    </tr>
+                    {open && g.vendas.map((venda) => renderRow(venda))}
+                  </Fragment>
+                );
+              })
             ) : (
-              vendas.map((venda) => (
-                <tr
-                  key={venda.id}
-                  onClick={() => router.push(`/vendas/${venda.id}`)}
-                  className={cn(
-                    "border-b last:border-b-0 cursor-pointer transition-colors hover:opacity-80",
-                    ROW_COLORS[venda.delivery_status],
-                  )}
-                >
-                  {columns.map((col) => (
-                    <td key={col.key} className="px-4 py-3">
-                      {col.render(venda)}
-                    </td>
-                  ))}
-                </tr>
-              ))
+              vendas.map((venda) => renderRow(venda))
             )}
           </tbody>
         </table>
