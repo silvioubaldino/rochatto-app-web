@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
-import { CITY_FILTER_SPEC, CityFilters, useCityView } from "@/components/entity/city-view";
+import { CITY_FILTER_SPEC, CityFilter, CityGroupToggle, useCityView } from "@/components/entity/city-view";
 import { EntityCombobox } from "@/components/entity/EntityCombobox";
 import { EntityLink } from "@/components/entity/EntityLink";
 import { DataTable, type DataTableColumn } from "@/components/patterns/DataTable";
@@ -103,9 +103,10 @@ function SalesContent() {
         <FieldShell label="Até" htmlFor="sf-to"><DateField id="sf-to" shortcuts={false} value={v.to} onChange={(x) => f.set({ to: x })} /></FieldShell>
         <FieldShell label="Cliente" htmlFor="sf-customer"><EntityCombobox kind="customer" id="sf-customer" value={v.cliente_id} allowCreate={false} placeholder="Todos os clientes" onChange={(id) => f.set({ cliente_id: id })} /></FieldShell>
         <FieldShell label="Parceiro" htmlFor="sf-referrer"><EntityCombobox kind="partner" id="sf-referrer" value={v.referrer_id} allowCreate={false} placeholder="Todos os parceiros" onChange={(id) => f.set({ referrer_id: id })} /></FieldShell>
+        <CityFilter cidade={v.cidade} options={city.options} onChange={(cidade) => f.set({ cidade })} />
       </FilterBar>
-      <div className="grid grid-cols-1 items-end gap-3 sm:flex sm:flex-wrap [&>*:first-child]:sm:w-64">
-        <CityFilters cidade={v.cidade} agrupar={v.agrupar} options={city.options} onChange={(p) => f.set(p)} />
+      <div className="flex justify-end">
+        <CityGroupToggle agrupar={v.agrupar} onChange={(agrupar) => f.set({ agrupar })} />
       </div>
       <DataTable
         caption="Vendas"

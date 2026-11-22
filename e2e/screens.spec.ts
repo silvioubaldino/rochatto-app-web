@@ -37,11 +37,10 @@ for (const [path, title] of SCREENS) {
 }
 
 for (const path of ["/vendas", "/orcamentos"]) {
-  test(`${path} mostra o agrupamento por cidade sem abrir os filtros`, async ({ page }) => {
+  test(`${path} mostra o botão de agrupar por cidade fora dos filtros`, async ({ page }) => {
     await mockApi(page);
     await page.goto(path);
     await expect(page.getByRole("button", { name: "Agrupar por cidade" })).toBeVisible();
-    await expect(page.getByRole("combobox", { name: "Cidade" })).toBeVisible();
   });
 }
 

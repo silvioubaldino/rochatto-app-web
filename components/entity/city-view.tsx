@@ -47,34 +47,33 @@ export function useCityView<T>(
   };
 }
 
-export function CityFilters({
+export function CityFilter({
   cidade,
-  agrupar,
   options,
   onChange,
 }: {
   cidade: string;
-  agrupar: string;
   options: { key: string; label: string; count: number }[];
-  onChange: (patch: { cidade?: string; agrupar?: string }) => void;
+  onChange: (cidade: string) => void;
 }) {
+  return (
+    <FieldShell label="Cidade" htmlFor="filter-city">
+      <Select
+        id="filter-city"
+        value={cidade}
+        onChange={onChange}
+        options={[{ value: "", label: "Todas" }, ...options.map((o) => ({ value: o.key, label: `${o.label} (${o.count})` }))]}
+      />
+    </FieldShell>
+  );
+}
+
+export function CityGroupToggle({ agrupar, onChange }: { agrupar: string; onChange: (agrupar: string) => void }) {
   const grouped = agrupar === "cidade";
   return (
-    <>
-      <FieldShell label="Cidade" htmlFor="filter-city">
-        <Select
-          id="filter-city"
-          value={cidade}
-          onChange={(v) => onChange({ cidade: v })}
-          options={[{ value: "", label: "Todas" }, ...options.map((o) => ({ value: o.key, label: `${o.label} (${o.count})` }))]}
-        />
-      </FieldShell>
-      <div className="flex items-end">
-        <Button type="button" variant={grouped ? "secondary" : "outline"} aria-pressed={grouped} onClick={() => onChange({ agrupar: grouped ? "" : "cidade" })}>
-          <Layers aria-hidden />
-          Agrupar por cidade
-        </Button>
-      </div>
-    </>
+    <Button type="button" variant={grouped ? "secondary" : "outline"} aria-pressed={grouped} onClick={() => onChange(grouped ? "" : "cidade")}>
+      <Layers aria-hidden />
+      Agrupar por cidade
+    </Button>
   );
 }
