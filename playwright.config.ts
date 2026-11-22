@@ -10,6 +10,9 @@ import { defineConfig, devices } from "@playwright/test";
  * No CI o servidor é subido pelo `webServer` abaixo.
  */
 const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:3000";
+// Sem download dos navegadores do Playwright (rede restrita): E2E_CHROME_PATH usa um Chrome do sistema.
+const chromePath = process.env.E2E_CHROME_PATH;
+const launch = chromePath ? { launchOptions: { executablePath: chromePath, args: ["--no-sandbox"] } } : {};
 
 export default defineConfig({
   testDir: "./e2e",
@@ -22,9 +25,9 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
+    { name: "desktop", use: { ...devices["Desktop Chrome"], ...launch } },
     { name: "iphone", use: { ...devices["iPhone 14"] } },
-    { name: "pixel", use: { ...devices["Pixel 7"] } },
+    { name: "pixel", use: { ...devices["Pixel 7"], ...launch } },
   ],
   webServer: process.env.CI
     ? {

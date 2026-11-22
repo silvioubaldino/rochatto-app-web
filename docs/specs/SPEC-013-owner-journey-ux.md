@@ -226,6 +226,20 @@ vazio/erro/esqueleto), `FilterBar` + `useUrlFilters`, `useUrlTab`, `DetailLayout
 3. Detalhe da venda no `DetailLayout` (T06): `nextStep(sale)` em `model.ts`, atendimento em lote (C6), aviso de saldo (C7), recebimento com `InstallmentPlanEditor`.
 4. Cliente 360 e Parceiro 360; listas de Orçamentos e Vendas no `DataTable` + `FilterBar` (chips, `q`, `referrer_id`, cidade/agrupamento migrados).
 
+### Entregue em U2/U3 (e o que ficou para as próximas fases)
+
+- **U2:** `/hoje` (`features/home`), `CommandPalette` (`features/search`), menu Novo completo, rotas novas com redirecionamentos
+  em `next.config.ts`, `docNumber`/`docTitle` (C1). Catálogos virou `components/catalogs/*` por rota (migrar para `DataTable` em U4/U5).
+  Receber/Pagar nas pendências usam o `SettleDialog` atual (U5 traz o `SettleFlow` com "Desfazer").
+- **U3:** `components/entity/items-grid`, `components/entity/installment-plan`, `features/closing` (`CloseSaleDialog`),
+  `features/quotes`, `features/sales`, `features/customers`, `features/partners`. Removidos `SaleItemsCard`,
+  `ProductPicker`, `ServicePicker`, `ChargesEditor`, `QuoteChargesCard`, `SaleDeliveryActions`, `city-view` e `useCityView` legados.
+- **Fica para depois (sem alterar contrato):** coluna "Margem est." na lista de Orçamentos (a lista da api não traz custo);
+  número da Sale nas linhas da Compra (`PurchaseSaleItem` só traz `sale_id`); `SaleCompositionCard`/`SaleCostModal`/`OriginObligations`
+  (tabelas legadas) migram em U4/U5; "rascunho salvo" do editor de orçamento (sem rascunho no servidor).
+- **E2E:** build com `NEXT_PUBLIC_E2E=1 NEXT_PUBLIC_API_URL=` entra como o dono e chama `/api/v1` no próprio servidor
+  (`e2e/mock-api.ts`); `E2E_CHROME_PATH` permite rodar com um Chrome do sistema.
+
 ### U4 · Operação — a fazer
 
 Compras e Compra (`nextStep(purchase)`, trilha de status, composição + rateio num cartão), Fornecedor 360, Estoque/Produto com prévia e "Comprar para estoque".
@@ -281,10 +295,10 @@ A receber / A pagar (chips, credor por combobox incluindo Partners — F13, agru
 - [x] U1 — `lib/http`, `lib/format`, `lib/events` + `useEmit`, `useApiMutation`
 - [x] U1 — padrões, `EntityCombobox` + `QuickCreate`, `EntitySheet` + prévias, `DataTable`/`FilterBar`/`DetailLayout`, `ResponsiveDialog`, `ConfirmDialog`
 - [x] U1 — ESLint (regras 2 e 4), testes (unitário, componente), Playwright com 3 perfis, Lighthouse CI, CI (lint → tsc → test → build)
-- [ ] U2 — Hoje, menu agrupado/rotas novas, ⌘K, "Novo" global, números humanos
-- [ ] U3 — `ItemsGrid`, editor de orçamento, Fechar venda, detalhe da venda, Cliente/Parceiro 360, listas migradas
+- [x] U2 — Hoje, menu agrupado/rotas novas, ⌘K, "Novo" global, números humanos
+- [x] U3 — `ItemsGrid`, editor de orçamento, Fechar venda, detalhe da venda, Cliente/Parceiro 360, listas migradas (pendências: ver "Entregue em U2/U3")
 - [ ] U4 — Compras, Fornecedor 360, Estoque/Produto
 - [ ] U5 — A receber/A pagar, `SettleFlow`, `InstallmentPlanEditor`, Movimentações, Resultado, Indicadores
 - [ ] Zero aviso de lint `no-restricted-*` em `app/` e `components/` (legado migrado) e componentes antigos removidos
-- [ ] Tarefas-ouro TO-1..TO-7 em e2e (desktop + iPhone + Pixel) e metas de desempenho verdes no CI
+- [ ] Tarefas-ouro TO-1..TO-7 em e2e (desktop + iPhone + Pixel) e metas de desempenho verdes no CI — TO-1, TO-2, TO-3, TO-4 e TO-6 escritas (verdes em desktop e Pixel; iPhone/WebKit só no CI); faltam TO-5 e TO-7 (U5)
 - [ ] Dono validou as questões em aberto (AYD-011 §13), em especial o aparelho de referência (nº 9)

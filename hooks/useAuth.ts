@@ -9,13 +9,21 @@ import {
   signOut as firebaseSignOut,
   type User,
 } from "firebase/auth";
-import { getFirebaseAuth, googleProvider } from "@/lib/firebase";
+import { E2E_USER, IS_E2E, getFirebaseAuth, googleProvider } from "@/lib/firebase";
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (IS_E2E) {
+      // e2e: entra como o dono, depois da hidratação (a pré-renderização é igual à de produção).
+      const t = setTimeout(() => {
+        setUser(E2E_USER as unknown as User);
+        setLoading(false);
+      }, 0);
+      return () => clearTimeout(t);
+    }
     const auth = getFirebaseAuth();
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
