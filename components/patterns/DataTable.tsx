@@ -40,6 +40,8 @@ export interface DataTableGrouping<T> {
   label: (key: string, rows: T[]) => ReactNode;
   /** Resumo do grupo (somas) mostrado no cabeçalho. */
   summary?: (key: string, rows: T[]) => ReactNode;
+  /** Ações do grupo (ex.: "Pagar tudo deste credor"), ao lado do cabeçalho — fora do botão que recolhe. */
+  actions?: (key: string, rows: T[]) => ReactNode;
   order?: readonly string[];
   lastKeys?: readonly string[];
   /** Grupos começam recolhidos? (padrão: expandidos) */
@@ -51,7 +53,7 @@ export interface DataTableProps<T> {
   rows: readonly T[];
   rowKey: (row: T) => string;
   /** LINK REAL da linha (abre em nova aba, teclado, leitor de tela — F16). */
-  rowHref?: (row: T) => string;
+  rowHref?: (row: T) => string | undefined;
   isLoading?: boolean;
   error?: unknown;
   onRetry?: () => void;
@@ -140,6 +142,7 @@ export function DataTable<T>({
               <GroupToggle
                 label={grouping.label(g.key, g.rows)}
                 summary={grouping.summary?.(g.key, g.rows)}
+                actions={grouping.actions?.(g.key, g.rows)}
                 open={!isCollapsed(g.key)}
                 onToggle={() => toggle(g.key)}
               />
@@ -205,9 +208,10 @@ export function DataTable<T>({
                     <GroupToggle
                       label={grouping.label(g.key, g.rows)}
                       summary={grouping.summary?.(g.key, g.rows)}
+                      actions={grouping.actions?.(g.key, g.rows)}
                       open={!isCollapsed(g.key)}
                       onToggle={() => toggle(g.key)}
-                          />
+                    />
                   </td>
                 </tr>
               )}
@@ -238,25 +242,30 @@ export function DataTable<T>({
 function GroupToggle({
   label,
   summary,
+  actions,
   open,
   onToggle,
 }: {
   label: ReactNode;
   summary?: ReactNode;
+  actions?: ReactNode;
   open: boolean;
   onToggle: () => void;
 }) {
   return (
-    <button
-      type="button"
-      aria-expanded={open}
-      onClick={onToggle}
-      className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none max-md:bg-muted/30"
-    >
-      {open ? <ChevronDown className="size-4 shrink-0" aria-hidden /> : <ChevronRight className="size-4 shrink-0" aria-hidden />}
-      <span className="min-w-0 flex-1 truncate">{label}</span>
-      {summary && <span className="shrink-0 text-xs font-normal text-muted-foreground">{summary}</span>}
-    </button>
+    <div className="flex flex-wrap items-center gap-x-2 max-md:rounded-lg max-md:bg-muted/30">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={onToggle}
+        className="flex min-h-11 min-w-0 flex-1 basis-48 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+      >
+        {open ? <ChevronDown className="size-4 shrink-0" aria-hidden /> : <ChevronRight className="size-4 shrink-0" aria-hidden />}
+        <span className="min-w-0 flex-1 truncate">{label}</span>
+        {summary && <span className="shrink-0 text-xs font-normal text-muted-foreground">{summary}</span>}
+      </button>
+      {actions && <div className="flex shrink-0 items-center gap-2 px-3 pb-2 md:pb-0">{actions}</div>}
+    </div>
   );
 }
 

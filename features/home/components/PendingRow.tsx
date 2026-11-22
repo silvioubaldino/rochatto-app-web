@@ -1,17 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DateText, MoneyText } from "@/components/patterns/values";
 import { StatusBadge } from "@/components/patterns/StatusBadge";
+import { useSettleFlow } from "@/components/entity/settle-flow";
 import { useConfirm, useUndoToast } from "@/components/patterns/ConfirmDialog";
 import { useGeneratePurchase, useSetPurchaseStatus, queueItemIds } from "@/features/purchasing/mutations";
 import { useSetDelivery } from "@/features/sales/mutations";
 import { useRouter } from "next/navigation";
 import type { PendingActionGroup, PendingActionItem, PendingSaleItemGroup } from "@/lib/types";
 import { itemContext, itemHref, itemLabel, rowAction } from "../model";
-import { SettleFromPending } from "./SettleFromPending";
 
 /** Uma pendência: o que é, quando, quanto e o botão que a resolve ali mesmo (UX-2). */
 export function PendingRow({
@@ -29,7 +28,7 @@ export function PendingRow({
   const delivery = useSetDelivery();
   const status = useSetPurchaseStatus();
   const generate = useGeneratePurchase();
-  const [settling, setSettling] = useState(false);
+  const settle = useSettleFlow();
   const action = rowAction(kind, item);
   const busy = delivery.pending || status.pending || generate.pending;
 
@@ -37,7 +36,8 @@ export function PendingRow({
     const id = item.entity.id;
     switch (action.id) {
       case "settle":
-        setSettling(true);
+        // Receber/Pagar no SettleFlow; concluído, o toast oferece "Desfazer".
+        settle.open({ obligationIds: [id] });
         return;
       case "deliver": {
         const ok = await delivery.mutate(id, "DELIVERED");
@@ -84,7 +84,6 @@ export function PendingRow({
       <Button size="sm" variant={item.overdue ? "default" : "outline"} onClick={run} disabled={busy}>
         {action.label}
       </Button>
-      {settling && <SettleFromPending obligationId={item.entity.id} onClose={() => setSettling(false)} />}
     </li>
   );
 }

@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { formatMoeda } from "@/lib/formatters";
 import type { VendasPorMes } from "@/lib/types";
 
-interface VendasChartProps {
+interface MonthlySalesChartProps {
   dados: VendasPorMes[];
   isLoading?: boolean;
   meses: number;
@@ -72,12 +72,12 @@ function CustomTooltip({
   );
 }
 
-export function VendasChart({
+export function MonthlySalesChart({
   dados,
   isLoading,
   meses,
   onChangeMeses,
-}: VendasChartProps) {
+}: MonthlySalesChartProps) {
   const safeData = Array.isArray(dados) ? dados : [];
   const chartData = safeData.map((d) => ({
     ...d,

@@ -82,6 +82,22 @@ describe("DataTable — desktop", () => {
     expect(screen.queryByText("Venda nº 98")).not.toBeInTheDocument();
     expect(screen.getByText("Venda nº 99")).toBeInTheDocument(); // outro grupo continua
   });
+
+  it("as ações do grupo ficam ao lado do cabeçalho, fora do botão que recolhe", async () => {
+    const user = userEvent.setup();
+    render(
+      <DataTable
+        {...base}
+        mode="table"
+        grouping={{ keyOf: (r) => r.city, label: (key) => key, actions: (key) => <button type="button">Pagar tudo de {key}</button> }}
+      />,
+    );
+    const toggle = screen.getByRole("button", { name: "Bonito" });
+    const action = screen.getByRole("button", { name: "Pagar tudo de Bonito" });
+    expect(toggle).not.toContainElement(action);
+    await user.click(toggle);
+    expect(action).toBeInTheDocument(); // recolher o grupo não esconde a ação do cabeçalho
+  });
 });
 
 describe("DataTable — celular (cartões)", () => {

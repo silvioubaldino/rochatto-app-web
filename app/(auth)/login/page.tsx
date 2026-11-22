@@ -101,17 +101,17 @@ function LoginForm() {
 
   if (loading || user) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
+      <div className="flex h-screen items-center justify-center bg-muted">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-teal-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-muted via-background to-muted px-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 drop-shadow-sm">
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground drop-shadow-sm">
             Rochatto App
           </h1>
           <p className="text-muted-foreground font-medium">
@@ -226,7 +226,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="flex h-screen items-center justify-center bg-muted">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       }

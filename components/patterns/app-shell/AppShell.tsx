@@ -36,6 +36,7 @@ import { ResponsiveDialog } from "@/components/patterns/ResponsiveDialog";
 import { PageSkeleton } from "@/components/patterns/skeletons";
 import { EntitySheetHost } from "@/components/entity/EntitySheet";
 import { QuickCreateProvider, hasQuickCreate, useQuickCreate } from "@/components/entity/quick-create";
+import { SettleFlowProvider } from "@/components/entity/settle-flow";
 import {
   BOTTOM_BAR_IDS,
   NAV_GROUPS,
@@ -97,13 +98,15 @@ function Badge({ count }: { count?: number }) {
  * Casca do app (UX-P13): barra do topo, lateral no desktop, barra inferior no celular
  * (Hoje · Orçamentos · ＋ · Vendas · Mais), áreas seguras, `dvh`. APARECE ANTES da
  * autenticação resolver — sem spinner de página inteira (F27): o conteúdo é esqueleto.
- * Também hospeda os serviços globais: ConfirmProvider, QuickCreateProvider, EntitySheet.
+ * Também hospeda os serviços globais: ConfirmProvider, QuickCreateProvider, SettleFlowProvider, EntitySheet.
  */
 export function AppShell(props: AppShellProps) {
   return (
     <ConfirmProvider>
       <QuickCreateProvider>
-        <ShellLayout {...props} />
+        <SettleFlowProvider>
+          <ShellLayout {...props} />
+        </SettleFlowProvider>
       </QuickCreateProvider>
     </ConfirmProvider>
   );

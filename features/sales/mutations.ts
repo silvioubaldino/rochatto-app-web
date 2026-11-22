@@ -3,12 +3,14 @@
 import { http } from "@/lib/http";
 import { useApiMutation } from "@/lib/mutation";
 import { diffLines, type ItemLine } from "@/components/entity/items-grid";
-import { toInstallmentsPayload, type PlanLine } from "@/components/entity/installment-plan";
 import { toSaleItemPayload, toSaleUpdatePayload, type SaleItemDraft } from "@/lib/sales";
+import { toSaleCostPayload, type toSaleChargePayload } from "@/lib/schemas";
 import type {
   BatchFulfillmentItem,
   BatchFulfillmentResponse,
   ItemVendaWriteResponse,
+  SaleCharge,
+  SaleCost,
   SaleDeliveryStatus,
   SaleItemWarning,
   Venda,
@@ -104,15 +106,75 @@ export function useBatchFulfillment(saleId: string) {
   });
 }
 
-/** Plano de recebimento da conta a receber (PUT /obligations/{id}/installments). */
-export function useSetInstallments() {
+/** Plano de recebimento da conta a receber: o mesmo hook das contas (features/finance). */
+export { useSetInstallments } from "@/features/finance/mutations";
+
+// --- Composição da venda (AYD-009): cobranças ao cliente e custos da venda com credor -------------
+
+type ChargePayload = ReturnType<typeof toSaleChargePayload>;
+type CostPayload = ReturnType<typeof toSaleCostPayload>;
+
+/** Cobrança adicional (frete cobrado): criar ou editar. Devolve a cobrança. */
+export function useSaveSaleCharge(saleId: string, charge?: SaleCharge) {
   return useApiMutation({
-    run: async (obligationId: string, lines: readonly PlanLine[]) => {
-      await http.put(`/obligations/${obligationId}/installments`, { installments: toInstallmentsPayload(lines) });
+    run: (payload: ChargePayload) =>
+      charge ? http.put<SaleCharge>(`/vendas/${saleId}/charges/${charge.id}`, payload) : http.post<SaleCharge>(`/vendas/${saleId}/charges`, payload),
+    emits: "SALE_CHANGED",
+    successMessage: charge ? "Cobrança atualizada." : "Cobrança lançada.",
+    toastOnError: false,
+  });
+}
+
+/** Remove a cobrança (quem chama oferece "Desfazer" recriando-a). */
+export function useDeleteSaleCharge(saleId: string) {
+  return useApiMutation({
+    run: async (chargeId: string) => {
+      await http.delete(`/vendas/${saleId}/charges/${chargeId}`);
       return true as const;
     },
-    emits: "MONEY_MOVED",
-    successMessage: "Plano de recebimento salvo.",
+    emits: "SALE_CHANGED",
+    errorFallback: "Erro ao remover a cobrança.",
+  });
+}
+
+export function useRestoreSaleCharge(saleId: string) {
+  return useApiMutation({
+    run: (c: SaleCharge) => http.post<SaleCharge>(`/vendas/${saleId}/charges`, { kind: c.kind, amount: c.amount, description: c.description }),
+    emits: "SALE_CHANGED",
+    errorFallback: "Não foi possível desfazer.",
+  });
+}
+
+/** Custo da venda (frete pago, instalador, comissão, outro): criar ou editar. `warnings` = OVERSETTLED. */
+export function useSaveSaleCost(saleId: string, cost?: SaleCost) {
+  return useApiMutation({
+    run: (payload: CostPayload) =>
+      cost ? http.put<SaleCost>(`/vendas/${saleId}/costs/${cost.id}`, payload) : http.post<SaleCost>(`/vendas/${saleId}/costs`, payload),
+    emits: ["SALE_CHANGED", "MONEY_MOVED"],
+    successMessage: cost ? "Custo atualizado." : "Custo lançado.",
     toastOnError: false,
+  });
+}
+
+export function useDeleteSaleCost(saleId: string) {
+  return useApiMutation({
+    run: async (costId: string) => {
+      await http.delete(`/vendas/${saleId}/costs/${costId}`);
+      return true as const;
+    },
+    emits: ["SALE_CHANGED", "MONEY_MOVED"],
+    errorFallback: "Erro ao remover o custo.",
+  });
+}
+
+export function useRestoreSaleCost(saleId: string) {
+  return useApiMutation({
+    run: (c: SaleCost) =>
+      http.post<SaleCost>(`/vendas/${saleId}/costs`, toSaleCostPayload(
+        { kind: c.kind, amount: c.amount, description: c.description ?? "", payee_id: c.payee?.id ?? "" },
+        c.sale_item_id,
+      )),
+    emits: ["SALE_CHANGED", "MONEY_MOVED"],
+    errorFallback: "Não foi possível desfazer.",
   });
 }

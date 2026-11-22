@@ -29,3 +29,13 @@ export function useAuthorizationRequest(id: string | null) {
   );
   return { request: data, isLoading, error };
 }
+
+/** Desconecta uma Connection (`DELETE /oauth/connections/{id}`). */
+export async function revokeConnection(id: string): Promise<void> {
+  await api.delete(`/oauth/connections/${id}`);
+}
+
+/** Decide um pedido de conexão (aprovar/negar); devolve o redirecionamento. */
+export function decideAuthorization<T>(requestId: string, action: "approve" | "deny"): Promise<T> {
+  return api.post<T>(`/oauth/authorization-requests/${encodeURIComponent(requestId)}/${action}`, {});
+}

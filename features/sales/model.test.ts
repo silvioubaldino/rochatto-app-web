@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ItemLine } from "@/components/entity/items-grid";
 import type { ItemVenda, Venda } from "@/lib/types";
-import { chipOf, chipPatch, attendanceView, cancelBlockedReason, chipFilters, isLate, lockReasonFor, nextStep, type PurchaseInfo, type SaleStepContext } from "./model";
+import { chipOf, chipPatch, attendanceView, cancelBlockedReason, chipFilters, defaultPayee, isLate, lockReasonFor, nextStep, saleBreakdown, type PurchaseInfo, type SaleStepContext } from "./model";
 
 const TODAY = "2026-11-22";
 const item = (over: Partial<ItemVenda> = {}): ItemVenda => ({
@@ -116,5 +116,18 @@ describe("chipOf / chipPatch", () => {
   it("combinação de um painel não acende chip", () => {
     expect(chipOf({ ...none, payment_status: "PAID" })).toBe("custom");
     expect(chipOf({ ...none, delivery_status: "DELIVERED" })).toBe("custom");
+  });
+});
+
+describe("composição da venda", () => {
+  it("preço − pedras − custos = lucro; sem composição não há quebra", () => {
+    const sale = { composition: { price_total: 6742, costs_total: 150 } as never, lucro: 2482 };
+    expect(saleBreakdown(sale)).toEqual({ price: 6742, stones: 4110, costs: 150, profit: 2482 });
+    expect(saleBreakdown({ composition: undefined, lucro: 0 })).toBeNull();
+  });
+  it("só a comissão tem credor padrão (o parceiro indicador)", () => {
+    expect(defaultPayee("COMMISSION", "pt1")).toBe("pt1");
+    expect(defaultPayee("COMMISSION", undefined)).toBe("");
+    expect(defaultPayee("FREIGHT", "pt1")).toBe("");
   });
 });

@@ -6,6 +6,8 @@ import { http, HttpResponse } from "msw";
 import { server } from "@/tests/msw/server";
 import { API } from "@/tests/msw/handlers";
 import { ConfirmProvider } from "@/components/patterns/ConfirmDialog";
+import { SettleFlowProvider, registerSettleFlow } from "@/components/entity/settle-flow";
+import { SettleFlow } from "@/features/finance/components/SettleFlow";
 import { HomePage } from "./HomePage";
 
 const nav = vi.hoisted(() => ({ search: "", push: vi.fn(), replace: vi.fn() }));
@@ -15,11 +17,15 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(nav.search),
 }));
 
+registerSettleFlow(SettleFlow);
+
 function renderHome() {
   return render(
     <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
       <ConfirmProvider>
-        <HomePage />
+        <SettleFlowProvider>
+          <HomePage />
+        </SettleFlowProvider>
       </ConfirmProvider>
     </SWRConfig>,
   );

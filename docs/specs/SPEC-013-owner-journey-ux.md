@@ -15,7 +15,7 @@ related: [GLO, ADR-001@context, TDR-001]
 > §11 aceite). O web **consome** os contratos C1–C10 da api (SPEC-012@api); não os redefine.
 > Plano em fases **U0–U5**, cada uma publicável sozinha. **U0 e U1 foram entregues nos
 > primeiros commits do PR desta spec** (marcados abaixo); U2–U5 seguem sobre a fundação.
-> `draft` até o dono validar as questões em aberto do AYD-011 §13; vira `done` quando U5 sair.
+> `draft` com U0–U5 entregues até o dono validar as questões em aberto do AYD-011 §13 e o CI confirmar iPhone/WebKit e o desempenho; então vira `done`.
 
 ## Objetivo
 
@@ -250,9 +250,27 @@ vazio/erro/esqueleto), `FilterBar` + `useUrlFilters`, `useUrlTab`, `DetailLayout
 6. [x] Cadastros (T16): Clientes, Produtos, Categorias, Serviços, Fornecedores e Parceiros em `CatalogList` (`components/entity`) sobre `DataTable`, com busca/filtros na URL e menu Editar/Excluir; `components/catalogs`, `components/forms`, `components/purchases`, `components/stock` e `components/tables/DataTable` removidos.
 7. [x] §9.4: `ClosingItemsSection` (e o modelo de atendimento dos Items) saiu de `features/closing` para `components/entity/closing-items`; `features/sales` deixou de importar componente de `features/closing`.
 
-### U5 · Financeiro — a fazer
+### U5 · Financeiro — entregue
 
-A receber / A pagar (chips, credor por combobox incluindo Partners — F13, agrupar por credor), `SettleFlow` (1..N contas, desfazer) no lugar de `SettleDialog`/`BulkSettleDialog`, `InstallmentPlanEditor`, Movimentações (Despesa / Receita avulsa), Resultado e Indicadores com o mesmo `PeriodSelector`.
+1. [x] **SettleFlow** (`features/finance/components/SettleFlow.tsx`, UX-P09): Pagar/Receber 1..N contas — valor por conta editável, data, forma; uma movimentação quita todas (`POST /settlements`); concluído, o toast oferece **Desfazer** (anula a movimentação, 8 s); 409 e contas de direções misturadas explicados no próprio diálogo; aviso de credores diferentes. A implementação se **registra** em `components/entity/settle-flow` (como o QuickCreate: `useSettleFlow().open({ obligations | obligationIds })`, hospedado no `AppShell`), então qualquer feature o abre sem importar outra feature. Aberto de /hoje (pendência), venda, compra, Fornecedor 360, A receber/A pagar, conta e prévia da conta. Substitui `SettleDialog`, `BulkSettleDialog` e `SettleFromPending`.
+2. [x] A receber / A pagar (T14): chips Vencidas · Próximos 7 dias · Em aberto · Todas, credor por `EntityCombobox` (Supplier **e** Partner em A pagar — F13; Cliente em A receber), "Por credor" (somas por credor e **Pagar tudo deste credor** — `grouping.actions` novo no `DataTable`), seleção múltipla (`SelectBox`, 44 px no celular) → SettleFlow, ação Receber/Pagar na linha, filtros e página na URL (`quando`, `counterparty_*`, `agrupar`, `offset`).
+3. [x] Conta (T14) em `/contas/[id]` no `DetailLayout`: resumo, componentes, **parcelas pelo `InstallmentPlanEditor`** (`PlanDialog`, com as parcelas atuais como ponto de partida; forma e observação preservadas — `planFromInstallments`, `PlanLine.notes`), quitações com **Desfazer** (refaz a MESMA movimentação por `movement_id`), prazo e observações; prévia da conta (`?peek=obligation:id`) com Receber/Pagar. Substitui `GenerateInstallmentsDialog`, `InstallmentsEditor`, `ObligationPatchDialog`, `UndoSettlementDialog`, `OriginObligations`.
+4. [x] Composição da venda: `SaleComposition`, `SaleChargeDialog` e `SaleCostDialog` (`features/sales`) no lugar de `SaleCompositionCard`/`SaleChargeModal`/`SaleCostModal`; credor por `EntityCombobox` (Partner para comissão), remover com **Desfazer** (recria); `saleBreakdown` em `model.ts`.
+5. [x] Movimentações (T14): **Despesa** e **Receita avulsa** (categorias pelo sinal), correção, anular com confirmação, lançamento novo com **Desfazer**; período pelo mesmo `PeriodSelector`, chips de sentido/alocação e categoria na URL; "＋ Novo" ganhou "Receita avulsa" (`?nova=despesa|receita`); o parâmetro antigo `unallocated_only` segue valendo.
+6. [x] Resultado (ex-Financeiro, `/financeiro`) e Indicadores (T15): `features/finance/components/ResultPage` e `features/dashboard`, com o **mesmo** `PeriodSelector` guardado na URL (`useUrlPeriod`), `StatCard` com link para a lista que compõe cada número, rankings de Products/Services no `DataTable` (linha → prévia do produto) e tom da margem pelo mapa único (`marginTone`). `components/dashboard`, `components/obligations`, `components/movements`, `components/sales` removidos.
+7. [x] Limpeza: telas legadas de `app/` (login, conectar, integrações) sem cor crua nem `@/lib/api` em componente; schemas e filtros antigos de `lib/schemas.ts`/`lib/obligations.ts` sem uso removidos. **Zero aviso de lint** em `app/`, `components/`, `features/`.
+8. [x] E2E: TO-5 (Fornecedor 360 → Pagar contas em aberto → Pix → uma movimentação) e TO-7 (＋ → Despesa → categoria → valor → Lançar), ambas com "Desfazer"; TO-4 agora pelo SettleFlow; verificação de alvos de toque ≥ 44 px nos diálogos no celular; `e2e/screens.spec.ts` abre as telas de U4/U5 em 360 px sem rolagem lateral.
+
+### Divergências e lacunas (U4/U5)
+
+- **Sem mudança de contrato.** Nenhuma chamada nova; tudo usa C1–C10 e os endpoints existentes.
+- **Pagar/Receber sempre por `POST /settlements`** (uma ou N contas), em vez de `POST /obligations/{id}/settle` para uma conta só: mesmo efeito (SettleRequest), uma rota só no web.
+- **Desfazer do Pagar/Receber = `DELETE /financial-movements/{id}`** (UX-P09). Anular uma movimentação que o dono já tinha lançado antes **não** oferece desfazer (cascata: leva as quitações junto) — pede confirmação.
+- **Lacuna de dados (sem alterar contrato):** `PurchaseSaleItem` só traz `sale_id` — o número e a situação de entrega da venda na Compra vêm de `GET /vendas` (uma leitura a mais, só em compra sob encomenda); idealmente a api devolveria `sale_number` e `delivery_status` no Item da Compra.
+- **Lacuna de dados:** `GET /financial-movements` não devolve a conta de cada quitação (só `obligation_id` e valor), então a coluna "Alocação" mostra o valor, não o credor — o nome sairia da prévia da conta ao abrir.
+- **"Categorias mais usadas primeiro"** (T14, Movimentações) não é possível sem a api informar uso: a ordem é a fixa de `EXPENSE_CATEGORIES`.
+- **"Comprado no período" do Fornecedor 360** usa uma janela fixa de 90 dias, somada no cliente sobre as compras do fornecedor (o AYD-011 não fixa o período).
+- O desktop do iPhone/WebKit segue sem rodar neste ambiente (cdn.playwright.dev bloqueado); os testes de celular rodaram no perfil Pixel (Chromium).
 
 ## Arquivos / módulos afetados
 
@@ -304,7 +322,7 @@ A receber / A pagar (chips, credor por combobox incluindo Partners — F13, agru
 - [x] U2 — Hoje, menu agrupado/rotas novas, ⌘K, "Novo" global, números humanos
 - [x] U3 — `ItemsGrid`, editor de orçamento, Fechar venda, detalhe da venda, Cliente/Parceiro 360, listas migradas (pendências: ver "Entregue em U2/U3")
 - [x] U4 — Compras, Fornecedor 360, Estoque/Produto, cadastros em `CatalogList`
-- [ ] U5 — A receber/A pagar, `SettleFlow`, `InstallmentPlanEditor`, Movimentações, Resultado, Indicadores
-- [ ] Zero aviso de lint `no-restricted-*` em `app/` e `components/` (legado migrado) e componentes antigos removidos
-- [ ] Tarefas-ouro TO-1..TO-7 em e2e (desktop + iPhone + Pixel) e metas de desempenho verdes no CI — TO-1, TO-2, TO-3, TO-4 e TO-6 escritas (verdes em desktop e Pixel; iPhone/WebKit só no CI); faltam TO-5 e TO-7 (U5)
+- [x] U5 — A receber/A pagar, `SettleFlow` (com Desfazer), `InstallmentPlanEditor` nas contas, Movimentações (Despesa/Receita avulsa), Resultado e Indicadores com o mesmo `PeriodSelector`
+- [x] Zero aviso de lint `no-restricted-*` em `app/` e `components/` (legado migrado) e componentes antigos removidos
+- [ ] Tarefas-ouro TO-1..TO-7 em e2e (desktop + iPhone + Pixel) e metas de desempenho verdes no CI — falta só a confirmação no CI (WebKit) e o Lighthouse nas rotas Hoje, Orçamento, Fechar venda, Venda e A receber — TO-1 a TO-7 escritas (verdes em desktop e Pixel; iPhone/WebKit só no CI)
 - [ ] Dono validou as questões em aberto (AYD-011 §13), em especial o aparelho de referência (nº 9)

@@ -1,12 +1,7 @@
 "use client";
 
-import { Suspense } from "react";
-import { ObligationsView } from "@/components/obligations/ObligationsView";
+import { ObligationsPage } from "@/features/finance/components/ObligationsPage";
 
 export default function ReceivablesPage() {
-  return (
-    <Suspense fallback={null}>
-      <ObligationsView direction="RECEIVABLE" />
-    </Suspense>
-  );
+  return <ObligationsPage direction="RECEIVABLE" />;
 }

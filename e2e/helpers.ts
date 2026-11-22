@@ -13,9 +13,16 @@ export async function smallTouchTargets(page: Page, min = 44): Promise<string[]>
       .filter((el) => {
         const r = el.getBoundingClientRect();
         const style = getComputedStyle(el);
-        return r.width > 0 && r.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+        // Os campos escondidos do Select (Base UI) são só para formulário: `aria-hidden` e fora da ordem de tabulação.
+        const hiddenFromUser = el.getAttribute("aria-hidden") === "true" || el.tabIndex === -1;
+        return r.width > 0 && r.height > 0 && style.visibility !== "hidden" && style.display !== "none" && !hiddenFromUser;
       })
-      .filter((el) => el.getBoundingClientRect().height < minSize)
+      .filter((el) => {
+        // Link de linha/cartão do DataTable: o ::after cobre o cartão todo, então o alvo é o cartão.
+        const stretched = getComputedStyle(el, "::after").position === "absolute" && el.offsetParent instanceof HTMLElement;
+        const target = stretched ? (el.offsetParent as HTMLElement) : el;
+        return target.getBoundingClientRect().height < minSize;
+      })
       .map((el) => `${el.tagName.toLowerCase()}:${(el.getAttribute("aria-label") ?? el.textContent ?? "").trim().slice(0, 30)}`);
   }, min);
 }

@@ -127,6 +127,7 @@ export const NEW_MENU: readonly NewMenuEntry[] = [
   { id: "receive", label: "Receber", href: "/contas/receber" },
   { id: "pay", label: "Pagar", href: "/contas/pagar" },
   { id: "expense", label: "Despesa", href: "/movimentacoes?nova=despesa" },
+  { id: "income", label: "Receita avulsa", href: "/movimentacoes?nova=receita" },
   { id: "customer", label: "Cliente", quickCreate: "customer" },
   { id: "product", label: "Produto", quickCreate: "product" },
   { id: "supplier", label: "Fornecedor ou prestador", quickCreate: "supplier" },

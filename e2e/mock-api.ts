@@ -54,9 +54,25 @@ const obligation = (open: number) => ({
   status: open > 0 ? "OPEN" : "SETTLED", due_date: addDays(-1), overdue: open > 0, next_installment: { due_date: addDays(-1), amount_open: open }, notes: null,
 });
 
+const purchaseRow = { id: "pu1", number: 12, kind: "MADE_TO_ORDER", status: "ORDERED", supplier_id: "f1", supplier_name: "Matheus RJ", expected_date: addDays(-1), notes: null, ordered_at: ts, received_at: null, total_cost: 2970, payable: 2970, paid: 0, created_at: ts };
+const purchaseDetail = {
+  ...purchaseRow, open: 2970, allocation_method: "BY_QUANTITY", items: [],
+  sale_items: [{ id: "si1", sale_id: "s1", customer_name: "Alejandra Souza", produto_nome: "Rock face", quantidade: 18, custo_unit: 165 }],
+  composition: { goods_total: 2970, charges: [{ id: "ch1", purchase_id: "pu1", kind: "FREIGHT", amount: 120, description: null, payee_supplier_id: "f3", payee_name: "Motorista Y", obligation_id: null }], charges_total: 120, total: 3090 },
+  lines: [{ line_type: "SALE_ITEM", line_id: "si1", product_id: "p1", product_name: "Rock face", unit: "m²", quantity: 18, unit_cost: 165, base_cost: 2970, allocated_charges: 120, landed_total: 3090, landed_unit_cost: 171.67 }],
+  obligations: [],
+};
+
+const supplierPayable = (id: string, open: number) => ({
+  id, direction: "PAYABLE", origin: { type: "PURCHASE", id: "pu1", label: "Compra nº 12" },
+  counterparty: { type: "SUPPLIER", id: "f1", name: "Matheus RJ" }, amount: open, settled: 0, open,
+  status: "OPEN", due_date: addDays(3), overdue: false, next_installment: { due_date: addDays(3), amount_open: open }, notes: null,
+});
+
 export async function mockApi(page: Page): Promise<MockApi> {
   const writes: MockApi["writes"] = [];
   let received = false;
+  let supplierPaid = false;
   const json = (route: Route, body: unknown, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
 
   await page.route("**/api/v1/**", async (route) => {
@@ -101,12 +117,17 @@ export async function mockApi(page: Page): Promise<MockApi> {
       if (path === "/obligations") {
         const dir = url.searchParams.get("direction");
         const origin = url.searchParams.get("origin_type");
-        const items = dir === "RECEIVABLE" || origin === "SALE" ? [obligation(received ? 0 : 3200)] : [];
+        const supplier = url.searchParams.get("counterparty_type") === "SUPPLIER";
+        const items = supplier
+          ? supplierPaid ? [] : [supplierPayable("o2", 1200), supplierPayable("o3", 300.5)]
+          : dir === "RECEIVABLE" || origin === "SALE" ? [obligation(received ? 0 : 3200)] : [];
         return json(route, { items, totals: { amount: 0, settled: 0, open: 0 }, total: items.length, offset: 0, has_more: false });
       }
       if (path === "/dashboard/kpis") return json(route, { period: { from: TODAY, to: TODAY }, sales: { count: 3, revenue: 48200, profit: 14900, average_ticket: 16066 }, quotes: { created: 7, won: 3, lost: 1, open: 3, conversion_rate: 0.42 }, balances: { receivable: 0, payable: 0, payable_by_counterparty_kind: [] }, open_deliveries: 1 });
+      if (path === "/financial-movements") return json(route, { items: [], totals: { inflow: 0, outflow: 0, net: 0 }, total: 0, offset: 0, has_more: false });
       if (path === "/purchases/pending-sale-items") return json(route, []);
-      if (path === "/purchases") return json(route, []);
+      if (path === "/purchases/pu1") return json(route, purchaseDetail);
+      if (path === "/purchases") return json(route, [purchaseRow]);
       return json(route, []);
     }
 
@@ -114,10 +135,13 @@ export async function mockApi(page: Page): Promise<MockApi> {
     if (method === "POST" && path === "/produtos") return json(route, { id: "p-new", nome: (body as { nome: string }).nome, unidade: "m²", preco_referencia: 80, custo_referencia: 40, created_at: ts }, 201);
     if (method === "POST" && path === "/quotes") return json(route, { ...quote, id: "q-new" }, 201);
     if (method === "POST" && path === "/quotes/q154/convert") return json(route, { sale_id: "s1", quote_id: "q154", sale_number: 98 }, 201);
-    if (method === "POST" && path === "/obligations/o1/settle") {
-      received = true;
-      return json(route, { movement: { id: "m1" }, obligations: [obligation(0)] }, 201);
+    if (method === "POST" && path === "/settlements") {
+      const first = (body as { allocations: { obligation_id: string }[] }).allocations[0]?.obligation_id;
+      if (first === "o1") received = true;
+      else supplierPaid = true;
+      return json(route, { movement: { id: first === "o1" ? "m1" : "m2" }, obligations: [] }, 201);
     }
+    if (method === "POST" && path === "/financial-movements") return json(route, { id: "m3" }, 201);
     if (method === "POST" && path === "/purchases") return json(route, { id: "pu1", number: 12 }, 201);
     return json(route, {});
   });

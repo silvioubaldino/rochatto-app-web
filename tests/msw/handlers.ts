@@ -93,6 +93,23 @@ export const purchaseRows = [
   { id: "pu1", number: 12, kind: "MADE_TO_ORDER", status: "OPEN", supplier_id: "f1", supplier_name: "Matheus RJ", expected_date: null, notes: null, ordered_at: null, received_at: null, total_cost: 2970, payable: 2970, paid: 0, created_at: "2026-11-20T10:00:00Z" },
 ];
 
+const payable = (id: string, open: number, supplier: { id: string; nome: string }, overdue = false) => ({
+  id,
+  direction: "PAYABLE",
+  origin: { type: "PURCHASE", id: "pu1", label: "Compra nº 12" },
+  counterparty: { type: "SUPPLIER", id: supplier.id, name: supplier.nome },
+  amount: open,
+  settled: 0,
+  open,
+  status: "OPEN",
+  due_date: "2026-11-25",
+  overdue,
+  next_installment: { due_date: "2026-11-25", amount_open: open },
+  notes: null,
+});
+
+export const payables = [payable("o1", 1200, suppliers[0], true), payable("o2", 300.5, suppliers[0]), payable("o3", 80, suppliers[1])];
+
 /** Handlers padrão. Cada teste sobrescreve o que precisar com `server.use(...)`. */
 export const handlers = [
   http.get(`${API}/produtos`, () => HttpResponse.json(products)),
@@ -103,6 +120,7 @@ export const handlers = [
   }),
   http.get(`${API}/services`, () => HttpResponse.json(services)),
   http.get(`${API}/stock/balance`, () => HttpResponse.json([{ product_id: "p2", balance: 4 }, { product_id: "p1", balance: 25 }])),
+  http.get(`${API}/obligations`, () => HttpResponse.json({ items: payables, totals: { amount: 1580.5, settled: 0, open: 1580.5 }, total: 3, offset: 0, has_more: false })),
   http.get(`${API}/purchases/pending-sale-items`, () => HttpResponse.json(queueGroups)),
   http.get(`${API}/purchases`, () => HttpResponse.json(purchaseRows)),
   http.get(`${API}/pending-actions`, () => HttpResponse.json(pendingActions)),

@@ -21,6 +21,8 @@ export interface PlanLine {
   due_date: string;
   amount: number;
   payment_method?: PaymentMethod;
+  /** Observação da parcela (preservada ao editar um plano existente). */
+  notes?: string;
 }
 
 export interface PlanState {
@@ -108,7 +110,7 @@ export const planTotal = (lines: readonly PlanLine[]): number => fromCents(lines
 export function validatePlan(lines: readonly PlanLine[], total: number): string | null {
   if (lines.some((l) => !(l.amount > 0))) return "Toda parcela precisa de valor maior que zero.";
   if (lines.some((l) => !l.due_date)) return "Toda parcela precisa de data.";
-  if (cents(planTotal(lines)) > cents(total)) return "A soma das parcelas passa do valor da venda.";
+  if (cents(planTotal(lines)) > cents(total)) return "A soma das parcelas passa do valor a parcelar.";
   return null;
 }
 
@@ -123,7 +125,25 @@ export function toInstallmentsPayload(lines: readonly PlanLine[]) {
     due_date: l.due_date,
     amount: l.amount,
     ...(l.payment_method ? { payment_method: l.payment_method } : {}),
+    ...(l.notes?.trim() ? { notes: l.notes.trim() } : {}),
   }));
+}
+
+/** O plano atual de uma conta como estado editável ("Personalizado", linhas = parcelas). */
+export function planFromInstallments(
+  installments: readonly { id: string; due_date: string; amount: number; payment_method: PaymentMethod | null; notes: string | null }[],
+  today: string,
+): PlanState {
+  return {
+    ...initialPlanState(today, "custom"),
+    lines: installments.map((i) => ({
+      key: `inst-${i.id}`,
+      due_date: i.due_date.slice(0, 10),
+      amount: i.amount,
+      ...(i.payment_method ? { payment_method: i.payment_method } : {}),
+      ...(i.notes ? { notes: i.notes } : {}),
+    })),
+  };
 }
 
 /** Quando o dono edita uma linha de um preset, vira `custom` com as linhas atuais. */

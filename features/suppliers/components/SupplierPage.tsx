@@ -15,13 +15,12 @@ import { ErrorState } from "@/components/patterns/states";
 import { StatusBadge } from "@/components/patterns/StatusBadge";
 import { useUrlTab } from "@/components/patterns/useUrlTab";
 import { DateText, MoneyText, QuantityText } from "@/components/patterns/values";
-import { BulkSettleDialog } from "@/components/obligations/BulkSettleDialog";
+import { useSettleFlow } from "@/components/entity/settle-flow";
 import { useFornecedor } from "@/hooks/useFornecedores";
 import { useGeneratePurchase, queueItemIds } from "@/features/purchasing/mutations";
 import { purchaseTitle } from "@/features/purchasing/model";
 import { usePendingPurchaseQueue, usePurchases } from "@/features/purchasing/queries";
 import { SUPPLIER_KIND_LABELS, formatMoney, todayISO } from "@/lib/format";
-import { useEmit } from "@/lib/events";
 import { SUPPLIER_TABS, openPayables, supplierStats, type SupplierTab } from "../model";
 import { useSupplierPayables } from "../queries";
 import { SupplierForm } from "./SupplierForm";
@@ -38,7 +37,7 @@ function Stat({ label, children }: { label: string; children: React.ReactNode })
 /** Fornecedor ou prestador 360 (T10): quanto devo, o que comprei e o que falta comprar, numa página. */
 export function SupplierPage({ id }: { id: string }) {
   const router = useRouter();
-  const emit = useEmit();
+  const settle = useSettleFlow();
   const { fornecedor, isLoading, error } = useFornecedor(id);
   const { purchases, isLoading: purchasesLoading } = usePurchases({ supplier_id: id });
   const payables = useSupplierPayables(id);
@@ -46,7 +45,6 @@ export function SupplierPage({ id }: { id: string }) {
   const generate = useGeneratePurchase();
   const [tab, setTab] = useUrlTab(SUPPLIER_TABS, "compras");
   const [editing, setEditing] = useState(false);
-  const [paying, setPaying] = useState(false);
 
   if (error) return <ErrorState message="Fornecedor não encontrado." />;
   if (isLoading || !fornecedor) return <PageSkeleton className="max-w-5xl" />;
@@ -67,18 +65,15 @@ export function SupplierPage({ id }: { id: string }) {
         subtitle={[SUPPLIER_KIND_LABELS[fornecedor.kind], fornecedor.cidade, fornecedor.telefone].filter(Boolean).join(" · ")}
         backFallback="/fornecedores"
         backLabel="Fornecedores"
-        actions={
-          <div className="flex gap-2">
-            {toPay.length > 0 && <Button type="button" onClick={() => setPaying(true)}>Pagar contas em aberto</Button>}
-            {stats.queueItems > 0 && <Button type="button" variant="outline" onClick={() => void generateFromQueue()} disabled={generate.pending}>Gerar compra da fila</Button>}
-          </div>
-        }
-        menu={<ActionsMenu items={[
-          { id: "edit", label: "Editar cadastro", onSelect: () => setEditing(true) },
-          ...(toPay.length > 0 ? [{ id: "pay", label: "Pagar contas em aberto", onSelect: () => setPaying(true) }] : []),
-          ...(stats.queueItems > 0 ? [{ id: "generate", label: "Gerar compra da fila", onSelect: () => void generateFromQueue() }] : []),
-        ]} />}
+        menu={<ActionsMenu items={[{ id: "edit", label: "Editar cadastro", onSelect: () => setEditing(true) }]} />}
       />
+      {/* As ações do dia ficam visíveis no desktop e no celular (mesmos passos — UX-11). */}
+      {(toPay.length > 0 || stats.queueItems > 0) && (
+        <div className="flex flex-wrap gap-2">
+          {toPay.length > 0 && <Button type="button" onClick={() => settle.open({ obligations: toPay })}>Pagar contas em aberto</Button>}
+          {stats.queueItems > 0 && <Button type="button" variant="outline" onClick={() => void generateFromQueue()} disabled={generate.pending}>Gerar compra da fila</Button>}
+        </div>
+      )}
       {fornecedor.observacoes && <p className="whitespace-pre-wrap text-sm text-muted-foreground">{fornecedor.observacoes}</p>}
 
       <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -136,7 +131,6 @@ export function SupplierPage({ id }: { id: string }) {
       </Tabs>
 
       {editing && <EntityFormDialog open onClose={() => setEditing(false)} titles={{ create: "Novo fornecedor", edit: "Editar fornecedor" }} Form={SupplierForm} entity={fornecedor} />}
-      {paying && <BulkSettleDialog open obligations={toPay} onClose={() => setPaying(false)} onDone={() => void emit("MONEY_MOVED")} />}
     </div>
   );
 }

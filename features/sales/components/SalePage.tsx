@@ -9,15 +9,12 @@ import { ActionBar, DetailLayout, NextStepBanner, PageHeader, SummaryAside, type
 import { PageSkeleton } from "@/components/patterns/skeletons";
 import { ErrorState } from "@/components/patterns/states";
 import { StatusBadge } from "@/components/patterns/StatusBadge";
-import { SettleDialog } from "@/components/obligations/SettleDialog";
-import { SaleCompositionCard } from "@/components/sales/SaleCompositionCard";
+import { useSettleFlow } from "@/components/entity/settle-flow";
 import { useGeneratePurchase, useAttachToPurchase } from "@/features/purchasing/mutations";
 import { useStockBalance } from "@/features/stock/queries";
 import { useVenda } from "@/hooks/useVenda";
-import { useEmit } from "@/lib/events";
 import { docTitle, isServiceOnlySale, todayISO } from "@/lib/format";
 import { useIsPhone } from "@/lib/media";
-import type { Obligation } from "@/lib/types";
 import { cancelBlockedReason, nextStep } from "../model";
 import { useCancelSale, useSetDelivery } from "../mutations";
 import { usePurchaseMap, useSaleObligations } from "../queries";
@@ -25,6 +22,7 @@ import { BatchFulfillmentDialog } from "./BatchFulfillmentDialog";
 import { SaleDetailsCard } from "./SaleDetailsCard";
 import { SaleItemsSection } from "./SaleItemsSection";
 import { SalePayablesCard } from "./SalePayablesCard";
+import { SaleComposition } from "./SaleComposition";
 import { SaleReceivableCard } from "./SaleReceivableCard";
 import { SetPlanDialog } from "./SetPlanDialog";
 
@@ -33,9 +31,9 @@ export function SalePage({ id }: { id: string }) {
   const router = useRouter();
   const params = useSearchParams();
   const phone = useIsPhone();
-  const emit = useEmit();
+  const settle = useSettleFlow();
   const undoable = useUndoToast();
-  const { venda, isLoading, error, refresh } = useVenda(id);
+  const { venda, isLoading, error } = useVenda(id);
   const purchases = usePurchaseMap();
   const { receivable, payables } = useSaleObligations(id);
   const { balances } = useStockBalance();
@@ -47,7 +45,6 @@ export function SalePage({ id }: { id: string }) {
   const [fulfillOpen, setFulfillOpen] = useState(() => params.get("atendimento") === "1");
   const [planOpen, setPlanOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
-  const [settling, setSettling] = useState<Obligation | null>(null);
 
   if (error) return <ErrorState message="Venda não encontrada." />;
   if (isLoading || !venda) return <PageSkeleton className="max-w-6xl" />;
@@ -88,7 +85,7 @@ export function SalePage({ id }: { id: string }) {
         else if (step.id === "generate-purchase") void generatePurchases(step.supplierIds ?? []);
         else if (step.id === "define-plan") setPlanOpen(true);
         else if (step.id === "receive-overdue" || step.id === "receive") {
-          if (receivable) setSettling(receivable);
+          if (receivable) settle.open({ obligations: [receivable] });
         }
         else if (step.id === "deliver") void markDelivered("DELIVERED");
         else if (step.id === "define-payee") document.getElementById("sale-costs")?.scrollIntoView({ block: "center" });
@@ -149,14 +146,13 @@ export function SalePage({ id }: { id: string }) {
         readOnly={readOnly}
         onDefineFulfillment={() => setFulfillOpen(true)}
       />
-      <div id="sale-costs"><SaleCompositionCard venda={venda} chargesReadOnly={readOnly} onChanged={() => void refresh()} /></div>
-      <SaleReceivableCard receivable={receivable} readOnly={readOnly} onReceive={setSettling} onDefinePlan={() => setPlanOpen(true)} />
-      <SalePayablesCard payables={payables} readOnly={readOnly} onPay={setSettling} />
+      <SaleComposition sale={venda} chargesReadOnly={readOnly} />
+      <SaleReceivableCard receivable={receivable} readOnly={readOnly} onReceive={(o) => settle.open({ obligations: [o] })} onDefinePlan={() => setPlanOpen(true)} />
+      <SalePayablesCard payables={payables} readOnly={readOnly} onPay={(o) => settle.open({ obligations: [o] })} />
       <SaleDetailsCard sale={venda} readOnly={readOnly} />
 
       <BatchFulfillmentDialog open={fulfillOpen} onOpenChange={setFulfillOpen} saleId={id} items={productItems} balances={balanceMap} />
       {receivable && <SetPlanDialog open={planOpen} onOpenChange={setPlanOpen} obligationId={receivable.id} total={receivable.amount} />}
-      {settling && <SettleDialog open obligation={settling} onClose={() => setSettling(null)} onDone={() => void emit("MONEY_MOVED")} />}
       <ConfirmDialog
         open={cancelOpen}
         onOpenChange={setCancelOpen}

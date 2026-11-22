@@ -11,12 +11,11 @@ import { PageSkeleton } from "@/components/patterns/skeletons";
 import { ErrorState } from "@/components/patterns/states";
 import { StatusBadge } from "@/components/patterns/StatusBadge";
 import { DateText } from "@/components/patterns/values";
-import { SettleDialog } from "@/components/obligations/SettleDialog";
+import { useSettleFlow } from "@/components/entity/settle-flow";
 import { useSetDelivery } from "@/features/sales/mutations";
-import { useEmit } from "@/lib/events";
 import { PURCHASE_KIND_LABELS, docTitle, todayISO } from "@/lib/format";
 import { useIsPhone } from "@/lib/media";
-import type { AllocationMethod, Obligation, PurchaseCharge, PurchaseItem, PurchaseSaleItem } from "@/lib/types";
+import type { AllocationMethod, PurchaseCharge, PurchaseItem, PurchaseSaleItem } from "@/lib/types";
 import { nextStep, openPayables, transitionsFor, undoTarget, type PurchaseTransition } from "../model";
 import {
   useDeletePurchase,
@@ -42,9 +41,9 @@ import { PurchaseStatusTrail } from "./PurchaseStatusTrail";
 export function PurchasePage({ id }: { id: string }) {
   const router = useRouter();
   const phone = useIsPhone();
-  const emit = useEmit();
+  const settle = useSettleFlow();
   const undoable = useUndoToast();
-  const { purchase, isLoading, error, refresh } = usePurchase(id);
+  const { purchase, isLoading, error } = usePurchase(id);
   const salesById = useSalesById(!!purchase && purchase.kind === "MADE_TO_ORDER");
   const status = useSetPurchaseStatus();
   const update = useUpdatePurchase(purchase ?? { id, expected_date: null, notes: null, allocation_method: "BY_QUANTITY" });
@@ -62,7 +61,6 @@ export function PurchasePage({ id }: { id: string }) {
   const [chargeDialog, setChargeDialog] = useState<{ charge?: PurchaseCharge } | null>(null);
   const [transition, setTransition] = useState<PurchaseTransition | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [settling, setSettling] = useState<Obligation | null>(null);
 
   if (error && !purchase) return <ErrorState message="Compra não encontrada." />;
   if (isLoading || !purchase) return <PageSkeleton className="max-w-6xl" />;
@@ -99,7 +97,7 @@ export function PurchasePage({ id }: { id: string }) {
 
   function payNow() {
     const list = openPayables(purchase?.obligations);
-    if (list.length === 1) setSettling(list[0]);
+    if (list.length === 1) settle.open({ obligations: list });
     else document.getElementById("purchase-payables")?.scrollIntoView({ block: "center" });
   }
 
@@ -180,12 +178,11 @@ export function PurchasePage({ id }: { id: string }) {
         onRemoveCharge={(c) => void removeChargeUndoable(c)}
         onChangeAllocation={(m: AllocationMethod) => m !== purchase.allocation_method && void update.mutate({ allocation_method: m })}
       />
-      <PurchasePayables payables={payables} onPay={setSettling} />
+      <PurchasePayables payables={payables} onPay={(o) => settle.open({ obligations: [o] })} />
 
       {header && <PurchaseHeaderDialog purchase={purchase} onClose={() => setHeader(false)} />}
       {itemDialog && <PurchaseItemDialog purchaseId={id} item={itemDialog.item} onClose={() => setItemDialog(null)} />}
       {chargeDialog && <PurchaseChargeDialog purchaseId={id} defaultSupplierId={purchase.supplier_id} charge={chargeDialog.charge} onClose={() => setChargeDialog(null)} />}
-      {settling && <SettleDialog open obligation={settling} onClose={() => setSettling(null)} onDone={() => { void refresh(); void emit("MONEY_MOVED"); }} />}
       <ConfirmDialog
         open={!!transition}
         onOpenChange={(o) => !o && setTransition(null)}

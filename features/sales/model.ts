@@ -1,7 +1,7 @@
 // Regras da venda: próximo passo (T06), atendimento por linha, chips da lista (T07) — puras e testadas.
 import { docNumber, formatDate, formatMoney, formatQuantity, ITEM_ORIGIN_LABELS, PURCHASE_STATUS_LABELS, type Tone } from "@/lib/format";
 import type { ItemLine } from "@/components/entity/items-grid";
-import type { Obligation, PurchaseStatus, Venda } from "@/lib/types";
+import type { Obligation, PurchaseStatus, SaleCostKind, Venda } from "@/lib/types";
 
 export interface PurchaseInfo {
   id: string;
@@ -194,4 +194,25 @@ export function chipOf(v: SaleChipValues): SaleChip | "custom" {
 export function chipPatch(chip: SaleChip): SaleChipValues {
   const f = chipFilters(chip);
   return { delivery_status: f.delivery_status ?? "", payment_status: f.payment_status ?? "", late: f.late ? "1" : "" };
+}
+
+export interface SaleBreakdown {
+  price: number;
+  /** O custo das pedras não é um componente: deriva de preço − lucro − custos da venda. */
+  stones: number;
+  costs: number;
+  profit: number;
+}
+
+/** Preço − pedras − custos = lucro previsto (T06 §2, AYD-009). `null` sem composição. */
+export function saleBreakdown(sale: Pick<Venda, "composition" | "lucro">): SaleBreakdown | null {
+  const c = sale.composition;
+  if (!c) return null;
+  const stones = Math.round((c.price_total - sale.lucro - c.costs_total) * 100) / 100;
+  return { price: c.price_total, stones, costs: c.costs_total, profit: sale.lucro };
+}
+
+/** Credor padrão de um custo: o Partner indicador para COMMISSION; os demais, sem credor ("a definir"). */
+export function defaultPayee(kind: SaleCostKind, referrerId: string | undefined): string {
+  return kind === "COMMISSION" ? (referrerId ?? "") : "";
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   downPaymentAmount,
   initialPlanState,
+  planFromInstallments,
   planGap,
   planTotal,
   resolvePlan,
@@ -80,6 +81,23 @@ describe("personalizado e validação", () => {
     ).toEqual([
       { due_date: TODAY, amount: 1, payment_method: "PIX" },
       { due_date: TODAY, amount: 2 },
+    ]);
+  });
+});
+
+describe("plano existente", () => {
+  it("vira personalizado com as parcelas (forma e observação preservadas)", () => {
+    const state = planFromInstallments(
+      [
+        { id: "i1", due_date: "2026-12-01T00:00:00Z", amount: 60, payment_method: "PIX", notes: "entrada" },
+        { id: "i2", due_date: "2026-12-15", amount: 40, payment_method: null, notes: null },
+      ],
+      TODAY,
+    );
+    expect(state.preset).toBe("custom");
+    expect(toInstallmentsPayload(resolvePlan(state, 100, TODAY))).toEqual([
+      { due_date: "2026-12-01", amount: 60, payment_method: "PIX", notes: "entrada" },
+      { due_date: "2026-12-15", amount: 40 },
     ]);
   });
 });

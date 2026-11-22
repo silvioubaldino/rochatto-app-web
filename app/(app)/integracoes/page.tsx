@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { useConnections } from "@/hooks/useConnections";
-import { api, APIError } from "@/lib/api";
+import { revokeConnection, useConnections } from "@/hooks/useConnections";
+import { isApiError } from "@/lib/errors";
 import { formatConnectionScope, formatDataHora } from "@/lib/formatters";
 import type { Connection } from "@/lib/types";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, Unplug } from "lucide-react";
+import { Unplug } from "lucide-react";
 
 export default function IntegracoesPage() {
   const { connections, isLoading, error, refresh } = useConnections();
@@ -20,14 +20,14 @@ export default function IntegracoesPage() {
   async function handleRevoke() {
     if (!toRevoke) return;
     try {
-      await api.delete(`/oauth/connections/${toRevoke.id}`);
+      await revokeConnection(toRevoke.id);
       toast.success("Conexão desconectada.");
     } catch (err) {
       // 404: já revogada (ex.: em outra aba) — o efeito desejado já aconteceu.
-      if (err instanceof APIError && err.status === 404) {
+      if (isApiError(err) && err.status === 404) {
         toast.info("Esta conexão já havia sido desconectada.");
       } else {
-        toast.error(err instanceof APIError ? err.message : "Erro ao desconectar.");
+        toast.error(isApiError(err) ? err.message : "Erro ao desconectar.");
         return;
       }
     }
