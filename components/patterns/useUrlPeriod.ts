@@ -4,10 +4,6 @@ import { useCallback, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { parseFinancePeriod, validateFinancePeriod, type FinancePeriod } from "@/lib/finance";
 
-/**
- * Período (`?from=&to=`) guardado na URL — o MESMO para Indicadores, Resultado e listas (UX-5, T14):
- * recarregar, voltar e compartilhar mantêm o período. Sem parâmetros vale o mês corrente.
- */
 export function useUrlPeriod() {
   const router = useRouter();
   const pathname = usePathname();

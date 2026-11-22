@@ -1,13 +1,9 @@
 import type { ItemKind, ItemOrigin, ItemVenda, Venda } from "./types";
 
-// AYD-009: PUT /vendas/{id} não aceita mais frete_* nem comissao_* (viram cobranças e custos).
-// Montadores de payload da Sale (rotas legadas `/vendas`, AYD-002 §1–2).
-//
 // `PUT /vendas/{id}` e `PUT /vendas/{id}/itens/{itemId}` são de substituição completa
 // (a API grava todos os campos do corpo), então a UI sempre envia o registro inteiro,
 // sobrepondo só o que mudou — nunca um corpo parcial.
 
-/** Corpo de PUT /vendas/{id}. Não envia `status` (AYD-002: entrega só via PATCH). */
 export function toSaleUpdatePayload(
   venda: Venda,
   overrides: Partial<{
@@ -32,10 +28,8 @@ export interface SaleItemDraft {
   fornecedor_nome: string | null;
   quantidade: number;
   preco_venda_unit: number;
-  /** null = deixar a API preencher (FROM_STOCK → custo da última entrada, RN-16). */
   custo_unit: number | null;
   origin: ItemOrigin;
-  /** AYD-010: SERVICE não tem Product, origem, Supplier nem custo no Item (custo = custo da venda LABOR). */
   kind: ItemKind;
   service_id: string | null;
 }
@@ -55,13 +49,8 @@ export function itemToDraft(item: ItemVenda): SaleItemDraft {
   };
 }
 
-/**
- * Corpo de POST/PUT /vendas/{id}/itens. Item FROM_STOCK não leva Supplier; `custo_unit`
- * é omitido quando null para a API aplicar o custo da última entrada (AYD-002 §1).
- */
 export function toSaleItemPayload(draft: SaleItemDraft) {
   if (draft.kind === "SERVICE") {
-    // AYD-010 §2: sem produto/origem/fornecedor; custo_unit sempre 0 (o custo vive no custo da venda LABOR).
     return {
       kind: "SERVICE" as const,
       service_id: draft.service_id || null,
@@ -88,7 +77,6 @@ export function toSaleItemPayload(draft: SaleItemDraft) {
   };
 }
 
-/** Valida o rascunho antes de enviar; devolve a mensagem de erro ou null. */
 export function validateSaleItemDraft(draft: SaleItemDraft): string | null {
   if (!draft.produto_nome.trim())
     return draft.kind === "SERVICE" ? "Informe o serviço." : "Informe o produto.";

@@ -7,7 +7,6 @@ import { MoneyText } from "@/components/patterns/values";
 import { formatCounterparty } from "@/lib/format";
 import type { Obligation } from "@/lib/types";
 
-/** Contas a pagar desta venda (T06 §4): lista compacta por credor, com Pagar. */
 export function SalePayablesCard({
   payables,
   readOnly,

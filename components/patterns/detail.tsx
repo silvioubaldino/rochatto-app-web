@@ -10,20 +10,6 @@ import { MoneyText } from "./values";
 import { TONE_SUBTLE_CLASSES, type Tone } from "@/lib/format";
 import type { StateAction } from "./states";
 
-/**
- * Esqueleto de página de detalhe (UX-P07): cabeçalho com status e UMA ação principal,
- * próximo passo, seções + resumo fixo, barra de ação fixa no celular.
- *
- * ```tsx
- * <DetailLayout
- *   header={<PageHeader title="Venda nº 98 · Alejandra" backFallback="/vendas" backLabel="Vendas" badges={…} actions={…} />}
- *   nextStep={<NextStepBanner step={nextStep(sale)} />}
- *   aside={<SummaryAside rows={…} />}
- *   actionBar={<ActionBar primary={…} />}>
- *   …seções…
- * </DetailLayout>
- * ```
- */
 export function DetailLayout({
   header,
   nextStep,
@@ -34,9 +20,7 @@ export function DetailLayout({
 }: {
   header: ReactNode;
   nextStep?: ReactNode;
-  /** Resumo (SummaryAside): fixo ao lado no desktop, recolhível no topo no celular. */
   aside?: ReactNode;
-  /** Barra de ação fixa embaixo no celular (ActionBar). */
   actionBar?: ReactNode;
   children: ReactNode;
   className?: string;
@@ -56,17 +40,11 @@ export function DetailLayout({
 
 export interface PageHeaderProps {
   title: string;
-  /** Linha de contexto sob o título ("Bonito/MS · indicado por Arq. Paula"). */
   subtitle?: ReactNode;
-  /** Status como badges (StatusBadge). */
   badges?: ReactNode;
-  /** Rota da lista de origem, usada quando não há tela anterior do app (F08). */
   backFallback: string;
-  /** Rótulo da trilha: "Vendas" → `‹ Vendas`. */
   backLabel?: string;
-  /** A ação principal do cabeçalho (desktop). As demais vão em `menu`. */
   actions?: ReactNode;
-  /** Menu "⋯" com as ações secundárias (sempre visível no celular — sem hover). */
   menu?: ReactNode;
   className?: string;
 }
@@ -110,7 +88,6 @@ export interface NextStep {
   tone?: Tone;
 }
 
-/** Próximo passo do detalhe (UX-2): o que falta + o botão que resolve. `null` = nada pendente. */
 export function NextStepBanner({ step }: { step: NextStep | null | undefined }) {
   if (!step) return null;
   const tone = step.tone ?? "warning";
@@ -137,17 +114,11 @@ export function NextStepBanner({ step }: { step: NextStep | null | undefined }) 
 
 export interface SummaryRow {
   label: string;
-  /** Dinheiro (`MoneyText`) ou nó livre. */
   value: number | ReactNode;
   tone?: Tone;
-  /** Linha de destaque (total). */
   strong?: boolean;
 }
 
-/**
- * Resumo fixo (UX-P07): cada número aparece UMA vez aqui. No celular é um bloco recolhível
- * no topo, sem ocupar a tela.
- */
 export function SummaryAside({
   title = "Resumo",
   rows,
@@ -156,7 +127,6 @@ export function SummaryAside({
 }: {
   title?: string;
   rows: readonly SummaryRow[];
-  /** Ações do resumo (Receber…). */
   children?: ReactNode;
   collapsibleOnPhone?: boolean;
 }) {
@@ -193,11 +163,6 @@ export function SummaryAside({
   );
 }
 
-/**
- * Barra de ação FIXA embaixo no celular (UX-P13): a ação principal ao alcance do polegar,
- * colada acima da barra de navegação (o AppShell reserva a barra fora da área de rolagem)
- * e da área segura. No desktop é uma linha comum.
- */
 export function ActionBar({
   primary,
   secondary,

@@ -23,25 +23,17 @@ import { hasQuickCreate, useQuickCreate } from "./quick-create";
 
 export interface EntityComboboxProps<K extends EntityKind> {
   kind: K;
-  /** Id selecionado; "" = nenhum (mesma convenção dos formulários do app). */
   value: string;
-  /** Recebe o id ("" ao limpar) e a opção (com o registro cru) quando houver. */
   onChange: (id: string, option: EntityOption<K> | null) => void;
   id?: string;
   placeholder?: string;
-  /** Nome do que está selecionado, se já se sabe (evita esperar a busca por id). */
   selectedLabel?: string;
   disabled?: boolean;
   invalid?: boolean;
-  /** "＋ Criar …" (padrão: sim, se houver formulário registrado para o tipo). */
   allowCreate?: boolean;
-  /** Mostra botão de limpar quando há valor (padrão: sim). */
   clearable?: boolean;
-  /** Só aparecem os registros que passam (ex.: fornecedor de pedra). */
   filter?: (raw: EntityRawMap[K]) => boolean;
-  /** Estes vêm primeiro (ex.: kind STONE para fornecedor de Item — UX-P03). */
   prefer?: (raw: EntityRawMap[K]) => boolean;
-  /** Recentes quando o campo está vazio (padrão: sim, guardados neste aparelho). */
   recents?: boolean;
   className?: string;
   "aria-label"?: string;
@@ -63,19 +55,9 @@ function writeRecents(kind: EntityKind, ids: string[]) {
   try {
     window.localStorage.setItem(RECENTS_KEY(kind), JSON.stringify(ids));
   } catch {
-    /* sem storage (janela privada): recentes são só uma conveniência */
   }
 }
 
-/**
- * Seletor de entidade (UX-P03): busca com teclado, recentes, filtro/ordem por contexto e
- * "＋ Criar '…'" que abre o cadastro pré-preenchido e SELECIONA o criado, sem perder o
- * formulário de origem. Padrão ARIA combobox (listbox + aria-activedescendant).
- *
- * ```tsx
- * <EntityCombobox kind="customer" value={field.value} onChange={(id) => field.onChange(id)} />
- * ```
- */
 export function EntityCombobox<K extends EntityKind>({
   kind,
   value,
@@ -104,7 +86,6 @@ export function EntityCombobox<K extends EntityKind>({
   const [debounced, setDebounced] = useState("");
   const [active, setActive] = useState(0);
   const [recentIds, setRecentIds] = useState<string[]>([]);
-  // Opção que acabou de ser escolhida/criada: o rótulo aparece já, antes do SWR revalidar.
   const [picked, setPicked] = useState<EntityOption<K> | null>(null);
 
   useEffect(() => {
@@ -176,13 +157,13 @@ export function EntityCombobox<K extends EntityKind>({
       setActive((a) => Math.max(a - 1, 0));
     } else if (e.key === "Enter") {
       if (open && rows.length > 0) {
-        e.preventDefault(); // não envia o formulário em volta
+        e.preventDefault();
         choose(active);
       }
     } else if (e.key === "Escape") {
       if (open) {
         e.preventDefault();
-        e.stopPropagation(); // Esc fecha só a lista, não o diálogo em volta
+        e.stopPropagation();
         close();
       }
     } else if (e.key === "Tab") {

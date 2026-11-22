@@ -8,9 +8,6 @@ import type {
 } from "../types";
 import { STATUS_TONES, TONE_SUBTLE_CLASSES } from "./tones";
 
-// Mapas `*_COLORS` das telas antigas, agora derivados do mapa único de tons (UX-P12).
-// Código novo usa `<StatusBadge kind value />`; estes saem quando a última tela migrar.
-
 function colors<K extends string>(tones: Record<K, keyof typeof TONE_SUBTLE_CLASSES>): Record<K, string> {
   return Object.fromEntries(
     Object.entries(tones).map(([k, t]) => [k, TONE_SUBTLE_CLASSES[t as keyof typeof TONE_SUBTLE_CLASSES]]),

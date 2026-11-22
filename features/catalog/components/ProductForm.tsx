@@ -13,7 +13,6 @@ import { useProductCategories } from "@/hooks/useProductCategories";
 import { productSchema, type ProductFormData } from "../schemas";
 import { useSaveProduct } from "../mutations";
 
-/** Cadastro de Product (RF-02): nome, categoria, unidade e preço/custo de referência. */
 export function ProductForm({ formId, entity, initialName, onSaved, onPendingChange }: EntityFormProps<"product">) {
   const { categories } = useProductCategories();
   // Categoria excluída (soft-delete) ainda vinculada ao Product: mantém a opção visível.

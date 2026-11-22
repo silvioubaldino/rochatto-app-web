@@ -16,7 +16,6 @@ function LoginForm() {
   const { user, loading, signIn, signInWithGoogle, resetPassword } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  // `?next=` (ex.: /conectar?request_id=...) — volta à mesma URL depois do login.
   const nextPath = safeNextPath(searchParams.get("next"));
   
   const [email, setEmail] = useState("");
@@ -70,7 +69,6 @@ function LoginForm() {
           ? String((err as { code: unknown }).code)
           : "";
       if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
-        // usuário fechou a janela: nada a mostrar
       } else if (code === "auth/popup-blocked") {
         toast.error("O navegador bloqueou a janela do Google. Libere pop-ups e tente de novo.");
       } else if (code === "auth/unauthorized-domain") {

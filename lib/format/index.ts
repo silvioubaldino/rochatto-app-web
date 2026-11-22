@@ -1,4 +1,3 @@
-// Formatação e rótulos — fonte única (AYD-011 §9.2). `lib/formatters.ts` re-exporta daqui.
 export * from "./money";
 export * from "./date";
 export * from "./quantity";
@@ -10,7 +9,6 @@ import { formatMoney } from "./money";
 import { formatDate, formatDateTime } from "./date";
 import { formatQuantityNumber } from "./quantity";
 
-// Nomes antigos (PT) — telas legadas. Código novo usa formatMoney/formatDate/formatQuantity.
 export const formatMoeda = formatMoney;
 export const formatData = formatDate;
 export const formatDataHora = formatDateTime;

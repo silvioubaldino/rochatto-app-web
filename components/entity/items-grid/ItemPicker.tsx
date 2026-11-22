@@ -33,10 +33,6 @@ const servicePick = (s: Service): ItemPick => ({
   cost: s.reference_cost ?? 0,
 });
 
-/**
- * Uma linha de busca que acha PRODUTO ou SERVIÇO (o tipo vem do que se escolhe — T03) e
- * oferece "＋ Criar" para os dois, sem sair da tela (UX-3).
- */
 export function ItemPicker({ onPick, disabled }: { onPick: (pick: ItemPick) => void; disabled?: boolean }) {
   const listId = useId();
   const quickCreate = useQuickCreate();

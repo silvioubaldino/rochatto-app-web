@@ -12,10 +12,6 @@ function getApp(): FirebaseApp {
   return getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 }
 
-/**
- * Build de e2e (`NEXT_PUBLIC_E2E=1`): o Playwright roda contra a api simulada, sem Google/Firebase.
- * Nunca ligado em produção (a variável só existe no job de e2e).
- */
 export const IS_E2E = process.env.NEXT_PUBLIC_E2E === "1";
 export const E2E_USER = {
   displayName: "Dono (e2e)",

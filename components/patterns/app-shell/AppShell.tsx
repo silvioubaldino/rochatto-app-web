@@ -75,12 +75,9 @@ export interface AppShellUser {
 }
 
 export interface AppShellProps {
-  /** `null` enquanto a sessão não resolveu: o shell já aparece e o conteúdo vira esqueleto. */
   user: AppShellUser | null;
-  /** Contadores por id do item de navegação (`today`: vencidos…). */
   badges?: Partial<Record<string, number>>;
   onSignOut: () => void;
-  /** Abre a busca global (U2). Sem isto o botão de busca não aparece. */
   onSearch?: () => void;
   children: ReactNode;
 }
@@ -94,12 +91,6 @@ function Badge({ count }: { count?: number }) {
   );
 }
 
-/**
- * Casca do app (UX-P13): barra do topo, lateral no desktop, barra inferior no celular
- * (Hoje · Orçamentos · ＋ · Vendas · Mais), áreas seguras, `dvh`. APARECE ANTES da
- * autenticação resolver — sem spinner de página inteira (F27): o conteúdo é esqueleto.
- * Também hospeda os serviços globais: ConfirmProvider, QuickCreateProvider, SettleFlowProvider, EntitySheet.
- */
 export function AppShell(props: AppShellProps) {
   return (
     <ConfirmProvider>

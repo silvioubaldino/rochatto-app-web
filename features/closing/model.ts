@@ -1,4 +1,3 @@
-// Regras do Fechar venda (T05, C5): estado, payload `closing`, lucro previsto, avisos e erros — puras e testadas.
 import { resolvePlan, toInstallmentsPayload, validatePlan, type PlanState } from "@/components/entity/installment-plan";
 import { round2 } from "@/components/entity/items-grid";
 import {
@@ -10,7 +9,6 @@ import {
 } from "@/components/entity/closing-items/closing-items-model";
 import type { ClosingCostInput, ClosingItemInput, ClosingRequest, PaymentMethod, SaleCostKind } from "@/lib/types";
 
-// O atendimento dos Items vive em `components/entity/closing-items`; reexportado para quem já importava daqui.
 export { defaultItemState, effectiveSupplier, stockShortfall };
 export type { ClosingItem, ClosingItemState };
 
@@ -41,7 +39,6 @@ export interface ClosingTotals {
   margin: number | null;
 }
 
-/** Lucro previsto = preço − custos dos Items − custos previstos (T05). */
 export function closingTotals(items: readonly ClosingItem[], chargesTotal: number, costs: readonly ClosingCostDraft[]): ClosingTotals {
   const itemsPrice = round2(items.reduce((s, i) => s + i.quantity * i.unitPrice, 0));
   const price = round2(itemsPrice + chargesTotal);
@@ -51,13 +48,11 @@ export function closingTotals(items: readonly ClosingItem[], chargesTotal: numbe
   return { price, itemsCost, extraCosts, profit, margin: price > 0 ? round2((profit / price) * 100) : null };
 }
 
-/** Valor da entrada que o "Recebi agora" quita: a primeira parcela do plano. */
 export function downPaymentOf(state: ClosingState, total: number, today: string): { amount: number } | null {
   const first = resolvePlan(state.plan, total, today)[0];
   return first ? { amount: first.amount } : null;
 }
 
-/** O corpo `closing` (C5): uma entrada por Item, na ordem, para o erro apontar o Item pelo índice. */
 export function buildClosing(
   items: readonly ClosingItem[],
   state: ClosingState,
@@ -98,7 +93,6 @@ export function buildClosing(
   };
 }
 
-/** Erros que dá para ver antes de enviar; `section` diz onde mostrar. */
 export function validateClosing(
   state: ClosingState,
   total: number,
@@ -119,11 +113,9 @@ export function validateClosing(
 
 export interface ClosingErrorTarget {
   section: ClosingSection;
-  /** Índice do Item ou do custo, quando o campo aponta um. */
   index?: number;
 }
 
-/** `closing.items[1].supplier_id` → seção e linha onde mostrar o erro (C5: erros trazem `field`). */
 export function closingErrorTarget(field: string | undefined): ClosingErrorTarget | null {
   if (!field?.startsWith("closing")) return null;
   const idx = /\[(\d+)\]/.exec(field)?.[1];

@@ -48,10 +48,6 @@ function itemColumns(selection?: { excluded: ReadonlySet<string>; onToggle: (id:
   ];
 }
 
-/**
- * Fila "a comprar" (RF-31, T11): Items sob encomenda sem compra, por fornecedor. Tudo vem marcado;
- * "Gerar compra" age sobre o que está marcado. O grupo sem fornecedor leva ao atendimento da venda.
- */
 export function PurchaseQueue() {
   const { groups, isLoading, error, refresh } = usePendingPurchaseQueue();
   const { purchases: open } = usePurchases({ kind: "MADE_TO_ORDER", status: "OPEN" });
@@ -140,7 +136,6 @@ function SupplierGroup({ group, supplierId, openPurchases }: { group: PendingSal
   );
 }
 
-/** Sem fornecedor: o atendimento em lote da venda define fornecedor e origem (T11). */
 function NoSupplierGroup({ group }: { group: PendingSaleItemGroup }) {
   const sales = new Set(group.items.map((i) => i.sale_id)).size;
   return (

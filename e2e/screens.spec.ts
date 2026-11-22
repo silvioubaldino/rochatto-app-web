@@ -2,10 +2,6 @@ import { expect, test } from "@playwright/test";
 import { hasHorizontalScroll } from "./helpers";
 import { mockApi } from "./mock-api";
 
-/**
- * As telas de Operação e Financeiro (SPEC-013 U4/U5) abrem sem rolagem lateral — no celular (360 px) e no
- * desktop (UX-P13). Com a api simulada, só o que cada tela precisa para montar.
- */
 test.beforeAll(async ({ baseURL }) => {
   const reachable = await fetch(baseURL ?? "http://localhost:3000", { method: "HEAD" })
     .then((r) => r.status < 500)
@@ -35,7 +31,6 @@ for (const [path, title] of SCREENS) {
     await mockApi(page);
     await page.goto(path);
     await expect(page.getByRole("heading", { name: new RegExp(title) }).first()).toBeVisible();
-    // dá tempo das listas assentarem (esqueleto → conteúdo)
     await page.waitForLoadState("networkidle");
     expect(await hasHorizontalScroll(page)).toBe(false);
   });

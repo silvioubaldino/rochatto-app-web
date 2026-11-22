@@ -5,7 +5,6 @@ export function quoteTitle(q: Pick<Quote, "number" | "id">): string {
   return docNumber("Orçamento", q.number, q.id);
 }
 
-/** Idade de um orçamento aberto: "há 12 dias" (só OPEN). */
 export function quoteAge(q: Pick<Quote, "status" | "quote_date">, today?: string): string | null {
   return q.status === "OPEN" ? formatRelativeDays(q.quote_date.slice(0, 10), today) : null;
 }
@@ -17,7 +16,6 @@ export const QUOTE_CHIPS = [
   { value: "LOST", label: "Perdidos" },
 ] as const;
 
-/** Margem estimada do orçamento (% do preço) a partir dos Items; null sem custo/preço. */
 export function estimatedMargin(q: Pick<Quote, "items" | "total_quote">): number | null {
   if (!q.items?.length || q.total_quote <= 0) return null;
   const cost = q.items.reduce((s, i) => s + i.quantity * i.unit_cost, 0);

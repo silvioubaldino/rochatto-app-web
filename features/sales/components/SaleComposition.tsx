@@ -34,8 +34,7 @@ interface CostRow {
   cost?: SaleCost;
 }
 
-/** "Preço ao cliente" (Items + cobranças) e "Custos da venda" com credor e conta — AYD-009, T06 §2. */
-export function SaleComposition({ sale, chargesReadOnly }: { sale: Venda; /** Venda cancelada: cobranças somente leitura (409); custos seguem editáveis (AYD-009 §2). */ chargesReadOnly: boolean }) {
+export function SaleComposition({ sale, chargesReadOnly }: { sale: Venda; chargesReadOnly: boolean }) {
   const undoable = useUndoToast();
   const removeCharge = useDeleteSaleCharge(sale.id);
   const restoreCharge = useRestoreSaleCharge(sale.id);

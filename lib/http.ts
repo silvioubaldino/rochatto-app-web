@@ -4,7 +4,6 @@ import { ApiError } from "./errors";
 
 export { ApiError, APIError, isApiError, errorMessage } from "./errors";
 
-/** Cliente HTTP autenticado da api (Bearer = ID token do Firebase). Erros viram `ApiError`. */
 function apiBaseUrl(): string {
   return process.env.NEXT_PUBLIC_API_URL ?? "";
 }

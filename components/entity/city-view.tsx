@@ -14,13 +14,8 @@ import {
 } from "@/lib/customer-city";
 import { useAllCustomers } from "./entity-queries";
 
-/** Parâmetros de URL da cidade (SPEC-012): somem do filtro quando vazios. */
 export const CITY_FILTER_SPEC = { cidade: {}, agrupar: {} } as const;
 
-/**
- * Cidade do Customer (a lista da Sale/Quote não a traz): filtro e agrupamento sobre linhas já
- * carregadas. O estado vem da URL (`cidade`, `agrupar=cidade`), passado pela página.
- */
 export function useCityView<T>(
   rows: readonly T[],
   getCustomerId: (row: T) => string,
@@ -41,9 +36,7 @@ export function useCityView<T>(
     visible,
     options,
     grouped,
-    /** Enquanto os clientes carregam, filtro e agrupamento ainda não são confiáveis. */
     loading: (grouped || state.cidade !== "") && isLoading,
-    /** Cidade da linha, ou null quando redundante (agrupado/filtrado) ou sem cidade. */
     rowCity: (row: T): string | null => {
       if (grouped || state.cidade) return null;
       const key = customerCityKey(getCustomerId(row), index);
@@ -54,7 +47,6 @@ export function useCityView<T>(
   };
 }
 
-/** Filtro de cidade + "Agrupar por cidade" para o painel de filtros avançados. */
 export function CityFilters({
   cidade,
   agrupar,

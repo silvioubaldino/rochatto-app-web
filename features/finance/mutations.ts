@@ -6,7 +6,6 @@ import { toInstallmentsPayload, type PlanLine } from "@/components/entity/instal
 import type { FinancialMovement, ObligationSettlement, ObligationWarning, SettlementResponse } from "@/lib/types";
 import { toMovementPayload, toSettlePayload, type MovementFormData, type SettleFormData } from "./model";
 
-/** Pagar/Receber 1..N contas com uma movimentação (`POST /settlements`). O 409 fica no diálogo. */
 export function useSettle() {
   return useApiMutation({
     run: (data: SettleFormData) => http.post<SettlementResponse>("/settlements", toSettlePayload(data)),
@@ -15,7 +14,6 @@ export function useSettle() {
   });
 }
 
-/** Anula a movimentação (desfaz o Pagar/Receber): as quitações saem e as contas voltam a ficar em aberto. */
 export function useVoidMovement() {
   return useApiMutation({
     run: async (movementId: string) => {
@@ -27,7 +25,6 @@ export function useVoidMovement() {
   });
 }
 
-/** Anular com erro no diálogo (a tela de movimentações). */
 export function useVoidMovementConfirmed() {
   return useApiMutation({
     run: async (movementId: string) => {
@@ -40,7 +37,6 @@ export function useVoidMovementConfirmed() {
   });
 }
 
-/** Desfaz uma quitação (`DELETE /settlements/{id}`); a movimentação permanece, sem alocação. */
 export function useUndoSettlement() {
   return useApiMutation({
     run: async (settlementId: string) => {
@@ -52,7 +48,6 @@ export function useUndoSettlement() {
   });
 }
 
-/** Refaz a quitação desfeita, ligando a MESMA movimentação à conta (`movement_id`). */
 export function useRestoreSettlement() {
   return useApiMutation({
     run: (obligationId: string, s: ObligationSettlement) =>
@@ -62,7 +57,6 @@ export function useRestoreSettlement() {
   });
 }
 
-/** Plano de parcelas da conta (`PUT /obligations/{id}/installments`; lista vazia remove o plano). */
 export function useSetInstallments() {
   return useApiMutation({
     run: async (obligationId: string, lines: readonly PlanLine[]) => {
@@ -75,7 +69,6 @@ export function useSetInstallments() {
   });
 }
 
-/** Prazo final e observações (`PATCH /obligations/{id}` só com o que mudou). */
 export function usePatchObligation(obligationId: string) {
   return useApiMutation({
     run: async (patch: { due_date?: string | null; notes?: string | null }) => {
@@ -88,7 +81,6 @@ export function usePatchObligation(obligationId: string) {
   });
 }
 
-/** Despesa ou receita avulsa (criar) / correção (editar). 409 fica no formulário. */
 export function useSaveMovement(movement?: FinancialMovement) {
   return useApiMutation({
     run: (data: MovementFormData) =>
@@ -98,5 +90,4 @@ export function useSaveMovement(movement?: FinancialMovement) {
   });
 }
 
-/** Avisos (2xx) de uma resposta de quitação. */
 export const warningsOf = (r: { warnings?: ObligationWarning[] | null } | undefined): ObligationWarning[] => r?.warnings ?? [];

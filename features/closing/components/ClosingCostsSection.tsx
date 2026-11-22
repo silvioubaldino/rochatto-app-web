@@ -13,7 +13,6 @@ import type { ClosingCostDraft } from "../model";
 
 let counter = 0;
 
-/** ④ Custos previstos (opcional): frete pago, instalador, comissão, outro — cada um com credor. */
 export function ClosingCostsSection({
   costs,
   errorIndex,

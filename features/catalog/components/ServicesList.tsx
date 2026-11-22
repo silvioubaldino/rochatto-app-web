@@ -43,7 +43,6 @@ function Content() {
   );
 }
 
-/** Catálogo de Services (T16). */
 export function ServicesList() {
   return (
     <Suspense fallback={null}>

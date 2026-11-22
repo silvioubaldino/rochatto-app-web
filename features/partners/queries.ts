@@ -4,7 +4,6 @@ import useSWR from "swr";
 import { http } from "@/lib/http";
 import type { ObligationList } from "@/lib/types";
 
-/** Comissões a pagar ao parceiro: contas PAYABLE em aberto com credor Partner. */
 export function usePartnerCommissions(partnerId: string) {
   const p = new URLSearchParams({
     direction: "PAYABLE",

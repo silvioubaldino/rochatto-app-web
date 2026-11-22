@@ -1,14 +1,12 @@
 import { cn } from "@/lib/utils";
 import { formatDate, formatMoney, formatQuantity, TONE_TEXT_CLASSES, type Tone } from "@/lib/format";
 
-/** Dinheiro: alinhado, `tabular-nums`; negativo em `danger` (UX-P12). */
 export function MoneyText({
   value,
   tone,
   className,
 }: {
   value: number | null | undefined;
-  /** Força um tom (ex.: "danger" para vencido). Negativo já é `danger`. */
   tone?: Tone;
   className?: string;
 }) {
@@ -21,7 +19,6 @@ export function MoneyText({
   );
 }
 
-/** Quantidade com a unidade: "18 m²". */
 export function QuantityText({
   value,
   unit,
@@ -34,7 +31,6 @@ export function QuantityText({
   return <span className={cn("tabular-nums whitespace-nowrap", className)}>{formatQuantity(value, unit)}</span>;
 }
 
-/** Data "dd/MM/yyyy"; vazia → "—". */
 export function DateText({
   value,
   tone,

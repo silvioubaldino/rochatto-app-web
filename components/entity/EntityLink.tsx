@@ -9,21 +9,11 @@ import { hasPreview, isPlainClick, usePeek } from "./EntitySheet";
 export interface EntityLinkProps {
   type: EntityType;
   id: string;
-  /** O que aparece (nome humano — nunca o UUID). */
   children: ReactNode;
-  /**
-   * `peek` abre a PRÉVIA lateral (referência dentro de outra entidade — UX-P04);
-   * `page` (padrão) vai para a página. Sem prévia registrada, `peek` cai em `page`.
-   * Ctrl/⌘/clique do meio sempre abrem a PÁGINA (o `href` é real).
-   */
   mode?: "page" | "peek";
   className?: string;
 }
 
-/**
- * Toda entidade citada é um link (UX-4). Em linhas de `DataTable` o link já recebe `z-10`
- * para ficar acima do link da linha.
- */
 export function EntityLink({ type, id, children, mode = "page", className }: EntityLinkProps) {
   const { open } = usePeek();
   const href = entityHref(type, id);

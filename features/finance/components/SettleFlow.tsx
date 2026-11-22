@@ -33,10 +33,6 @@ import { useObligationsByIds } from "../queries";
 const FORM_ID = "settle-flow-form";
 const METHOD_OPTIONS = PAYMENT_METHODS.map((m) => ({ value: m, label: PAYMENT_METHOD_LABELS[m] }));
 
-/**
- * Pagar/Receber 1..N contas (UX-P09): valor por conta editável, data, forma. Uma movimentação quita todas
- * (um Pix pode quitar várias contas). Concluído, oferece "Desfazer" (anula a movimentação) por 8 s.
- */
 export function SettleFlow({ obligations, obligationIds, onClose }: SettleFlowProps) {
   const loaded = useObligationsByIds(obligations ? undefined : obligationIds);
   const list = obligations ?? loaded.obligations;

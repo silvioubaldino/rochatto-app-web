@@ -23,20 +23,14 @@ import {
 } from "./items-grid-model";
 
 export interface ItemsGridProps {
-  /** `quote`: custo estimado e margem sempre; `sale`: atendimento por linha, custo atrás de um botão. */
   mode: "quote" | "sale";
   lines: ItemLine[];
   onChange: (lines: ItemLine[]) => void;
-  /** Somente leitura (Quote ganho/perdido, Sale cancelada): sem campos nem busca. */
   readOnly?: boolean;
-  /** Seleção múltipla (modo `sale`: "Definir atendimento" em lote). */
   selection?: ReadonlySet<string>;
   onSelectionChange?: (selection: Set<string>) => void;
-  /** Conteúdo da coluna "Atendimento" (modo `sale`): origem, fornecedor, situação da compra. */
   renderAttendance?: (line: ItemLine) => ReactNode;
-  /** Por que a linha está travada (explicado ANTES de editar — UX-9); `null` = livre. */
   lockReason?: (line: ItemLine) => string | null;
-  /** Mostra os erros de validação por linha (depois da primeira tentativa de salvar). */
   showErrors?: boolean;
   className?: string;
 }
@@ -44,11 +38,6 @@ export interface ItemsGridProps {
 const defaultLockReason = (l: ItemLine) =>
   isLineLocked(l) ? "Item já está numa compra: só o preço pode mudar." : null;
 
-/**
- * Grade ÚNICA de Items (Quote e Sale — UX-5): produto ou serviço numa linha de busca,
- * quantidade com unidade, preço, custo e margem por linha. No celular, um cartão por linha
- * com os mesmos campos (UX-P13). Controlada: quem a usa guarda `lines` e grava pelo `diffLines`.
- */
 export function ItemsGrid({
   mode,
   lines,

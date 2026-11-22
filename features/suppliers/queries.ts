@@ -4,7 +4,6 @@ import useSWR from "swr";
 import { http } from "@/lib/http";
 import type { ObligationList } from "@/lib/types";
 
-/** Contas a pagar em aberto a um fornecedor/prestador (`/obligations`, mesma base das telas de contas). */
 export function useSupplierPayables(supplierId: string) {
   const p = new URLSearchParams({
     direction: "PAYABLE",

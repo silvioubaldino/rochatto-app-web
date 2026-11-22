@@ -10,7 +10,6 @@ const TABS = ["produtos", "categorias"] as const;
 type ProductsTabId = (typeof TABS)[number];
 
 function Content() {
-  // Categorias moram dentro de Produtos (AYD-011 §5.1); a aba fica na URL (?tab=).
   const [tab, setTab] = useUrlTab(TABS, "produtos");
   return (
     <div className="space-y-4">

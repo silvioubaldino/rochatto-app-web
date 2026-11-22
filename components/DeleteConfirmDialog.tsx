@@ -8,11 +8,9 @@ interface DeleteConfirmDialogProps {
   onConfirm: () => Promise<void>;
   title: string;
   description: string;
-  /** Rótulo do botão de confirmação (padrão: "Excluir"). */
   confirmLabel?: string;
 }
 
-/** Invólucro legado: a confirmação do irreversível é o `ConfirmDialog` (UX-8). */
 export function DeleteConfirmDialog({
   open,
   onClose,

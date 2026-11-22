@@ -14,7 +14,6 @@ import { effectiveSupplier, stockShortfall, type ClosingItem, type ClosingItemSt
 
 const ORIGINS: ItemOrigin[] = ["MADE_TO_ORDER", "FROM_STOCK"];
 
-/** ① Atendimento dos Items: origem, fornecedor (habitual pré-preenchido), saldo e aviso. */
 export function ClosingItemsSection({
   items,
   states,

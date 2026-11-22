@@ -19,7 +19,6 @@ import { useSavePurchaseCharge } from "../mutations";
 const KIND_OPTIONS = PURCHASE_CHARGE_KINDS.map((k) => ({ value: k, label: PURCHASE_CHARGE_KIND_LABELS[k] }));
 const FORM_ID = "purchase-charge-form";
 
-/** Custo adicional da compra (frete de compra, descarga, imposto, outro), com credor editável e rateio. */
 export function PurchaseChargeDialog({ purchaseId, defaultSupplierId, charge, onClose }: { purchaseId: string; defaultSupplierId: string; charge?: PurchaseCharge; onClose: () => void }) {
   const save = useSavePurchaseCharge(purchaseId, charge);
   const {

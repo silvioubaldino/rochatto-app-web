@@ -12,7 +12,6 @@ import { useRouter } from "next/navigation";
 import type { PendingActionGroup, PendingActionItem, PendingSaleItemGroup } from "@/lib/types";
 import { itemContext, itemHref, itemLabel, rowAction } from "../model";
 
-/** Uma pendência: o que é, quando, quanto e o botão que a resolve ali mesmo (UX-2). */
 export function PendingRow({
   kind,
   item,
@@ -36,7 +35,6 @@ export function PendingRow({
     const id = item.entity.id;
     switch (action.id) {
       case "settle":
-        // Receber/Pagar no SettleFlow; concluído, o toast oferece "Desfazer".
         settle.open({ obligationIds: [id] });
         return;
       case "deliver": {

@@ -20,11 +20,6 @@ import {
 
 let counter = 0;
 
-/**
- * Plano de parcelas com presets (à vista · entrada + saldo · parcelas iguais · personalizado ·
- * definir depois). Controlado: `value` é o estado; as parcelas saem de `resolvePlan`.
- * Mexer numa linha de um preset vira "Personalizado" com as linhas atuais.
- */
 export function InstallmentPlanEditor({
   total,
   today,
@@ -33,7 +28,6 @@ export function InstallmentPlanEditor({
   idPrefix = "plan",
   disabled,
 }: {
-  /** Valor a parcelar (preço ao cliente, ou o em aberto da conta). */
   total: number;
   today: string;
   value: PlanState;

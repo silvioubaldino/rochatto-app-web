@@ -10,10 +10,6 @@ import { isApiError } from "@/lib/errors";
 import type { Obligation } from "@/lib/types";
 import { useSetInstallments } from "../mutations";
 
-/**
- * Plano de parcelas da conta (T14): o mesmo editor do Fechar venda, com as parcelas atuais como ponto de
- * partida (forma e observação preservadas). "Definir depois" ou nenhuma parcela remove o plano.
- */
 export function PlanDialog({ obligation, onClose }: { obligation: Obligation; onClose: () => void }) {
   const today = todayISO();
   const existing = obligation.installments ?? [];

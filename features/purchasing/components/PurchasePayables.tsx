@@ -7,7 +7,6 @@ import { MoneyText } from "@/components/patterns/values";
 import { formatCounterparty } from "@/lib/format";
 import type { Obligation } from "@/lib/types";
 
-/** Contas a pagar da compra (T12 §3): uma por credor, com o saldo e Pagar. */
 export function PurchasePayables({ payables, onPay }: { payables: readonly Obligation[]; onPay: (o: Obligation) => void }) {
   return (
     <section id="purchase-payables" aria-labelledby="purchase-payables-h" className="space-y-2 rounded-lg border bg-card p-4">

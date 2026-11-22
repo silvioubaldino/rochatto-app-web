@@ -25,7 +25,6 @@ function Providers({ children }: { children: ReactNode }) {
   );
 }
 
-/** Campo controlado, como num formulário RHF. */
 function Harness({ onChange }: { onChange: (id: string, option: EntityOption<"customer"> | null) => void }) {
   const [value, setValue] = useState("");
   return (
@@ -59,7 +58,7 @@ describe("EntityCombobox", () => {
     await user.type(input, "Alej");
 
     const option = await screen.findByRole("option", { name: /Alejandra Souza/ });
-    expect(option).toHaveTextContent("Bonito/MS"); // linha secundária
+    expect(option).toHaveTextContent("Bonito/MS");
     await user.click(option);
 
     expect(onChange).toHaveBeenCalledWith("c1", expect.objectContaining({ id: "c1", label: "Alejandra Souza" }));
@@ -107,21 +106,17 @@ describe("EntityCombobox", () => {
     await user.click(input);
     await user.type(input, "Fulano de Tal");
 
-    // nenhuma opção com esse nome: a última linha oferece criar
     await user.click(await screen.findByRole("option", { name: '＋ Criar cliente "Fulano de Tal"' }));
 
-    // diálogo de cadastro com o nome pré-preenchido
     const dialog = await screen.findByRole("dialog", { name: "Novo cliente" });
     expect(within(dialog).getByLabelText(/Nome/)).toHaveValue("Fulano de Tal");
 
     await user.click(within(dialog).getByRole("button", { name: "Criar" }));
 
-    // o registro criado volta selecionado
     await waitFor(() => expect(onChange).toHaveBeenCalledWith("c-new", expect.objectContaining({ label: "Fulano de Tal" })));
     expect(posted).toMatchObject({ nome: "Fulano de Tal" });
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Novo cliente" })).not.toBeInTheDocument());
     expect(screen.getByRole("combobox", { name: "Cliente" })).toHaveValue("Fulano de Tal");
-    // e o resto do formulário continua intacto
     expect(screen.getByLabelText("Observação digitada")).toHaveValue("não pode se perder");
   });
 

@@ -18,7 +18,6 @@ const LEAD_OPTIONS = [
   ...LEAD_SOURCES.map((s) => ({ value: s, label: LEAD_SOURCE_LABELS[s] })),
 ];
 
-/** Cadastro de Customer (RF-01). Parceiro indicador se escolhe/cria por EntityCombobox. */
 export function CustomerForm({ formId, entity, initialName, onSaved, onPendingChange }: EntityFormProps<"customer">) {
   const {
     register,
@@ -85,7 +84,6 @@ export function CustomerForm({ formId, entity, initialName, onSaved, onPendingCh
                 options={LEAD_OPTIONS}
                 onChange={(v) => {
                   field.onChange(v);
-                  // referrer_id só existe com origem Parceiro (regra da API).
                   if (v !== "PARTNER") setValue("referrer_id", "");
                 }}
               />

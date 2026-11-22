@@ -3,7 +3,6 @@ import { cn } from "@/lib/utils";
 import type { PurchaseStatus } from "@/lib/types";
 import { statusTrail } from "../model";
 
-/** `Aberta → Pedida → Recebida` com o passo atual destacado (T12). */
 export function PurchaseStatusTrail({ status }: { status: PurchaseStatus }) {
   return (
     <ol aria-label="Andamento da compra" className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">

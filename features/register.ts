@@ -1,7 +1,3 @@
-// Composição raiz dos registros de entidade: importado UMA vez por `app/(app)/layout.tsx`.
-// Cada feature registra seus formulários de criação rápida (QuickCreate) e prévias (EntitySheet,
-// pelos `previews.tsx` — importados por efeito colateral);
-// `components/entity` não conhece as features (dependências só descem — AYD-011 §9.2).
 import { registerQuickCreate } from "@/components/entity/quick-create";
 import { registerSettleFlow } from "@/components/entity/settle-flow";
 import { SettleFlow } from "./finance/components/SettleFlow";

@@ -22,7 +22,6 @@ export const quoteChargeSchema = z.object({
   description: z.string(),
 });
 
-/** Formulário do editor de orçamento (T03): cabeçalho + Items + cobranças. */
 export const quoteFormSchema = z.object({
   customer_id: z.string().min(1, "Cliente é obrigatório"),
   quote_date: z.string().min(1, "Data é obrigatória"),
@@ -55,7 +54,6 @@ export function formFromQuote(quote: Quote, lines: ItemLine[]): QuoteFormData {
   };
 }
 
-/** Item no corpo da api: a api rejeita "" e Item de serviço não leva product_id (AYD-010). */
 export function toQuoteItemPayload(l: ItemLine) {
   const service = l.kind === "SERVICE";
   return {
@@ -69,7 +67,6 @@ export function toQuoteItemPayload(l: ItemLine) {
   };
 }
 
-/** `charges` do Quote: descarta linhas zeradas (a api recusa amount ≤ 0). */
 export function toQuoteChargesPayload(charges: readonly ChargeDraft[]) {
   return charges
     .filter((c) => c.amount > 0)
@@ -81,7 +78,6 @@ export function toQuoteChargesPayload(charges: readonly ChargeDraft[]) {
     }));
 }
 
-/** Corpo de POST /quotes e de POST /quotes/quick-sale (sem `closing`). */
 export function toQuoteCreatePayload(form: QuoteFormData) {
   return {
     customer_id: form.customer_id,
@@ -93,7 +89,6 @@ export function toQuoteCreatePayload(form: QuoteFormData) {
   };
 }
 
-/** Cabeçalho do PUT /quotes/{id} (C2): cliente e data só enquanto OPEN. Os Items vão por rotas próprias. */
 export function toQuoteHeaderPayload(form: QuoteFormData) {
   return {
     customer_id: form.customer_id,

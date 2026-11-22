@@ -64,7 +64,6 @@ function Content() {
   );
 }
 
-/** Clientes (cadastro): busca, origem e parceiro; a linha abre o Cliente 360. */
 export function CustomersList() {
   return (
     <Suspense fallback={null}>

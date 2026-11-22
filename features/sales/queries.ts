@@ -5,7 +5,6 @@ import { http } from "@/lib/http";
 import type { Obligation, ObligationList, PurchaseListItem } from "@/lib/types";
 import type { PurchaseInfo } from "./model";
 
-/** Compras por id (estado, número, previsão) — mesma chave da lista de compras. */
 export function usePurchaseMap(enabled = true): Record<string, PurchaseInfo> {
   const { data } = useSWR<PurchaseListItem[]>(enabled ? "/purchases" : null, http.get);
   const map: Record<string, PurchaseInfo> = {};
@@ -15,7 +14,6 @@ export function usePurchaseMap(enabled = true): Record<string, PurchaseInfo> {
   return map;
 }
 
-/** Contas (a receber e a pagar) de uma venda. */
 export function useSaleObligations(saleId: string) {
   const params = new URLSearchParams({ origin_type: "SALE", origin_id: saleId, limit: "100" });
   const { data, isLoading } = useSWR<ObligationList>(saleId ? `/obligations?${params.toString()}` : null, http.get);
@@ -27,7 +25,6 @@ export function useSaleObligations(saleId: string) {
   };
 }
 
-/** Uma conta em detalhe (parcelas e quitações). */
 export function useObligationDetail(id: string | null | undefined) {
   const { data } = useSWR<Obligation>(id ? `/obligations/${id}` : null, http.get);
   return data;

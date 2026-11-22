@@ -6,7 +6,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { ResponsiveDialog } from "@/components/patterns/ResponsiveDialog";
 import { FieldShell } from "@/components/patterns/fields";
 
-/** Marcar como perdido, com o motivo (opcional). */
 export function QuoteLostDialog({
   open,
   onOpenChange,

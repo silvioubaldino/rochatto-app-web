@@ -1,5 +1,3 @@
-// Regras puras do DataTable (ordenação, agrupamento, totais) — testadas em data-table-model.test.ts.
-
 export type SortDirection = "asc" | "desc";
 export interface SortState {
   id: string;
@@ -13,7 +11,6 @@ export interface SortableColumn<T> {
   sortValue?: (row: T) => SortValue;
 }
 
-/** Próximo estado ao clicar no cabeçalho: nova coluna → asc; mesma → desc; de novo → sem ordenação. */
 export function nextSort(current: SortState | null, columnId: string): SortState | null {
   if (!current || current.id !== columnId) return { id: columnId, dir: "asc" };
   if (current.dir === "asc") return { id: columnId, dir: "desc" };
@@ -26,7 +23,6 @@ function compare(a: SortValue, b: SortValue): number {
   return String(a).localeCompare(String(b), "pt-BR", { numeric: true, sensitivity: "base" });
 }
 
-/** Ordena sem mutar. Valores vazios ficam no fim; empate preserva a ordem original (estável). */
 export function sortRows<T>(rows: readonly T[], columns: readonly SortableColumn<T>[], sort: SortState | null): T[] {
   const column = sort ? columns.find((c) => c.id === sort.id) : undefined;
   if (!sort || !column?.sortValue) return [...rows];
@@ -48,11 +44,6 @@ export interface RowGroup<T> {
   rows: T[];
 }
 
-/**
- * Agrupa preservando a ordem de entrada dentro do grupo. `order` fixa a ordem dos grupos;
- * chaves fora dele vêm depois, em ordem alfabética (pt-BR), e `lastKeys` (ex.: "Sem cidade")
- * por último.
- */
 export function groupRows<T>(
   rows: readonly T[],
   keyOf: (row: T) => string,
@@ -75,7 +66,6 @@ export function groupRows<T>(
   return [...fixed, ...rest, ...tail].map((key) => ({ key, rows: map.get(key) ?? [] }));
 }
 
-/** Atributo `aria-sort` do cabeçalho. */
 export function ariaSort(sort: SortState | null, columnId: string): "ascending" | "descending" | "none" {
   if (!sort || sort.id !== columnId) return "none";
   return sort.dir === "asc" ? "ascending" : "descending";

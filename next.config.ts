@@ -1,6 +1,5 @@
 import type { NextConfig } from "next";
 
-// Rotas antigas → novas (AYD-011 §5.1 / SPEC-013 U2). A query original é repassada ao destino.
 const nextConfig: NextConfig = {
   async redirects() {
     const tab = (value: string) => [{ type: "query" as const, key: "tab", value }];

@@ -158,7 +158,6 @@ function Content() {
   );
 }
 
-/** Resultado (T14, ex-Financeiro): vendas, movimento, despesas e resultado do período, com o mesmo seletor dos Indicadores. */
 export function ResultPage() {
   return (
     <Suspense fallback={null}>

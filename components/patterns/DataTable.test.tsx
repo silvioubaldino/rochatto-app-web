@@ -39,7 +39,7 @@ describe("DataTable — desktop", () => {
     render(<DataTable {...base} mode="table" />);
     expect(screen.getByRole("table", { name: "Vendas" })).toBeInTheDocument();
     expect(screen.getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["Nº", "Cliente", "Cidade", "Total", "Entrega"]);
-    expect(screen.getAllByRole("row")).toHaveLength(1 + 3 + 1); // cabeçalho + linhas + rodapé
+    expect(screen.getAllByRole("row")).toHaveLength(1 + 3 + 1);
     expect(screen.getByText("R$ 6280")).toBeInTheDocument();
   });
 
@@ -80,7 +80,7 @@ describe("DataTable — desktop", () => {
     await user.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByText("Venda nº 98")).not.toBeInTheDocument();
-    expect(screen.getByText("Venda nº 99")).toBeInTheDocument(); // outro grupo continua
+    expect(screen.getByText("Venda nº 99")).toBeInTheDocument();
   });
 
   it("as ações do grupo ficam ao lado do cabeçalho, fora do botão que recolhe", async () => {
@@ -96,7 +96,7 @@ describe("DataTable — desktop", () => {
     const action = screen.getByRole("button", { name: "Pagar tudo de Bonito" });
     expect(toggle).not.toContainElement(action);
     await user.click(toggle);
-    expect(action).toBeInTheDocument(); // recolher o grupo não esconde a ação do cabeçalho
+    expect(action).toBeInTheDocument();
   });
 });
 
@@ -107,7 +107,6 @@ describe("DataTable — celular (cartões)", () => {
     const list = screen.getByRole("list", { name: "Vendas" });
     const cards = within(list).getAllByRole("listitem");
     expect(cards).toHaveLength(3);
-    // título = link; subtítulo; valor; badge; meta
     const first = cards[0];
     expect(within(first).getByRole("link", { name: "Venda nº 98" })).toHaveAttribute("href", "/vendas/a");
     expect(within(first).getByText("Alejandra")).toBeInTheDocument();

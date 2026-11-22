@@ -28,7 +28,6 @@ function Stat({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-/** Parceiro 360 (T09): indicações, faturamento indicado, conversão e comissões a pagar (sem módulo de comissão — RF-25). */
 export function PartnerPage({ id }: { id: string }) {
   const { partner, isLoading, error } = usePartner(id);
   const { clientes, isLoading: customersLoading } = useClientes(undefined, { referrer_id: id });

@@ -5,16 +5,6 @@ import { useRouter } from "next/navigation";
 import { useConfirm } from "./ConfirmDialog";
 import { isInternalNavigationClick } from "./unsaved-guard-model";
 
-/**
- * Guarda de alterações não salvas (UX-P10, F25): avisa ao fechar/recarregar a aba
- * (`beforeunload`) e ao clicar em qualquer link interno (menu, voltar do cabeçalho…) com o
- * formulário sujo. Para botões programáticos ("Cancelar") use o `confirmDiscard` devolvido.
- *
- * ```ts
- * const { confirmDiscard } = useUnsavedChangesGuard(formState.isDirty && !saving);
- * ```
- * Limitação conhecida: o "voltar" do navegador (popstate) não é interceptável no App Router.
- */
 export function useUnsavedChangesGuard(dirty: boolean) {
   const router = useRouter();
   const confirm = useConfirm();

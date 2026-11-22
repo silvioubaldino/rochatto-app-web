@@ -7,7 +7,6 @@ import { useEntityById } from "@/components/entity/entity-queries";
 import { DateField, FieldShell } from "@/components/patterns/fields";
 import type { QuoteFormData } from "../schemas";
 
-/** Cabeçalho do orçamento (C2): cliente, data, indicação e observações — criar e editar. */
 export function QuoteHeaderFields({
   control,
   errors,
@@ -39,7 +38,6 @@ export function QuoteHeaderFields({
               invalid={!!errors.customer_id}
               onChange={(id, option) => {
                 field.onChange(id);
-                // Cliente que veio por um Partner: sugere a mesma indicação (editável).
                 const raw = option?.raw;
                 if (raw?.lead_source === "PARTNER" && raw.referrer_id && !getValues("referrer_id")) {
                   setValue("referrer_id", raw.referrer_id, { shouldDirty: true });

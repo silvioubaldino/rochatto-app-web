@@ -20,13 +20,8 @@ import {
   saleDeliveryLabel,
 } from "./labels";
 
-/**
- * Tons semânticos (AYD-011 UX-P12): significado, não cor. As cores vêm dos tokens de
- * `app/globals.css` (success/warning/danger/info/neutral) — claro e escuro.
- */
 export type Tone = "success" | "warning" | "danger" | "info" | "neutral";
 
-/** Fundo suave + texto do tom (badges, chips, avisos). Strings literais: o Tailwind as enxerga. */
 export const TONE_SUBTLE_CLASSES: Record<Tone, string> = {
   success: "bg-success-subtle text-success",
   warning: "bg-warning-subtle text-warning",
@@ -35,7 +30,6 @@ export const TONE_SUBTLE_CLASSES: Record<Tone, string> = {
   neutral: "bg-neutral-subtle text-neutral",
 };
 
-/** Só o texto do tom (valores, ícones). */
 export const TONE_TEXT_CLASSES: Record<Tone, string> = {
   success: "text-success",
   warning: "text-warning",
@@ -44,7 +38,6 @@ export const TONE_TEXT_CLASSES: Record<Tone, string> = {
   neutral: "text-neutral",
 };
 
-/** Fundo sólido do tom (indicadores, botões de alerta). */
 export const TONE_SOLID_CLASSES: Record<Tone, string> = {
   success: "bg-success text-success-foreground",
   warning: "bg-warning text-warning-foreground",
@@ -58,7 +51,6 @@ export interface StatusMeta {
   tone: Tone;
 }
 
-/** Famílias de status que o `StatusBadge` conhece. */
 export type StatusKind =
   | "quote"
   | "saleDelivery"
@@ -80,7 +72,6 @@ type Registry = {
   itemKind: Record<ItemKind, Tone>;
 };
 
-/** Mapa ÚNICO de tom por status (AYD-011 UX-P12). Rótulos vêm de `labels.ts`. */
 export const STATUS_TONES: Registry = {
   quote: { OPEN: "warning", WON: "success", LOST: "danger" },
   saleDelivery: { TO_DELIVER: "warning", DELIVERED: "success", CANCELED: "neutral" },
@@ -104,13 +95,10 @@ const STATUS_LABELS: Record<StatusKind, Record<string, string>> = {
 };
 
 export interface StatusMetaOptions {
-  /** Sale só de serviço: "A executar / Executado" (AYD-010 §3). Só `saleDelivery`. */
   serviceOnly?: boolean;
-  /** Vencido/atrasado: força o tom `danger` (UX-P12). */
   overdue?: boolean;
 }
 
-/** Rótulo + tom de um valor de enum. Valor desconhecido → "—" neutro (nunca o código). */
 export function statusMeta(
   kind: StatusKind,
   value: string | null | undefined,

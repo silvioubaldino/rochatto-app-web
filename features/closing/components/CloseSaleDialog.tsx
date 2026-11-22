@@ -29,22 +29,15 @@ import { ClosingReceivableSection } from "./ClosingReceivableSection";
 export interface CloseSaleDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** "Orçamento nº 154 · Alejandra". */
   heading: string;
   items: ClosingItem[];
-  /** Cobranças ao cliente (frete cobrado) que já compõem o preço. */
   chargesTotal: number;
-  /** Envia o `closing` (conversão ou venda rápida); `undefined` = falhou (o erro vem em `error`). */
   submit: (closing: ClosingRequest) => Promise<ClosingResponse | undefined>;
   pending: boolean;
   error: unknown;
   onClosed: (result: ClosingResponse) => void;
 }
 
-/**
- * Fechar venda (T05, C5): UMA chamada atômica — ou fecha tudo, ou nada muda e o erro aponta a
- * seção. Tudo é opcional: o dono pode só confirmar. Usado pela conversão e pela venda rápida.
- */
 export function CloseSaleDialog(props: CloseSaleDialogProps) {
   // O corpo monta ao abrir: cada abertura começa do padrão, sem efeito de reset.
   return props.open ? <CloseSaleForm {...props} /> : null;

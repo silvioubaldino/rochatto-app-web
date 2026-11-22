@@ -9,7 +9,6 @@ export function safeNextPath(next: string | null | undefined, fallback = "/hoje"
   return next;
 }
 
-/** `/login?next=<caminho atual com query>` — volta à mesma URL depois do login. */
 export function loginUrlWithNext(pathAndQuery: string): string {
   return `/login?next=${encodeURIComponent(pathAndQuery)}`;
 }

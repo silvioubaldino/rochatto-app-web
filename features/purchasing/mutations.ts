@@ -13,7 +13,6 @@ import type {
   PurchaseStatusResponse,
 } from "@/lib/types";
 
-/** Marca a compra como pedida/recebida (PATCH /purchases/{id}/status). */
 export function useSetPurchaseStatus() {
   return useApiMutation({
     run: (id: string, status: PurchaseStatus) =>
@@ -23,10 +22,6 @@ export function useSetPurchaseStatus() {
   });
 }
 
-/**
- * Gera UMA compra (sob encomenda) para o fornecedor com os Items indicados
- * (`POST /purchases`); sem `itemIds`, os Items de TODA a fila do fornecedor.
- */
 export function useGeneratePurchase() {
   return useApiMutation({
     run: async (supplierId: string, itemIds: readonly string[]) =>
@@ -44,7 +39,6 @@ export function useGeneratePurchase() {
   });
 }
 
-/** Anexa Items a uma compra aberta do mesmo fornecedor (`POST /purchases/{id}/sale-items`). */
 export function useAttachToPurchase() {
   return useApiMutation({
     run: (purchaseId: string, itemIds: readonly string[]) =>
@@ -55,12 +49,10 @@ export function useAttachToPurchase() {
   });
 }
 
-/** Ids dos Items da fila de um fornecedor. */
 export function queueItemIds(groups: readonly PendingSaleItemGroup[], supplierId: string): string[] {
   return groups.find((g) => g.supplier_id === supplierId)?.items.map((i) => i.id) ?? [];
 }
 
-/** Previsão, observações e rateio (PUT /purchases/{id}: substituição completa dos três campos). */
 export function useUpdatePurchase(purchase: Pick<PurchaseDetail, "id" | "expected_date" | "notes" | "allocation_method">) {
   return useApiMutation({
     run: (patch: Partial<Pick<PurchaseDetail, "expected_date" | "notes" | "allocation_method">>) => {
@@ -84,7 +76,6 @@ export interface PurchaseChargePayload {
   payee_supplier_id: string | null;
 }
 
-/** Custo adicional da compra (criar ou editar). Devolve o custo com `warnings` (OVERSETTLED). */
 export function useSavePurchaseCharge(purchaseId: string, charge?: PurchaseCharge) {
   return useApiMutation({
     run: (payload: PurchaseChargePayload) =>
@@ -97,7 +88,6 @@ export function useSavePurchaseCharge(purchaseId: string, charge?: PurchaseCharg
   });
 }
 
-/** Remove um custo adicional (a quem chama cabe oferecer "Desfazer" recriando-o). */
 export function useDeletePurchaseCharge(purchaseId: string) {
   return useApiMutation({
     run: async (chargeId: string) => {
@@ -109,7 +99,6 @@ export function useDeletePurchaseCharge(purchaseId: string) {
   });
 }
 
-/** Recria um custo adicional removido (desfazer). */
 export function useRestorePurchaseCharge(purchaseId: string) {
   return useApiMutation({
     run: (c: PurchaseCharge) =>
@@ -124,7 +113,6 @@ export function useRestorePurchaseCharge(purchaseId: string) {
   });
 }
 
-/** Tira um Item de venda da compra (volta para a fila "a comprar"). */
 export function useDetachSaleItem(purchaseId: string) {
   return useApiMutation({
     run: async (saleItemId: string) => {
@@ -142,7 +130,6 @@ export interface PurchaseItemPayload {
   unit_cost: number;
 }
 
-/** Linha de reposição (criar ou editar; só compra aberta). */
 export function useSavePurchaseItem(purchaseId: string, item?: PurchaseItem) {
   return useApiMutation({
     run: (payload: PurchaseItemPayload) =>
@@ -175,7 +162,6 @@ export function useRestorePurchaseItem(purchaseId: string) {
   });
 }
 
-/** Exclui a compra aberta; os Items de venda voltam para a fila (erro mostrado no ConfirmDialog). */
 export function useDeletePurchase() {
   return useApiMutation({
     run: async (purchaseId: string) => {
@@ -198,7 +184,6 @@ export interface ReplenishmentPayload {
   items: PurchaseItemPayload[];
 }
 
-/** Nova compra para repor o estoque. */
 export function useCreateReplenishment() {
   return useApiMutation({
     run: (payload: ReplenishmentPayload) => http.post<PurchaseDetail>("/purchases", payload),

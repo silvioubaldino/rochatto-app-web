@@ -1,5 +1,3 @@
-// Regras puras de apresentação do Financeiro (T14 — AYD-011): filtros das contas, agrupar por credor,
-// seleção, Pagar/Receber (SettleFlow), movimentações. Sem React, sem rede.
 import { z } from "zod";
 import { addDaysISO, formatCounterparty, formatMoney } from "@/lib/format";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/lib/format/labels";
@@ -18,8 +16,6 @@ import {
 } from "@/lib/obligations";
 import { signedMovementAmount } from "@/lib/schemas";
 import type { FinancialMovement, MovementCategory, Obligation, ObligationDirection } from "@/lib/types";
-
-// --- Contas a receber / a pagar -------------------------------------------------
 
 export const OBLIGATION_CHIPS = [
   { value: "vencidas", label: "Vencidas" },
@@ -45,7 +41,6 @@ export interface ObligationUrlValues {
 const WHEN_VALUES: readonly string[] = OBLIGATION_CHIPS.map((c) => c.value);
 const PARTY_TYPES = ["SUPPLIER", "PARTNER", "CUSTOMER"] as const;
 
-/** Valores crus da URL → filtros da api (valor inválido cai no padrão). `today` injetável. */
 export function obligationFiltersFromUrl(direction: ObligationDirection, v: ObligationUrlValues, today: string): ObligationFilters {
   const when = (WHEN_VALUES.includes(v.quando) ? v.quando : DEFAULT_WHEN) as ObligationWhen;
   const party = v.counterparty_id && (PARTY_TYPES as readonly string[]).includes(v.counterparty_type);
@@ -61,7 +56,6 @@ export function obligationFiltersFromUrl(direction: ObligationDirection, v: Obli
   };
 }
 
-/** Quem é a parte da conta: credor (a pagar) ou cliente (a receber). */
 export const partyLabel = (direction: ObligationDirection): string => (direction === "RECEIVABLE" ? "Cliente" : "Credor");
 
 export const obligationVerb = (direction: ObligationDirection): "Receber" | "Pagar" => (direction === "RECEIVABLE" ? "Receber" : "Pagar");
@@ -69,7 +63,6 @@ export const obligationVerb = (direction: ObligationDirection): "Receber" | "Pag
 export const obligationTitle = (o: Pick<Obligation, "direction" | "counterparty">): string =>
   `${o.direction === "RECEIVABLE" ? "Conta a receber" : "Conta a pagar"} · ${formatCounterparty(o.counterparty)}`;
 
-/** Vencimento que importa: o da próxima parcela, ou o prazo final. */
 export const obligationDue = (o: Pick<Obligation, "next_installment" | "due_date">): string | null =>
   (o.next_installment?.due_date ?? o.due_date)?.slice(0, 10) ?? null;
 
@@ -79,11 +72,9 @@ export interface GroupSummary {
   open: number;
   count: number;
   overdue: number;
-  /** Contas com saldo (as que "Pagar tudo deste credor" leva ao fluxo). */
   payable: Obligation[];
 }
 
-/** Somas de um grupo (credor) para o cabeçalho do agrupamento. */
 export function groupSummary(rows: readonly Obligation[]): GroupSummary {
   return {
     open: sumMoney(rows.map((o) => o.open)),
@@ -95,7 +86,6 @@ export function groupSummary(rows: readonly Obligation[]): GroupSummary {
 
 export const selectableIds = (rows: readonly Obligation[]): string[] => rows.filter(isSelectable).map((o) => o.id);
 
-/** As contas selecionadas, na ordem da lista, só as que ainda têm saldo. */
 export const selectedObligations = (rows: readonly Obligation[], ids: ReadonlySet<string>): Obligation[] =>
   rows.filter((o) => ids.has(o.id) && isSelectable(o));
 
@@ -104,13 +94,10 @@ export function pageLabel(offset: number, total: number): string {
   return `${offset + 1}–${Math.min(offset + PAGE_SIZE, total)} de ${total}`;
 }
 
-// --- Pagar / Receber (SettleFlow) --------------------------------------------------
-
 const METHODS = ["PIX", "CASH", "CARD", "BOLETO", "TRANSFER"] as const;
 
 export const settleSchema = z.object({
   occurred_on: z.string().min(1, "Informe a data"),
-  // "" = ainda não escolhida (o Select vazio): a mensagem explica
   payment_method: z.string().pipe(z.enum(METHODS, { error: "Escolha a forma de pagamento" })),
   allocations: z
     .array(z.object({ obligation_id: z.string().min(1), amount: z.number({ error: "Informe o valor" }).gt(0, "Valor deve ser maior que zero") }))
@@ -119,14 +106,12 @@ export const settleSchema = z.object({
 export type SettleFormData = z.infer<typeof settleSchema>;
 export type SettleFormValues = z.input<typeof settleSchema>;
 
-/** Valores iniciais: cada conta com o que está em aberto, hoje, forma por escolher. */
 export function settleDefaults(obligations: readonly Pick<Obligation, "id" | "open">[], today: string): SettleFormValues {
   return { occurred_on: today, payment_method: "", allocations: defaultAllocations([...obligations]) };
 }
 
 export const settleTotal = (allocations: readonly { amount: number }[]): number => sumMoney(allocations.map((a) => Number(a.amount) || 0));
 
-/** Corpo de `POST /settlements`: uma movimentação que quita 1..N contas. */
 export function toSettlePayload(d: SettleFormData) {
   return {
     movement: { occurred_on: d.occurred_on, payment_method: d.payment_method },
@@ -134,7 +119,6 @@ export function toSettlePayload(d: SettleFormData) {
   };
 }
 
-/** Por que o fluxo não pode seguir (misturou direções, nada em aberto), ou null. */
 export function settleBlocker(obligations: readonly Obligation[]): string | null {
   if (obligations.length === 0) return "Não há contas em aberto para quitar.";
   if (!sameDirection([...obligations])) return "Escolha só contas a pagar ou só contas a receber.";
@@ -143,20 +127,16 @@ export function settleBlocker(obligations: readonly Obligation[]): string | null
 
 export const settleMixedCounterparties = (obligations: readonly Obligation[]): boolean => obligations.length > 1 && hasMixedCounterparties([...obligations]);
 
-/** "Receber — Alejandra Souza" · "Pagar 3 contas". */
 export function settleTitle(obligations: readonly Obligation[]): string {
   const direction = obligations[0]?.direction ?? "PAYABLE";
   if (obligations.length === 1) return `${obligationVerb(direction)} — ${formatCounterparty(obligations[0].counterparty)}`;
   return `${obligationVerb(direction)} ${obligations.length} contas`;
 }
 
-/** Mensagem do toast com "Desfazer". */
 export function settledMessage(direction: ObligationDirection, total: number, count: number): string {
   const what = direction === "RECEIVABLE" ? "Recebimento" : "Pagamento";
   return `${what} de ${formatMoney(total)} registrado${count > 1 ? ` (${count} contas)` : ""}.`;
 }
-
-// --- Movimentações -------------------------------------------------------------------
 
 export type MovementKind = "EXPENSE" | "INCOME";
 
@@ -171,7 +151,6 @@ export const MOVEMENT_ALLOCATION_CHIPS = [
   { value: "sem", label: "Sem alocação" },
 ] as const;
 
-/** Categorias do lançamento avulso: as de saída para despesa, as de entrada para receita; na correção, mais a atual. */
 export function movementCategories(kind: MovementKind, current?: MovementCategory): MovementCategory[] {
   const base = kind === "EXPENSE" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
   return current && !base.includes(current) ? [current, ...base] : [...base];
@@ -191,7 +170,6 @@ export type MovementFormData = z.infer<typeof movementSchema>;
 
 const nullIfEmpty = (v: string) => (v.trim() === "" ? null : v.trim());
 
-/** Corpo de POST e PUT /financial-movements: o sinal vem da categoria (entrada +, saída −). */
 export function toMovementPayload(d: MovementFormData) {
   const category = d.category as MovementCategory;
   return {
@@ -210,12 +188,10 @@ export interface MovementUrlValues {
   category: string;
   direction: string;
   alocacao: string;
-  /** Parâmetro antigo (links do Resultado e de favoritos). */
   unallocated_only?: string;
   offset: string;
 }
 
-/** Valores crus da URL → filtros da api; período padrão = mês corrente até hoje. */
 export function movementFiltersFromUrl(v: MovementUrlValues, today: Date = new Date()): MovementFilters {
   const month = financePresetPeriod("this_month", today);
   const offset = Number(v.offset);
@@ -231,9 +207,6 @@ export function movementFiltersFromUrl(v: MovementUrlValues, today: Date = new D
 
 export const movementPeriodError = (f: Pick<MovementFilters, "from" | "to">): string | null => validateFinancePeriod({ from: f.from, to: f.to });
 
-// --- Resultado (T14) -------------------------------------------------------------------
-
-/** Cada número do Resultado abre a lista que o compõe, com o mesmo período. */
 export function resultLinks(period: { from: string; to: string }) {
   const range = `from=${period.from}&to=${period.to}`;
   return {

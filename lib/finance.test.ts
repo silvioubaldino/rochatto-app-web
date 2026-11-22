@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { financePresetPeriod, matchFinancePreset, parseFinancePeriod, validateFinancePeriod } from "./finance";
 
-const TODAY = new Date(2026, 10, 22); // 22/11/2026
+const TODAY = new Date(2026, 10, 22);
 
 describe("período (Indicadores, Resultado e Movimentações)", () => {
   it("o padrão é o mês corrente até hoje", () => {

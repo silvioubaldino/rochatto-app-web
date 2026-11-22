@@ -42,14 +42,13 @@ describe("CloseSaleDialog (T05)", () => {
     for (const name of ["Atendimento dos Items", "Entrega", "Recebimento", "Custos previstos (opcional)"]) {
       expect(within(dialog).getByRole("heading", { name: new RegExp(name.replace(/[()]/g, "\\$&")) })).toBeInTheDocument();
     }
-    // preço 6.842 − custos 4.110 = 2.732
     expect(within(dialog).getByText("R$ 2.732,00")).toBeInTheDocument();
   });
 
   it("fechar sem tocar em nada: sob encomenda com o fornecedor habitual, plano 50/50 e sem entrada paga", async () => {
     const user = userEvent.setup();
     const { submit, onClosed } = setup();
-    await screen.findByDisplayValue("Matheus RJ"); // fornecedor habitual do Rock face (C8)
+    await screen.findByDisplayValue("Matheus RJ");
     await user.click(screen.getByRole("button", { name: "Fechar venda" }));
     expect(submit).toHaveBeenCalledTimes(1);
     const closing = submit.mock.calls[0][0];

@@ -12,7 +12,6 @@ import type { PurchaseDetail, PurchaseItem, PurchaseSaleItem, SaleDeliveryStatus
 
 type SaleInfo = Readonly<Record<string, { number?: number; delivery_status: SaleDeliveryStatus }>>;
 
-/** Items da compra (T12): de venda (cliente, venda e entrega) ou de reposição (produtos). */
 export function PurchaseItemsSection({
   purchase,
   sales,

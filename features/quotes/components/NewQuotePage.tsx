@@ -10,7 +10,6 @@ function Content() {
   return <QuoteEditor initial={{ customerId: params.get("customer_id") ?? "", quick: params.get("rapida") === "1" }} />;
 }
 
-/** `/orcamentos/novo[?customer_id=…&rapida=1]` — o mesmo editor, sem orçamento. */
 export function NewQuotePage() {
   return (
     <Suspense fallback={<PageSkeleton className="max-w-5xl" />}>

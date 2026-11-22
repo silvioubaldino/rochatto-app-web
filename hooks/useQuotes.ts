@@ -10,7 +10,6 @@ interface QuotesFilters {
   to?: string;
   customer_id?: string;
   q?: string;
-  /** AYD-011 C4: Quotes indicados por este Partner. */
   referrer_id?: string;
 }
 

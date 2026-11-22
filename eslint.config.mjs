@@ -2,11 +2,6 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
-// Regras de código do AYD-011 §9.4 (regra 4 e regra 2). Severidade:
-//   · ERRO em código novo: `features/`, `components/patterns/`, `components/entity/`;
-//   · AVISO nas telas legadas (`app/`, `components/`, `hooks/`) — somem conforme migram
-//     (migração incremental, §9.6); o build passa com avisos.
-
 const COLOR_NAMES =
   "red|green|yellow|blue|gray|grey|slate|zinc|neutral|stone|orange|amber|lime|emerald|teal|cyan|sky|indigo|violet|purple|fuchsia|pink|rose";
 const COLOR_UTILS =
@@ -40,7 +35,6 @@ const syntaxRules = (level, { table = true } = {}) => ({
   ],
 });
 
-// Regra 2: nada de http/fetch em componente — leitura em queries, escrita em mutations.
 const httpImports = (level) => ({
   "no-restricted-imports": [
     level,
@@ -58,7 +52,6 @@ const httpImports = (level) => ({
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  // Legado: aviso.
   {
     files: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", "hooks/**/*.{ts,tsx}"],
     ignores: ["components/ui/**"],
@@ -69,12 +62,10 @@ const eslintConfig = defineConfig([
     ignores: ["components/ui/**"],
     rules: httpImports("warn"),
   },
-  // Código novo: erro.
   {
     files: ["features/**/*.{ts,tsx}", "components/patterns/**/*.{ts,tsx}", "components/entity/**/*.{ts,tsx}"],
     rules: { ...syntaxRules("error"), ...httpImports("error") },
   },
-  // Exceções documentadas: a tabela mora no DataTable; leitura de entidades mora em *-queries.
   {
     files: ["components/patterns/DataTable.tsx", "components/entity/items-grid/ItemsGrid.tsx"],
     rules: syntaxRules("error", { table: false }),
@@ -83,7 +74,6 @@ const eslintConfig = defineConfig([
     files: ["**/queries.ts", "**/mutations.ts", "**/*-queries.ts"],
     rules: { "no-restricted-imports": "off" },
   },
-  // Testes simulam a api e a rede.
   {
     files: ["**/*.test.{ts,tsx}", "tests/**/*.{ts,tsx}", "e2e/**/*.ts"],
     rules: { "no-restricted-syntax": "off", "no-restricted-imports": "off" },

@@ -56,7 +56,6 @@ function Content() {
   );
 }
 
-/** Fornecedores e prestadores (T10/T16): todo credor que não é Partner. */
 export function SuppliersList() {
   return (
     <Suspense fallback={null}>

@@ -78,7 +78,6 @@ function Content() {
   );
 }
 
-/** Indicadores (T15, ex-Dashboard): KPIs do período com link para a lista, gráfico mensal e rankings. */
 export function IndicatorsPage() {
   return (
     <Suspense fallback={null}>

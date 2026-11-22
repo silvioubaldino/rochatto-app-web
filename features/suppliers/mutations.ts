@@ -5,7 +5,6 @@ import { useApiMutation } from "@/lib/mutation";
 import type { Fornecedor } from "@/lib/types";
 import type { SupplierFormData } from "./schemas";
 
-/** Criar ou atualizar um fornecedor/prestador. Emite SUPPLIER_CHANGED. */
 export function useSaveSupplier(entity?: Fornecedor) {
   return useApiMutation({
     run: (payload: SupplierFormData) =>
@@ -16,7 +15,6 @@ export function useSaveSupplier(entity?: Fornecedor) {
   });
 }
 
-/** Exclui um fornecedor/prestador (soft-delete). O erro sobe para o ConfirmDialog. */
 export function useDeleteSupplier() {
   return useApiMutation({
     run: async (id: string) => {

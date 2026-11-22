@@ -9,11 +9,6 @@ interface ClientesFilters {
   referrer_id?: string;
 }
 
-/**
- * Lista de Customers. Sem busca → `GET /clientes` com os filtros do AYD-003
- * (`lead_source`, `referrer_id`). Com busca → `GET /clientes/search?q=` (legado, sem esses
- * filtros no contrato); nesse caso os filtros são aplicados sobre o resultado da busca.
- */
 export function useClientes(search?: string, filters?: ClientesFilters) {
   let key: string;
   if (search) {

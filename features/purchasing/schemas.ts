@@ -4,7 +4,6 @@ import type { PurchaseChargePayload, PurchaseItemPayload, ReplenishmentPayload }
 
 const money = z.number({ error: "Informe o valor" });
 
-/** Linha de reposição (Product + quantidade + custo unitário). */
 export const purchaseItemSchema = z.object({
   product_id: z.string().min(1, "Selecione o produto"),
   quantity: z.number({ error: "Informe a quantidade" }).gt(0, "Quantidade deve ser maior que zero"),
@@ -14,7 +13,6 @@ export type PurchaseItemFormData = z.infer<typeof purchaseItemSchema>;
 
 export const toPurchaseItemPayload = (d: PurchaseItemFormData): PurchaseItemPayload => ({ product_id: d.product_id, quantity: d.quantity, unit_cost: d.unit_cost });
 
-/** Nova compra para repor o estoque. */
 export const replenishmentSchema = z.object({
   supplier_id: z.string().min(1, "Selecione o fornecedor"),
   expected_date: z.string(),
@@ -36,7 +34,6 @@ export function toReplenishmentPayload(d: ReplenishmentFormData): ReplenishmentP
   };
 }
 
-/** Custo adicional (frete de compra, descarga, imposto, outro) com credor editável. */
 export const purchaseChargeSchema = z.object({
   kind: z.enum(["FREIGHT", "UNLOADING", "TAX", "OTHER"]),
   amount: money.gt(0, "Valor deve ser maior que zero"),
@@ -52,6 +49,5 @@ export const toPurchaseChargePayload = (d: PurchaseChargeFormData): PurchaseChar
   payee_supplier_id: emptyToNull(d.payee_supplier_id),
 });
 
-/** Previsão no fornecedor e observações. */
 export const purchaseHeaderSchema = z.object({ expected_date: z.string(), notes: z.string() });
 export type PurchaseHeaderFormData = z.infer<typeof purchaseHeaderSchema>;

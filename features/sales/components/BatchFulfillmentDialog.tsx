@@ -11,7 +11,6 @@ import { isApiError } from "@/lib/errors";
 import type { BatchFulfillmentItem, ItemVenda } from "@/lib/types";
 import { useBatchFulfillment } from "../mutations";
 
-/** Atendimento em lote (C6): origem e fornecedor dos Items da venda de uma vez, tudo ou nada. */
 export function BatchFulfillmentDialog({
   open,
   onOpenChange,
@@ -22,7 +21,6 @@ export function BatchFulfillmentDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   saleId: string;
-  /** Items de produto livres (fora de compra). */
   items: ItemVenda[];
   balances: ReadonlyMap<string, number>;
 }) {
@@ -58,7 +56,6 @@ function Form({ onOpenChange, saleId, items, balances }: Omit<Parameters<typeof 
     const res = await batch.mutate(payload);
     if (res) {
       if (res.warnings?.length) {
-        // aviso de saldo: a venda segue permitida (RN-16)
         toast.warning("Estoque insuficiente em parte dos items: o saldo fica negativo.");
       }
       onOpenChange(false);

@@ -26,7 +26,6 @@ import { SaleComposition } from "./SaleComposition";
 import { SaleReceivableCard } from "./SaleReceivableCard";
 import { SetPlanDialog } from "./SetPlanDialog";
 
-/** Venda (T06) no DetailLayout: próximo passo, Items e atendimento, preço e custos, recebimento, contas a pagar, dados. */
 export function SalePage({ id }: { id: string }) {
   const router = useRouter();
   const params = useSearchParams();

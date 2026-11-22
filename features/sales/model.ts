@@ -1,4 +1,3 @@
-// Regras da venda: próximo passo (T06), atendimento por linha, chips da lista (T07) — puras e testadas.
 import { docNumber, formatDate, formatMoney, formatQuantity, ITEM_ORIGIN_LABELS, PURCHASE_STATUS_LABELS, type Tone } from "@/lib/format";
 import type { ItemLine } from "@/components/entity/items-grid";
 import type { Obligation, PurchaseStatus, SaleCostKind, Venda } from "@/lib/types";
@@ -13,9 +12,7 @@ export interface PurchaseInfo {
 
 export interface SaleStepContext {
   today: string;
-  /** Compras conhecidas (lista), por id. */
   purchases: Readonly<Record<string, PurchaseInfo>>;
-  /** Conta a receber da venda (lista de /obligations; sem parcelas detalhadas). */
   receivable: Pick<Obligation, "open" | "overdue" | "due_date" | "next_installment"> | null;
 }
 
@@ -34,13 +31,11 @@ export interface SaleStep {
   description?: string;
   label: string;
   tone: Tone;
-  /** `generate-purchase`: fornecedores com Items fora de compra. */
   supplierIds?: string[];
 }
 
 const productItems = (sale: Venda) => (sale.itens ?? []).filter((i) => (i.kind ?? "PRODUCT") === "PRODUCT");
 
-/** O que falta para a venda andar — o primeiro que se aplica (tabela do AYD-011 T06). */
 export function nextStep(sale: Venda, ctx: SaleStepContext): SaleStep | null {
   if (sale.delivery_status === "CANCELED") return null;
   const made = productItems(sale).filter((i) => i.origin === "MADE_TO_ORDER");
@@ -110,7 +105,6 @@ export interface AttendanceView {
   tone?: Tone;
 }
 
-/** Coluna "Atendimento": origem, fornecedor e situação da compra (T06). */
 export function attendanceView(line: ItemLine, purchases: Readonly<Record<string, PurchaseInfo>>): AttendanceView {
   if (line.kind === "SERVICE") return { text: "Serviço" };
   if (line.origin === "FROM_STOCK") {
@@ -134,7 +128,6 @@ export function attendanceView(line: ItemLine, purchases: Readonly<Record<string
   return { text: parts.join(" · ") };
 }
 
-/** Por que a linha está travada (explicado antes de editar — UX-9). */
 export function lockReasonFor(line: ItemLine, purchases: Readonly<Record<string, PurchaseInfo>>): string | null {
   if (!line.purchaseId) return null;
   const p = purchases[line.purchaseId];
@@ -142,7 +135,6 @@ export function lockReasonFor(line: ItemLine, purchases: Readonly<Record<string,
   return `Item na ${label}${p ? ` (${PURCHASE_STATUS_LABELS[p.status].toLowerCase()})` : ""}: só o preço muda.`;
 }
 
-/** RN-15: a venda só cancela se nenhum Item estiver em compra pedida ou recebida. */
 export function cancelBlockedReason(sale: Venda, purchases: Readonly<Record<string, PurchaseInfo>>): string | null {
   const blocked = (sale.itens ?? []).some((i) => {
     const p = i.purchase_id ? purchases[i.purchase_id] : undefined;
@@ -150,8 +142,6 @@ export function cancelBlockedReason(sale: Venda, purchases: Readonly<Record<stri
   });
   return blocked ? "Há Item em compra pedida ou recebida: não dá para cancelar a venda." : null;
 }
-
-// --- T07: chips da lista de vendas ------------------------------------------------------
 
 export type SaleChip = "" | "to-deliver" | "late" | "receivable";
 
@@ -162,7 +152,6 @@ export const SALE_CHIPS: readonly { value: SaleChip; label: string }[] = [
   { value: "receivable", label: "Com saldo a receber" },
 ];
 
-/** Filtros da api (e do cliente) que cada chip representa. */
 export function chipFilters(chip: SaleChip): { delivery_status?: "TO_DELIVER"; payment_status?: "PENDING,PARTIAL"; late?: boolean } {
   if (chip === "to-deliver") return { delivery_status: "TO_DELIVER" };
   if (chip === "late") return { delivery_status: "TO_DELIVER", late: true };
@@ -170,7 +159,6 @@ export function chipFilters(chip: SaleChip): { delivery_status?: "TO_DELIVER"; p
   return {};
 }
 
-/** Entrega atrasada: a entregar com prazo antes de hoje. */
 export function isLate(sale: Pick<Venda, "delivery_status" | "data_entrega_prevista">, today: string): boolean {
   return sale.delivery_status === "TO_DELIVER" && !!sale.data_entrega_prevista && sale.data_entrega_prevista.slice(0, 10) < today;
 }
@@ -181,7 +169,6 @@ export interface SaleChipValues {
   late: string;
 }
 
-/** Qual chip a URL representa; combinação fora dos chips (ex.: vinda de um painel) = "custom". */
 export function chipOf(v: SaleChipValues): SaleChip | "custom" {
   const none = !v.delivery_status && !v.payment_status && !v.late;
   if (none) return "";
@@ -190,7 +177,6 @@ export function chipOf(v: SaleChipValues): SaleChip | "custom" {
   return "custom";
 }
 
-/** Valores da URL que um chip aplica (zera os outros dois). */
 export function chipPatch(chip: SaleChip): SaleChipValues {
   const f = chipFilters(chip);
   return { delivery_status: f.delivery_status ?? "", payment_status: f.payment_status ?? "", late: f.late ? "1" : "" };
@@ -198,13 +184,11 @@ export function chipPatch(chip: SaleChip): SaleChipValues {
 
 export interface SaleBreakdown {
   price: number;
-  /** O custo das pedras não é um componente: deriva de preço − lucro − custos da venda. */
   stones: number;
   costs: number;
   profit: number;
 }
 
-/** Preço − pedras − custos = lucro previsto (T06 §2, AYD-009). `null` sem composição. */
 export function saleBreakdown(sale: Pick<Venda, "composition" | "lucro">): SaleBreakdown | null {
   const c = sale.composition;
   if (!c) return null;
@@ -212,7 +196,6 @@ export function saleBreakdown(sale: Pick<Venda, "composition" | "lucro">): SaleB
   return { price: c.price_total, stones, costs: c.costs_total, profit: sale.lucro };
 }
 
-/** Credor padrão de um custo: o Partner indicador para COMMISSION; os demais, sem credor ("a definir"). */
 export function defaultPayee(kind: SaleCostKind, referrerId: string | undefined): string {
   return kind === "COMMISSION" ? (referrerId ?? "") : "";
 }

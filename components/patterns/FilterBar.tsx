@@ -12,7 +12,6 @@ export interface FilterChipOption {
 }
 
 export interface FilterChipGroup {
-  /** Nome acessível do grupo ("Situação da venda"). */
   label: string;
   options: readonly FilterChipOption[];
   value: string;
@@ -20,22 +19,14 @@ export interface FilterChipGroup {
 }
 
 export interface FilterBarProps {
-  /** Filtros rápidos em chips (Vendas: A entregar · Atrasadas · Todas). */
   chips?: readonly FilterChipGroup[];
-  /** Busca por texto (debounce de 300 ms). */
   search?: { value: string; onChange: (value: string) => void; placeholder?: string };
-  /** Filtros avançados (período, cliente, cidade…): ficam num painel recolhível. */
   children?: ReactNode;
-  /** Quantos filtros estão ativos — habilita "Limpar (N)". */
   activeCount?: number;
   onClear?: () => void;
   className?: string;
 }
 
-/**
- * Barra de filtros padrão: chips rápidos + busca + painel avançado + "Limpar".
- * O estado fica na URL via `useUrlFilters`; a barra só apresenta e dispara `onChange`.
- */
 export function FilterBar({ chips, search, children, activeCount = 0, onClear, className }: FilterBarProps) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [draft, setDraft] = useState(search?.value ?? "");

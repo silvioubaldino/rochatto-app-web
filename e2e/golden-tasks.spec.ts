@@ -2,11 +2,6 @@ import { expect, test, type Page } from "@playwright/test";
 import { hasHorizontalScroll, smallTouchTargets } from "./helpers";
 import { mockApi, type MockApi } from "./mock-api";
 
-/**
- * Tarefas-ouro TO-1 a TO-7 (AYD-011 §3.6) com a api simulada. Rodam em desktop,
- * iPhone (WebKit) e Pixel (Chromium) com os MESMOS passos — a única diferença permitida é onde mora
- * o gatilho (barra lateral × topo), nunca um passo a mais (UX-P13).
- */
 test.beforeAll(async ({ baseURL }) => {
   const reachable = await fetch(baseURL ?? "http://localhost:3000", { method: "HEAD" })
     .then((r) => r.status < 500)
@@ -20,7 +15,6 @@ test.beforeEach(async ({ page }) => {
 });
 
 const noSideScroll = async (page: Page) => expect(await hasHorizontalScroll(page)).toBe(false);
-/** No celular (iPhone/Pixel) todo controle visível tem ao menos 44 px (UX-P13); no desktop o alvo é menor por desenho. */
 const touchTargets = async (page: Page) => {
   if (test.info().project.name !== "desktop") expect(await smallTouchTargets(page)).toEqual([]);
 };
@@ -61,7 +55,7 @@ test("TO-2 · fechar o orçamento num diálogo (sob encomenda, estoque, instalad
   await page.goto("/orcamentos/q154");
   await page.getByRole("button", { name: "Fechar venda" }).click();
   const dialog = page.getByRole("dialog", { name: "Fechar venda" });
-  await expect(dialog.getByRole("combobox", { name: "Fornecedor de Rock face" })).toHaveValue("Matheus RJ"); // C8
+  await expect(dialog.getByRole("combobox", { name: "Fornecedor de Rock face" })).toHaveValue("Matheus RJ");
 
   await dialog.getByRole("radiogroup", { name: "Origem de Moledo" }).getByRole("radio", { name: "De estoque" }).click();
   await dialog.locator("#labor-2").fill("Nivaldo");
@@ -86,7 +80,6 @@ test("TO-2 · fechar o orçamento num diálogo (sob encomenda, estoque, instalad
   expect(closing.down_payment).toMatchObject({ payment_method: "PIX" });
   expect(closing.costs).toEqual([{ kind: "FREIGHT", amount: 150, payee_id: "f3", description: null }]);
 
-  // a venda abre já com o próximo passo
   await expect(page).toHaveURL(/\/vendas\/s1$/);
   const banner = page.getByRole("region", { name: "Próximo passo" });
   await expect(banner).toContainText("Falta comprar");
@@ -116,8 +109,7 @@ test("TO-4 · registrar a parcela paga: Hoje → A receber vencendo → Receber"
   await dialog.getByRole("button", { name: /^Receber R\$/ }).click();
   await expect.poll(() => api.last("POST", "/settlements")).toBeTruthy();
   expect(api.last("POST", "/settlements")?.body).toMatchObject({ allocations: [{ obligation_id: "o1", amount: 3200 }], movement: { payment_method: "PIX" } });
-  await expect(money).toHaveCount(0); // a pendência some quando o estado se resolve
-  // o toast oferece "Desfazer" (anula a movimentação)
+  await expect(money).toHaveCount(0);
   await page.getByRole("button", { name: "Desfazer" }).click();
   await expect.poll(() => api.last("DELETE", "/financial-movements/m1")).toBeTruthy();
 });
@@ -126,7 +118,7 @@ test("TO-5 · pagar num Pix duas contas do fornecedor: Fornecedor 360 → Pagar 
   await page.goto("/fornecedores/f1");
   await page.getByRole("button", { name: "Pagar contas em aberto" }).click();
   const dialog = page.getByRole("dialog", { name: "Pagar 2 contas" });
-  await expect(dialog).toContainText("1.500,50"); // as duas contas já vêm com o em aberto
+  await expect(dialog).toContainText("1.500,50");
   await dialog.getByRole("combobox", { name: "Forma de pagamento" }).click();
   await page.getByRole("option", { name: "Pix" }).click();
   await noSideScroll(page);
@@ -134,12 +126,12 @@ test("TO-5 · pagar num Pix duas contas do fornecedor: Fornecedor 360 → Pagar 
   await dialog.getByRole("button", { name: /^Pagar R\$/ }).click();
 
   await expect.poll(() => api.last("POST", "/settlements")).toBeTruthy();
-  expect(api.writes.filter((w) => w.method === "POST" && w.path === "/settlements")).toHaveLength(1); // um Pix, uma movimentação
+  expect(api.writes.filter((w) => w.method === "POST" && w.path === "/settlements")).toHaveLength(1);
   expect(api.last("POST", "/settlements")?.body).toMatchObject({
     movement: { payment_method: "PIX" },
     allocations: [{ obligation_id: "o2", amount: 1200 }, { obligation_id: "o3", amount: 300.5 }],
   });
-  await expect(page).toHaveURL(/\/fornecedores\/f1$/); // continua na mesma tela
+  await expect(page).toHaveURL(/\/fornecedores\/f1$/);
   await page.getByRole("button", { name: "Desfazer" }).click();
   await expect.poll(() => api.last("DELETE", "/financial-movements/m2")).toBeTruthy();
 });

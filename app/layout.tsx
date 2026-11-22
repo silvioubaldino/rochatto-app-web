@@ -18,7 +18,6 @@ export const metadata: Metadata = {
   description: "Sistema de gestão de vendas",
 };
 
-// viewport-fit=cover: o conteúdo usa a tela toda e respeita as áreas seguras (UX-P13).
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,

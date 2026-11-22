@@ -6,7 +6,6 @@ import type { SearchResponse } from "@/lib/types";
 
 export const SEARCH_MIN_CHARS = 2;
 
-/** `GET /search?q=` (C9). `q` já com debounce; menos de 2 caracteres não busca. */
 export function useGlobalSearch(q: string, enabled = true) {
   const term = q.trim();
   const key = enabled && term.length >= SEARCH_MIN_CHARS ? `/search?q=${encodeURIComponent(term)}&limit=5` : null;

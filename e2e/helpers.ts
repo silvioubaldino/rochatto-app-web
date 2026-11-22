@@ -1,11 +1,9 @@
 import type { Page } from "@playwright/test";
 
-/** Rolagem lateral da PÁGINA? (UX-P13: 360 px sem rolagem lateral.) */
 export async function hasHorizontalScroll(page: Page): Promise<boolean> {
   return page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
 }
 
-/** Controles interativos visíveis menores que 44 px de altura (alvo de toque — UX-P13). */
 export async function smallTouchTargets(page: Page, min = 44): Promise<string[]> {
   return page.evaluate((minSize) => {
     const selector = "button, a[href], input:not([type=hidden]), select, textarea, [role=button], [role=combobox]";

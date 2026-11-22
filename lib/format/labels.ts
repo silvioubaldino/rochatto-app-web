@@ -28,8 +28,6 @@ import type {
   PaymentMethod,
 } from "../types";
 
-// AYD-002 — rótulos e cores dos enums de atendimento (nunca exibir o código do enum).
-
 export const SALE_DELIVERY_STATUSES: SaleDeliveryStatus[] = ["TO_DELIVER", "DELIVERED", "CANCELED"];
 
 export const SALE_DELIVERY_STATUS_LABELS: Record<SaleDeliveryStatus, string> = {
@@ -53,19 +51,15 @@ export const ITEM_ORIGIN_LABELS: Record<ItemOrigin, string> = {
   FROM_STOCK: "De estoque",
 };
 
-// AYD-010 — tipo do Item (Product × Service).
-
 export const ITEM_KIND_LABELS: Record<ItemKind, string> = {
   PRODUCT: "Produto",
   SERVICE: "Serviço",
 };
 
-/** Item de serviço? (`kind` ausente = PRODUCT, respostas anteriores ao AYD-010.) */
 export function isServiceItem(item: { kind?: ItemKind | null }): boolean {
   return item.kind === "SERVICE";
 }
 
-/** Sale só de serviço: A entregar / Entregue leem-se como A executar / Executado (AYD-010 §3). */
 export function isServiceOnlySale(itens: { kind?: ItemKind | null }[] | undefined): boolean {
   return !!itens && itens.length > 0 && itens.every(isServiceItem);
 }
@@ -75,7 +69,6 @@ const SERVICE_ONLY_DELIVERY_LABELS: Partial<Record<SaleDeliveryStatus, string>> 
   DELIVERED: "Executado",
 };
 
-/** Rótulo do status de entrega; `serviceOnly` troca por A executar / Executado. */
 export function saleDeliveryLabel(status: SaleDeliveryStatus, serviceOnly = false): string {
   return (serviceOnly && SERVICE_ONLY_DELIVERY_LABELS[status]) || SALE_DELIVERY_STATUS_LABELS[status] || "—";
 }
@@ -136,7 +129,6 @@ export const QUOTE_STATUS_LABELS: Record<QuoteStatus, string> = {
   LOST: "Perdido",
 };
 
-// AYD-003 — Partner type e Lead source (rótulos PT-BR; nunca exibir o código do enum).
 export const PARTNER_TYPES: PartnerType[] = ["ARCHITECT", "ENGINEER", "BUILDER", "OTHER"];
 
 export const PARTNER_TYPE_LABELS: Record<PartnerType, string> = {
@@ -155,7 +147,6 @@ export const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
   OTHER: "Outro",
 };
 
-/** "Parceiro · Fulano" quando a origem é um Partner; "—" quando não informada. */
 export function formatLeadSource(
   leadSource?: LeadSource | null,
   referrerName?: string | null,
@@ -165,7 +156,6 @@ export function formatLeadSource(
   return leadSource === "PARTNER" && referrerName ? `${label} · ${referrerName}` : label;
 }
 
-// AYD-004 — forma de pagamento (nunca exibir o código do enum).
 export const PAYMENT_METHODS: PaymentMethod[] = ["PIX", "CASH", "CARD", "BOLETO", "TRANSFER"];
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
@@ -176,29 +166,23 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   TRANSFER: "Transferência",
 };
 
-/** Rótulo da forma de pagamento; null/ausente = "Não informado". */
 export function formatPaymentMethod(method?: PaymentMethod | null): string {
   return method ? (PAYMENT_METHOD_LABELS[method] ?? "Não informado") : "Não informado";
 }
 
-/** Taxa 0..1 → "42%" (arredondada); null → "—" (ex.: conversão Quote → Sale sem Quotes). */
 export function formatPercentRate(rate: number | null | undefined): string {
   if (rate === null || rate === undefined || Number.isNaN(rate)) return "—";
   return `${Math.round(rate * 100)}%`;
 }
 
-// Assistant connector (AYD-006)
 export const CONNECTION_SCOPE_LABELS: Record<string, string> = {
   read: "Consultar dados (clientes, orçamentos, vendas, financeiro, estoque)",
   write: "Lançar dados (orçamentos, vendas, recebimentos, compras, ajustes de estoque)",
 };
 
-/** Rótulo de um scope; scope desconhecido aparece como veio da API. */
 export function formatConnectionScope(scope: string): string {
   return CONNECTION_SCOPE_LABELS[scope] ?? scope;
 }
-
-// AYD-007 — contas e movimentações (rótulos PT-BR; nunca exibir o código do enum).
 
 export const SUPPLIER_KINDS: SupplierKind[] = ["STONE", "TRANSPORT", "LABOR", "TAX_AUTHORITY", "OTHER"];
 
@@ -244,7 +228,6 @@ export const MOVEMENT_CATEGORY_LABELS: Record<MovementCategory, string> = {
   OTHER_EXPENSE: "Outra despesa",
 };
 
-/** Categorias que o dono escolhe ao lançar uma despesa (saída sem quitação). */
 export const EXPENSE_CATEGORIES: MovementCategory[] = [
   "VEHICLE",
   "TAXES",
@@ -255,10 +238,8 @@ export const EXPENSE_CATEGORIES: MovementCategory[] = [
   "OTHER_EXPENSE",
 ];
 
-/** Categoria de entrada avulsa; SALE_RECEIPT só nasce de uma quitação. */
 export const INCOME_CATEGORIES: MovementCategory[] = ["OTHER_INCOME"];
 
-/** Entradas (valor > 0). As demais categorias são saídas (valor < 0) — AYD-007 §Enums. */
 export const INFLOW_CATEGORIES: MovementCategory[] = ["SALE_RECEIPT", "OTHER_INCOME"];
 
 export function isInflowCategory(category: MovementCategory): boolean {
@@ -278,7 +259,6 @@ export const OBLIGATION_COMPONENT_LABELS: Record<string, string> = {
   PURCHASE_ITEMS: "Pedras da compra",
 };
 
-/** Rótulo do componente: o mapa conhecido, senão o `label` que a API enviou. */
 export function formatComponentLabel(component: Pick<ObligationComponent, "type" | "label">): string {
   return OBLIGATION_COMPONENT_LABELS[component.type] ?? component.label;
 }
@@ -288,12 +268,10 @@ export const OBLIGATION_ORIGIN_LABELS: Record<ObligationOriginType, string> = {
   PURCHASE: "Compra",
 };
 
-/** Rota da origem da conta (Sale → /vendas, Purchase → /compras). */
 export function obligationOriginHref(origin: { type: ObligationOriginType; id: string }): string {
   return origin.type === "SALE" ? `/vendas/${origin.id}` : `/compras/${origin.id}`;
 }
 
-/** Credor/devedor da conta; sem credor = "A definir". */
 export function formatCounterparty(counterparty: { name: string } | null | undefined): string {
   return counterparty?.name ?? "A definir";
 }

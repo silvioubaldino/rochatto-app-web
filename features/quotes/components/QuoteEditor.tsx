@@ -35,15 +35,11 @@ import { QuoteHeaderFields } from "./QuoteHeaderFields";
 import { QuoteLostDialog } from "./QuoteLostDialog";
 
 interface QuoteEditorProps {
-  /** Orçamento aberto a editar; sem isto, cria um novo. */
   quote?: Quote;
-  /** Relê o orçamento (ids dos Items novos) — devolve o registro fresco. */
   refresh?: () => Promise<Quote | undefined>;
-  /** `/orcamentos/novo?customer_id=…&rapida=1`. */
   initial?: { customerId?: string; quick?: boolean };
 }
 
-/** Editor ÚNICO de orçamento (T03): criar e editar um Quote aberto — mesmo componente. */
 export function QuoteEditor({ quote, refresh, initial }: QuoteEditorProps) {
   const router = useRouter();
   const phone = useIsPhone();

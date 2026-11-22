@@ -17,7 +17,6 @@ import { useCreateAdjustment } from "../mutations";
 const FORM_ID = "adjustment-form";
 const REASONS = STOCK_ADJUSTMENT_REASONS.map((r) => ({ value: r, label: STOCK_ADJUSTMENT_REASON_LABELS[r] }));
 
-/** Novo ajuste de estoque: somar ou baixar do saldo de um produto, com motivo. */
 export function AdjustmentDialog({ productId, onClose }: { productId?: string; onClose: () => void }) {
   const create = useCreateAdjustment();
   const {

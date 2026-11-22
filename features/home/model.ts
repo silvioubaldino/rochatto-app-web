@@ -1,4 +1,3 @@
-// Regras de apresentação da tela Hoje (T01) — puras e testadas.
 import { addDaysISO, formatDate, formatMoney } from "@/lib/format";
 import type { PendingActionGroup, PendingActionItem, PendingActionKind } from "@/lib/types";
 
@@ -10,7 +9,6 @@ export const HORIZON_OPTIONS = [
 
 export const DEFAULT_HORIZON = "7";
 
-/** Horizonte válido (0..60, inteiro) vindo da URL; senão o padrão. */
 export function parseHorizon(raw: string | null | undefined): number {
   const n = Number(raw ?? DEFAULT_HORIZON);
   return Number.isInteger(n) && n >= 0 && n <= 60 ? n : Number(DEFAULT_HORIZON);
@@ -22,7 +20,6 @@ export interface HomeSection {
   kinds: readonly PendingActionKind[];
 }
 
-/** Áreas da tela (mock do T01). Grupos vêm da api na ordem do enum; aqui só se distribuem. */
 export const HOME_SECTIONS: readonly HomeSection[] = [
   { id: "money", label: "Dinheiro", kinds: ["RECEIVABLE_DUE", "PAYABLE_DUE", "RECEIVABLE_WITHOUT_PLAN", "COST_WITHOUT_PAYEE"] },
   {
@@ -54,7 +51,6 @@ const BASE_TITLES: Record<PendingActionKind, string> = {
   NEGATIVE_STOCK: "Estoque negativo",
 };
 
-/** Grupos cujo corte depende do horizonte escolhido ("até 29/11"). */
 const HORIZON_KINDS: readonly PendingActionKind[] = ["RECEIVABLE_DUE", "PAYABLE_DUE", "DELIVERY_DUE", "PURCHASE_TO_RECEIVE"];
 
 export function groupTitle(kind: PendingActionKind, today: string, horizonDays: number): string {
@@ -63,7 +59,6 @@ export function groupTitle(kind: PendingActionKind, today: string, horizonDays: 
   return horizonDays === 0 ? `${base} hoje` : `${base} até ${formatDate(addDaysISO(today, horizonDays))}`;
 }
 
-/** "R$ 3.200,00 · 2" / "5" — o total do grupo numa linha. */
 export function groupSummary(group: Pick<PendingActionGroup, "count" | "amount">): string {
   return group.amount !== null && group.amount !== 0
     ? `${formatMoney(group.amount)} · ${group.count}`
@@ -82,11 +77,9 @@ export type RowActionId =
 export interface RowAction {
   id: RowActionId;
   label: string;
-  /** Destino quando a ação é navegar. */
   href?: string;
 }
 
-/** Página da entidade da pendência. */
 export function itemHref(kind: PendingActionKind, item: PendingActionItem): string {
   const { type, id } = item.entity;
   switch (type) {
@@ -105,7 +98,6 @@ export function itemHref(kind: PendingActionKind, item: PendingActionItem): stri
   }
 }
 
-/** A ação que RESOLVE a pendência ali mesmo (ou leva a quem resolve). */
 export function rowAction(kind: PendingActionKind, item: PendingActionItem): RowAction {
   switch (kind) {
     case "RECEIVABLE_DUE":
@@ -139,13 +131,11 @@ const NUMBERED: Partial<Record<PendingActionItem["entity"]["type"], string>> = {
   PURCHASE: "Compra",
 };
 
-/** "Venda nº 98 · Alejandra", "Compra nº 12 · Matheus RJ" ou só o nome (conta, produto, fornecedor). */
 export function itemLabel(item: PendingActionItem): string {
   const noun = NUMBERED[item.entity.type];
   return noun && item.number ? `${noun} nº ${item.number} · ${item.title}` : item.title;
 }
 
-/** Contexto da linha: "venc. 29/11/2026 · 2 items". */
 export function itemContext(kind: PendingActionKind, item: PendingActionItem): string {
   const parts: string[] = [];
   if (item.date) {

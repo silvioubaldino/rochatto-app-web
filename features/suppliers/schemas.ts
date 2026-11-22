@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-// Fornecedor / prestador (AYD-007 §1).
 export const supplierSchema = z.object({
   nome: z.string().trim().min(1, "Nome é obrigatório"),
   kind: z.enum(["STONE", "TRANSPORT", "LABOR", "TAX_AUTHORITY", "OTHER"]),

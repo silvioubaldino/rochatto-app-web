@@ -13,7 +13,6 @@ import type { Quote } from "@/lib/types";
 import { estimatedMargin, quoteTitle } from "../model";
 import { useSetQuoteStatus } from "../mutations";
 
-/** Orçamento ganho ou perdido (T04): visualização; o ganho leva à venda, o perdido pode reabrir. */
 export function QuoteReadOnlyView({ quote }: { quote: Quote }) {
   const status = useSetQuoteStatus(quote.id);
   const lines = (quote.items ?? []).map(fromQuoteItem);

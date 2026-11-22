@@ -1,11 +1,7 @@
-// Regras da grade de Items (Quote e Sale): linha, totais, margem e diferença para gravar — puras e testadas.
 import type { ItemKind, ItemOrigin, ItemVenda, QuoteItem } from "@/lib/types";
 
-/** Uma linha editável da grade. Serve a Quote (`mode="quote"`) e à Sale (`mode="sale"`). */
 export interface ItemLine {
-  /** Chave local estável (React); não vai para a api. */
   key: string;
-  /** Id gravado na api; ausente = linha nova. */
   id?: string;
   kind: ItemKind;
   productId: string | null;
@@ -14,9 +10,7 @@ export interface ItemLine {
   unit: string | null;
   quantity: number;
   unitPrice: number;
-  /** Custo unitário (estimado no Quote; do Item na Sale). */
   unitCost: number;
-  // só Sale
   origin?: ItemOrigin | null;
   supplierId?: string | null;
   supplierName?: string | null;
@@ -24,7 +18,6 @@ export interface ItemLine {
   stockBalance?: number | null;
 }
 
-/** O que o seletor de produto/serviço devolve. */
 export interface ItemPick {
   kind: ItemKind;
   id: string | null;
@@ -94,7 +87,6 @@ export function fromSaleItem(i: ItemVenda): ItemLine {
 export const lineTotal = (l: Pick<ItemLine, "quantity" | "unitPrice">): number => round2(l.quantity * l.unitPrice);
 export const lineCost = (l: Pick<ItemLine, "quantity" | "unitCost">): number => round2(l.quantity * l.unitCost);
 
-/** Margem em % do preço: (preço − custo) / preço. `null` sem preço. */
 export function marginPercent(revenue: number, cost: number): number | null {
   if (revenue <= 0) return null;
   return round2(((revenue - cost) / revenue) * 100);
@@ -114,7 +106,6 @@ export function gridTotals(lines: readonly ItemLine[]): GridTotals {
   return { revenue, cost, margin: marginPercent(revenue, cost) };
 }
 
-/** Mensagem de erro da linha, ou null. */
 export function lineError(l: ItemLine): string | null {
   if (!l.name.trim()) return "Informe o produto ou serviço.";
   if (!(l.quantity > 0)) return "A quantidade deve ser maior que zero.";
@@ -123,7 +114,6 @@ export function lineError(l: ItemLine): string | null {
   return null;
 }
 
-/** Linha travada (Item já numa Purchase): só o preço muda (AYD-002 §1). */
 export function isLineLocked(l: ItemLine): boolean {
   return !!l.purchaseId;
 }
@@ -136,7 +126,6 @@ export interface LineDiff {
 
 const SAME_FIELDS: (keyof ItemLine)[] = ["name", "quantity", "unitPrice", "unitCost", "productId", "serviceId", "kind"];
 
-/** O que gravar para a lista `drafts` virar o que o servidor tem em `original` (por id). */
 export function diffLines(original: readonly ItemLine[], drafts: readonly ItemLine[]): LineDiff {
   const byId = new Map(original.filter((l) => l.id).map((l) => [l.id as string, l]));
   const keptIds = new Set(drafts.filter((l) => l.id).map((l) => l.id as string));

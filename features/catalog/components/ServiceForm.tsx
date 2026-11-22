@@ -10,7 +10,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { serviceSchema, toServicePayload, type ServiceFormData } from "@/lib/schemas";
 import { useSaveService } from "../mutations";
 
-/** Cadastro de Service (AYD-010 §1): nome, unidade livre, preço e custo de referência. */
 export function ServiceForm({ formId, entity, initialName, onSaved, onPendingChange }: EntityFormProps<"service">) {
   const {
     register,

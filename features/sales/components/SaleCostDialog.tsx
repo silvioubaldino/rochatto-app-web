@@ -20,8 +20,7 @@ import { useSaveSaleCost } from "../mutations";
 const FORM_ID = "sale-cost-form";
 const KIND_OPTIONS = SALE_COST_KINDS.map((k) => ({ value: k, label: SALE_COST_KIND_LABELS[k] }));
 
-/** Custo da venda (frete pago, instalador, comissão, outro) com credor: vira conta a pagar. */
-export function SaleCostDialog({ saleId, referrerId, cost, onClose }: { saleId: string; /** Partner indicador: credor padrão da comissão. */ referrerId?: string; cost?: SaleCost; onClose: () => void }) {
+export function SaleCostDialog({ saleId, referrerId, cost, onClose }: { saleId: string; referrerId?: string; cost?: SaleCost; onClose: () => void }) {
   const save = useSaveSaleCost(saleId, cost);
   const {
     control,

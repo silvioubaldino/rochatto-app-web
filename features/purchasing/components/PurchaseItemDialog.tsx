@@ -14,7 +14,6 @@ import { useSavePurchaseItem } from "../mutations";
 
 const FORM_ID = "purchase-item-form";
 
-/** Linha de reposição (só compra aberta): produto, quantidade e custo unitário. */
 export function PurchaseItemDialog({ purchaseId, item, onClose }: { purchaseId: string; item?: PurchaseItem; onClose: () => void }) {
   const save = useSavePurchaseItem(purchaseId, item);
   const {

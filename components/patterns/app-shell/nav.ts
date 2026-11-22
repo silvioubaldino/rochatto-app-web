@@ -1,6 +1,3 @@
-// Navegação do app: grupos, item ativo e barra inferior do celular — puro e testado.
-// Estrutura de AYD-011 §5.1 (U2). Trocar uma rota = mudar `href` aqui e em `entityHref`.
-
 export type NavIconName =
   | "home"
   | "indicators"
@@ -24,7 +21,6 @@ export interface NavItem {
   label: string;
   href: string;
   icon: NavIconName;
-  /** Rotas extras que também deixam o item ativo. */
   alsoActiveFor?: readonly string[];
 }
 
@@ -82,12 +78,10 @@ export const NAV_GROUPS: readonly NavGroup[] = [
   },
 ];
 
-/** Configuração rara: fica no menu do usuário / "Mais", não no menu principal. */
 export const USER_MENU_ITEMS: readonly NavItem[] = [
   { id: "integrations", label: "Integrações", href: "/integracoes", icon: "integrations" },
 ];
 
-/** Barra inferior do celular: Hoje · Orçamentos · ＋ · Vendas · Mais (AYD-011 §5.1). */
 export const BOTTOM_BAR_IDS = ["today", "quotes", "new", "sales", "more"] as const;
 export type BottomBarId = (typeof BOTTOM_BAR_IDS)[number];
 
@@ -99,13 +93,11 @@ export function findNavItem(id: string): NavItem | undefined {
   return allNavItems().find((i) => i.id === id);
 }
 
-/** O item está ativo para este caminho? `/vendas/abc` ativa "Vendas"; `/vendas-x` não. */
 export function isNavActive(item: Pick<NavItem, "href" | "alsoActiveFor">, pathname: string): boolean {
   const hrefs = [item.href, ...(item.alsoActiveFor ?? [])];
   return hrefs.some((h) => pathname === h || pathname.startsWith(`${h}/`));
 }
 
-/** O item "Mais" fica ativo quando a rota é de algum item que NÃO está na barra. */
 export function isMoreActive(pathname: string): boolean {
   const inBar = new Set<string>(BOTTOM_BAR_IDS);
   return allNavItems().some((i) => !inBar.has(i.id) && isNavActive(i, pathname));
@@ -114,13 +106,10 @@ export function isMoreActive(pathname: string): boolean {
 export interface NewMenuEntry {
   id: string;
   label: string;
-  /** Rota (sem diálogo). */
   href?: string;
-  /** Abre o cadastro rápido deste tipo, sem sair da tela. */
   quickCreate?: "customer" | "product" | "supplier" | "partner" | "service";
 }
 
-/** Menu "＋ Novo" (UX-P02): cada entrada abre um fluxo real, sem sair da tela quando é cadastro. */
 export const NEW_MENU: readonly NewMenuEntry[] = [
   { id: "quote", label: "Orçamento", href: "/orcamentos/novo" },
   { id: "quick-sale", label: "Venda rápida", href: "/orcamentos/novo?rapida=1" },

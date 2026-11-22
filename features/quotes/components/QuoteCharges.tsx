@@ -9,7 +9,6 @@ import { SALE_CHARGE_KINDS, SALE_CHARGE_KIND_LABELS } from "@/lib/format";
 import type { SaleChargeKind } from "@/lib/types";
 import type { ChargeDraft } from "../schemas";
 
-/** Cobranças ao cliente (frete cobrado, outras): somam ao preço e viram parte da conta a receber (AYD-009). */
 export function QuoteCharges({ value, onChange }: { value: ChargeDraft[]; onChange: (next: ChargeDraft[]) => void }) {
   const patch = (index: number, part: Partial<ChargeDraft>) =>
     onChange(value.map((c, i) => (i === index ? { ...c, ...part } : c)));

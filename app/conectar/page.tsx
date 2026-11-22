@@ -61,7 +61,6 @@ function Notice({
   );
 }
 
-/** O `redirect_to` vem da API (confiável), mas só navegamos para http(s). */
 function isNavigable(url: unknown): url is string {
   return typeof url === "string" && /^https?:\/\//i.test(url);
 }

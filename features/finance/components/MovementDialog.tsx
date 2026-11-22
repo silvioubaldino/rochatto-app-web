@@ -24,7 +24,6 @@ const COPY: Record<MovementKind, { create: string; hint: string; done: string; c
   INCOME: { create: "Nova receita avulsa", hint: "Entrada que não vem de uma venda.", done: "Receita lançada.", counterparty: "De quem" },
 };
 
-/** Despesa ou receita avulsa (criar) e correção de uma movimentação. O valor é digitado sem sinal; a categoria dá o sinal. */
 export function MovementDialog({ kind, movement, onClose }: { kind: MovementKind; movement?: FinancialMovement; onClose: () => void }) {
   const save = useSaveMovement(movement);
   const voidMovement = useVoidMovement();
@@ -47,7 +46,6 @@ export function MovementDialog({ kind, movement, onClose }: { kind: MovementKind
     const saved = await save.mutate(data);
     if (!saved) return;
     if (movement) {
-      // corrigir é uma ação direta; criar oferece desfazer (anular)
       onClose();
       return;
     }

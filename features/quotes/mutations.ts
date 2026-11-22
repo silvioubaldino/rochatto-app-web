@@ -11,7 +11,6 @@ import {
   type QuoteFormData,
 } from "./schemas";
 
-/** Cria o orçamento (POST /quotes). */
 export function useCreateQuote() {
   return useApiMutation({
     run: (form: QuoteFormData) => http.post<Quote>("/quotes", toQuoteCreatePayload(form)),
@@ -41,7 +40,6 @@ export function useSaveQuote(quoteId: string, original: readonly ItemLine[]) {
   });
 }
 
-/** OPEN ↔ LOST (motivo opcional). Ganho só pelo Fechar venda. */
 export function useSetQuoteStatus(quoteId: string) {
   return useApiMutation({
     run: async (status: QuoteStatus, lostReason?: string) => {
@@ -67,7 +65,6 @@ export function useDeleteQuote(quoteId: string) {
 
 const CLOSING_EMITS = ["QUOTE_CHANGED", "SALE_CHANGED", "PURCHASE_CHANGED", "MONEY_MOVED"] as const;
 
-/** Fecha a venda de um orçamento aberto (POST /quotes/{id}/convert + closing — C5). O erro fica no diálogo. */
 export function useConvertQuote(quoteId: string) {
   return useApiMutation({
     run: (closing: ClosingRequest) => http.post<ClosingResponse>(`/quotes/${quoteId}/convert`, { closing }),
@@ -77,7 +74,6 @@ export function useConvertQuote(quoteId: string) {
   });
 }
 
-/** Venda rápida: cria o Quote e converte (POST /quotes/quick-sale + closing — C5). */
 export function useQuickSale() {
   return useApiMutation({
     run: (form: QuoteFormData, closing: ClosingRequest) =>
@@ -88,7 +84,6 @@ export function useQuickSale() {
   });
 }
 
-/** Duplicar: novo orçamento aberto com os mesmos Items e cobranças (atalho para "revisão" — RF-08 fora). */
 export function useDuplicateQuote() {
   return useApiMutation({
     run: (form: QuoteFormData, today: string) => http.post<Quote>("/quotes", toQuoteCreatePayload({ ...form, quote_date: today })),

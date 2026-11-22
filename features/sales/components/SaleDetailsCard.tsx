@@ -14,7 +14,6 @@ import { docNumber } from "@/lib/format";
 import type { Venda } from "@/lib/types";
 import { useUpdateSale } from "../mutations";
 
-/** Dados da venda (T06 §5): cliente e parceiro com prévia, datas, observações e orçamento de origem. */
 export function SaleDetailsCard({ sale, readOnly }: { sale: Venda; readOnly: boolean }) {
   const [editing, setEditing] = useState(false);
   const { quote } = useQuote(sale.quote_id ?? "");

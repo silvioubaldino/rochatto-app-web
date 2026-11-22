@@ -11,7 +11,6 @@ export interface SelectOption {
 }
 
 export interface SelectProps {
-  /** Valor selecionado; "" = nenhum (use uma opção `{ value: "", label: "Todos" }` para limpar). */
   value: string;
   onChange: (value: string) => void;
   options: readonly SelectOption[];
@@ -20,15 +19,10 @@ export interface SelectProps {
   name?: string;
   disabled?: boolean;
   invalid?: boolean;
-  /** Rótulo acessível quando não há <label htmlFor>. */
   "aria-label"?: string;
   className?: string;
 }
 
-/**
- * Escolha em lista fixa (enums). Substitui o `<select>` nativo (barrado por lint):
- * mesmo foco, teclado e visual em todas as telas; alvo de toque ≥ 44 px no celular.
- */
 export function Select({
   value,
   onChange,

@@ -71,7 +71,6 @@ function Content() {
   );
 }
 
-/** Cadastro de Products (T16): busca, filtro por categoria, editar e excluir. */
 export function ProductsList() {
   return (
     <Suspense fallback={null}>

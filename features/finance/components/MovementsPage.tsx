@@ -45,7 +45,6 @@ function Content() {
   const periodError = movementPeriodError(filters);
   const { list, isLoading, error, refresh } = useFinancialMovements(periodError ? null : filters);
   const voidMovement = useVoidMovementConfirmed();
-  // `?nova=despesa|receita` (do "＋ Novo") já abre o lançamento.
   const [editing, setEditing] = useState<Editing>(() => (v.nova === "despesa" ? { kind: "EXPENSE" } : v.nova === "receita" ? { kind: "INCOME" } : null));
   const [voiding, setVoiding] = useState<FinancialMovement | null>(null);
 

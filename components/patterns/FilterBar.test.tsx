@@ -80,7 +80,6 @@ describe("ResponsiveDialog", () => {
     const dialog = screen.getByRole("dialog", { name: "Fechar venda" });
     expect(dialog).toHaveTextContent("corpo");
     expect(screen.getByRole("button", { name: "Confirmar" })).toBeInTheDocument();
-    // celular: tela cheia com voltar; desktop: caixa com X — as duas ações existem no DOM
     expect(screen.getByRole("button", { name: "Voltar" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Fechar" }));
     expect(onOpenChange).toHaveBeenCalledWith(false);

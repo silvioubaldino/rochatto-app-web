@@ -7,13 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { addDaysISO, formatMoney, moneyToInput, parseMoney, parseQuantity, todayISO } from "@/lib/format";
 
-/**
- * Campos de domínio (UX-P10). Todos aceitam `{...field}` do `Controller` do RHF
- * (`name`, `ref`, `onBlur`, `value`, `onChange`) e escolhem o teclado certo no celular.
- */
-
 interface FieldShellProps {
-  /** Rótulo visível (todo campo tem rótulo — WCAG). */
   label: ReactNode;
   htmlFor?: string;
   error?: string;
@@ -23,7 +17,6 @@ interface FieldShellProps {
   children: ReactNode;
 }
 
-/** Rótulo + controle + erro inline (+ dica). */
 export function FieldShell({ label, htmlFor, error, hint, required, className, children }: FieldShellProps) {
   return (
     <div className={cn("space-y-1.5", className)}>
@@ -50,7 +43,6 @@ interface BaseFieldProps {
   className?: string;
   onBlur?: () => void;
   ref?: Ref<HTMLInputElement>;
-  /** "next" (padrão em campos de meio de formulário) ou "done"/"send" no último. */
   enterKeyHint?: "next" | "done" | "send" | "go";
   autoFocus?: boolean;
   placeholder?: string;
@@ -61,7 +53,6 @@ export interface MoneyFieldProps extends BaseFieldProps {
   onChange: (value: number) => void;
 }
 
-/** Dinheiro (R$, vírgula): mostra "R$ 1.234,56" e edita "1234,56". */
 export function MoneyField({ value, onChange, invalid, enterKeyHint = "next", className, ...rest }: MoneyFieldProps) {
   const [draft, setDraft] = useState<string | null>(null);
   const typed = useRef(false);
@@ -102,11 +93,9 @@ export function MoneyField({ value, onChange, invalid, enterKeyHint = "next", cl
 export interface QuantityFieldProps extends BaseFieldProps {
   value: number | null | undefined;
   onChange: (value: number) => void;
-  /** Unidade do Product/Service, exibida junto ao campo ("m²"). */
   unit?: string | null;
 }
 
-/** Quantidade COM a unidade ao lado ("18 m²"). */
 export function QuantityField({
   value,
   onChange,
@@ -148,16 +137,12 @@ export function QuantityField({
 }
 
 export interface DateFieldProps extends BaseFieldProps {
-  /** "yyyy-MM-dd" ou "". */
   value: string | null | undefined;
   onChange: (value: string) => void;
-  /** Atalhos Hoje / +7 / +30 (padrão: ligados). */
   shortcuts?: boolean;
-  /** Injetável em testes. */
   today?: string;
 }
 
-/** Data com o seletor nativo do aparelho + atalhos. */
 export function DateField({
   value,
   onChange,

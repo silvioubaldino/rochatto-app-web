@@ -19,7 +19,6 @@ const FORM_ID = "replenishment-form";
 const METHOD_OPTIONS = ALLOCATION_METHODS.map((m) => ({ value: m, label: ALLOCATION_METHOD_LABELS[m] }));
 const EMPTY_LINE = { product_id: "", quantity: 0, unit_cost: 0 };
 
-/** Nova compra para repor o estoque (kind STOCK_REPLENISHMENT) com linhas de Product. `product` opcional pré-preenche a 1ª linha. */
 export function ReplenishmentDialog({ onClose, product }: { onClose: () => void; product?: { id: string; unit_cost: number } }) {
   const router = useRouter();
   const create = useCreateReplenishment();

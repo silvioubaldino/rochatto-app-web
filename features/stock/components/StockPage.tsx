@@ -30,7 +30,6 @@ function StockContent() {
   const v = f.values;
   const { balances, totalStockValue, isLoading, error, refresh } = useStockBalance({ q: v.q || undefined, only_negative: v.saldo === "negativo" || undefined });
   const adjustments = useStockAdjustments(v.produto || undefined);
-  // `?ajuste=<produto>` (da prévia do produto) abre o ajuste já com o produto.
   const preset = params.get("ajuste");
   const [adjusting, setAdjusting] = useState<{ productId?: string } | null>(() => (preset ? { productId: preset } : null));
 

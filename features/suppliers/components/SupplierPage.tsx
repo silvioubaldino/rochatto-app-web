@@ -34,7 +34,6 @@ function Stat({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-/** Fornecedor ou prestador 360 (T10): quanto devo, o que comprei e o que falta comprar, numa página. */
 export function SupplierPage({ id }: { id: string }) {
   const router = useRouter();
   const settle = useSettleFlow();
@@ -67,7 +66,6 @@ export function SupplierPage({ id }: { id: string }) {
         backLabel="Fornecedores"
         menu={<ActionsMenu items={[{ id: "edit", label: "Editar cadastro", onSelect: () => setEditing(true) }]} />}
       />
-      {/* As ações do dia ficam visíveis no desktop e no celular (mesmos passos — UX-11). */}
       {(toPay.length > 0 || stats.queueItems > 0) && (
         <div className="flex flex-wrap gap-2">
           {toPay.length > 0 && <Button type="button" onClick={() => settle.open({ obligations: toPay })}>Pagar contas em aberto</Button>}

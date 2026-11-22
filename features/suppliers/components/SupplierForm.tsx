@@ -14,7 +14,6 @@ import { useSaveSupplier } from "../mutations";
 
 const KIND_OPTIONS = SUPPLIER_KINDS.map((k) => ({ value: k, label: SUPPLIER_KIND_LABELS[k] }));
 
-/** Cadastro de fornecedor ou prestador (credor que não é Partner). */
 export function SupplierForm({ formId, entity, initialName, onSaved, onPendingChange }: EntityFormProps<"supplier">) {
   const {
     register,

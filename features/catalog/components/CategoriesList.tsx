@@ -30,7 +30,6 @@ function CategoryDialog({ entity, onClose }: { entity?: ProductCategory; onClose
       await save.mutateAsync(data.name);
       onClose();
     } catch (err) {
-      // 409 = nome duplicado (único, sem diferenciar maiúsculas) — erro no campo.
       setError("name", { message: isApiError(err) && err.status === 409 ? "Já existe uma categoria com esse nome." : errorMessage(err, "Erro ao salvar a categoria.") });
     }
   }
@@ -61,7 +60,6 @@ function CategoryDialog({ entity, onClose }: { entity?: ProductCategory; onClose
   );
 }
 
-/** Categorias de produto (T16): dentro de Produtos, cadastráveis pelo dono. */
 export function CategoriesList() {
   const { categories, isLoading, error, refresh } = useProductCategories();
   const remove = useDeleteCategory();

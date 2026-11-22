@@ -9,7 +9,6 @@ import { todayISO } from "@/lib/format";
 import { isApiError } from "@/lib/errors";
 import { useSetInstallments } from "../mutations";
 
-/** Definir (ou refazer) o plano de recebimento da venda — mesmos presets do Fechar venda. */
 export function SetPlanDialog({
   open,
   onOpenChange,

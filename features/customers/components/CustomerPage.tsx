@@ -31,7 +31,6 @@ function Stat({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-/** Cliente 360 (T08): quem é, quanto comprou, o que deve e o histórico, numa página. */
 export function CustomerPage({ id }: { id: string }) {
   const router = useRouter();
   const { cliente, isLoading, error } = useCliente(id);

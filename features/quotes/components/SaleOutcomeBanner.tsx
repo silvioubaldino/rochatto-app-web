@@ -4,7 +4,6 @@ import { MoneyText } from "@/components/patterns/values";
 import { useVenda } from "@/hooks/useVenda";
 import { formatPercent } from "@/lib/format";
 
-/** Margem estimada do orçamento × lucro previsto da venda lado a lado (T04): o dono vê o quanto o orçamento acerta. */
 export function SaleOutcomeBanner({ saleId, estimatedMargin }: { saleId: string; estimatedMargin: number | null }) {
   const { venda } = useVenda(saleId);
   if (!venda) return null;

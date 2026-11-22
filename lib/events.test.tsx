@@ -30,7 +30,7 @@ describe("mapa evento → chaves SWR", () => {
 
   it("cadastros revalidam só a própria família (e dependentes)", () => {
     expect(matchesEvent("CUSTOMER_CHANGED", "/clientes/search?q=a")).toBe(true);
-    expect(matchesEvent("CUSTOMER_CHANGED", "/quotes")).toBe(true); // nome do cliente aparece
+    expect(matchesEvent("CUSTOMER_CHANGED", "/quotes")).toBe(true);
     expect(matchesEvent("SUPPLIER_CHANGED", "/fornecedores?kind=STONE")).toBe(true);
     expect(matchesEvent("PARTNER_CHANGED", "/partners")).toBe(true);
     expect(matchesEvent("CATALOG_CHANGED", "/produtos")).toBe(true);

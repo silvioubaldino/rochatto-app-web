@@ -6,16 +6,12 @@ import type { Venda, SaleDeliveryStatus, SalePaymentStatus } from "@/lib/types";
 
 export interface VendasFilters {
   delivery_status?: SaleDeliveryStatus;
-  /** um status ou vários separados por vírgula (ex.: "PENDING,PARTIAL") */
   payment_status?: SalePaymentStatus | "PENDING,PARTIAL";
   data_inicio?: string;
   data_fim?: string;
   cliente_id?: string;
-  /** AYD-011 C4: nome do cliente, número da Sale ou nome de Item (contém). */
   q?: string;
-  /** AYD-011 C4: Sales indicadas por este Partner. */
   referrer_id?: string;
-  /** data_venda entre from e to (inclusive), YYYY-MM-DD */
   from?: string;
   to?: string;
 }

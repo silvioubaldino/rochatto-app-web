@@ -7,7 +7,6 @@ import { MovementPaymentLabel } from "./MovementPaymentLabel";
 import type { Obligation } from "@/lib/types";
 import { useObligationDetail } from "../queries";
 
-/** Recebimento (T06 §3): plano com cobertura, quitações, Receber e Definir plano. */
 export function SaleReceivableCard({
   receivable,
   readOnly,

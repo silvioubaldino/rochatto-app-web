@@ -13,29 +13,20 @@ export interface CatalogListProps<T> {
   rows: readonly T[];
   rowKey: (row: T) => string;
   columns: readonly DataTableColumn<T>[];
-  /** Nome humano da linha, para os menus e a confirmação ("Rock face"). */
   nameOf: (row: T) => string;
   rowHref?: (row: T) => string;
   isLoading?: boolean;
   error?: unknown;
   onRetry?: () => void;
   empty: { title: string; description?: string; action?: StateAction };
-  /** "Novo produto". */
   createLabel: string;
-  /** Busca e filtros (FilterBar), acima da lista. */
   toolbar?: ReactNode;
-  /** O diálogo de cadastro (criar: `entity` ausente; editar: a linha). */
   renderForm: (args: { entity?: T; onClose: () => void }) => ReactNode;
-  /** Exclui a linha; o erro (409) sobe para o ConfirmDialog. */
   onDelete: (row: T) => Promise<unknown>;
   deleteTitle: string;
   deleteDescription: (row: T) => string;
 }
 
-/**
- * Lista de um cadastro (Produtos, Serviços, Fornecedores, Parceiros, Categorias): `DataTable`
- * com "Novo", menu Editar/Excluir por linha (44 px no celular) e confirmação do excluir.
- */
 export function CatalogList<T>({
   caption,
   rows,

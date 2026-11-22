@@ -31,7 +31,6 @@ import { useObligation } from "../queries";
 import { ObligationPatchDialog } from "./ObligationPatchDialog";
 import { PlanDialog } from "./PlanDialog";
 
-/** Detalhe da conta (T14): resumo, componentes, parcelas (plano) e quitações, com Pagar/Receber e desfazer. */
 export function ObligationPage({ id }: { id: string }) {
   const phone = useIsPhone();
   const settle = useSettleFlow();

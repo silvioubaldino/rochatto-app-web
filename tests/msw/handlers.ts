@@ -1,6 +1,5 @@
 import { http, HttpResponse } from "msw";
 
-// Base da api nos testes (vitest.config.ts → NEXT_PUBLIC_API_URL).
 export const API = "http://api.test/api/v1";
 
 export const customers = [
@@ -110,7 +109,6 @@ const payable = (id: string, open: number, supplier: { id: string; nome: string 
 
 export const payables = [payable("o1", 1200, suppliers[0], true), payable("o2", 300.5, suppliers[0]), payable("o3", 80, suppliers[1])];
 
-/** Handlers padrão. Cada teste sobrescreve o que precisar com `server.use(...)`. */
 export const handlers = [
   http.get(`${API}/produtos`, () => HttpResponse.json(products)),
   http.get(`${API}/fornecedores`, () => HttpResponse.json(suppliers)),

@@ -1,4 +1,3 @@
-// Regras da busca global e da paleta de comandos (UX-P01) — puras e testadas.
 import { formatDate, formatMoney, PARTNER_TYPE_LABELS, statusMeta, SUPPLIER_KIND_LABELS } from "@/lib/format";
 import { normalizeText, entityHref, type EntityType } from "@/components/entity/entity-model";
 import type { PartnerType, SearchGroup, SearchItem, SearchType, SupplierKind } from "@/lib/types";
@@ -27,13 +26,11 @@ const ENTITY_BY_TYPE: Record<SearchType, EntityType> = {
 
 const NUMBERED: Partial<Record<SearchType, string>> = { QUOTE: "Orçamento", SALE: "Venda", PURCHASE: "Compra" };
 
-/** "Orçamento nº 154 · Alejandra" para os numerados; o nome para os demais. */
 export function resultTitle(type: SearchType, item: SearchItem): string {
   const noun = NUMBERED[type];
   return noun && item.number ? `${noun} nº ${item.number} · ${item.title}` : item.title;
 }
 
-/** Linha de contexto: cidade, data, valor, situação/tipo. */
 export function resultContext(type: SearchType, item: SearchItem): string {
   const parts: string[] = [];
   if (item.city) parts.push(item.city);
@@ -57,7 +54,6 @@ export interface PaletteRow {
   label: string;
   context: string;
   href: string;
-  /** Presente nos resultados de entidade (para a prévia). */
   entity?: { type: EntityType; id: string };
 }
 
@@ -81,7 +77,6 @@ interface PaletteAction {
   keywords: string;
 }
 
-/** Ações da paleta (UX-P01): vão para um fluxo real. */
 export const PALETTE_ACTIONS: readonly PaletteAction[] = [
   { id: "new-quote", label: "Novo orçamento", href: "/orcamentos/novo", keywords: "criar orcamento novo" },
   { id: "quick-sale", label: "Venda rápida", href: "/orcamentos/novo?rapida=1", keywords: "criar venda rapida fechar" },
@@ -95,7 +90,6 @@ export const PALETTE_ACTIONS: readonly PaletteAction[] = [
   { id: "go-quotes", label: "Ir para Orçamentos", href: "/orcamentos", keywords: "orcamentos" },
 ];
 
-/** Ações que casam com o texto digitado (vazio = todas, as 5 primeiras). */
 export function filterActions(query: string, limit = 5): PaletteRow[] {
   const q = normalizeText(query);
   return PALETTE_ACTIONS.filter((a) => !q || normalizeText(`${a.label} ${a.keywords}`).includes(q))
@@ -103,12 +97,10 @@ export function filterActions(query: string, limit = 5): PaletteRow[] {
     .map((a) => ({ key: `action:${a.id}`, group: "Ações", label: a.label, context: "", href: a.href }));
 }
 
-/** Linhas da paleta: resultados primeiro, depois as ações que casam. */
 export function paletteRows(query: string, groups: readonly SearchGroup[]): PaletteRow[] {
   return [...resultRows(groups), ...filterActions(query)];
 }
 
-/** Próximo índice ativo com volta nas pontas. */
 export function moveActive(current: number, delta: number, length: number): number {
   if (length <= 0) return 0;
   return (current + delta + length) % length;

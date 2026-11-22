@@ -13,7 +13,6 @@ import { usePatchObligation } from "../mutations";
 
 const FORM_ID = "obligation-patch-form";
 
-/** Prazo final e observações da conta: só envia o que mudou. */
 export function ObligationPatchDialog({ obligation, onClose }: { obligation: Pick<Obligation, "id" | "due_date" | "notes">; onClose: () => void }) {
   const patch = usePatchObligation(obligation.id);
   const { control, register, handleSubmit } = useForm({ defaultValues: { due_date: obligation.due_date?.slice(0, 10) ?? "", notes: obligation.notes ?? "" } });

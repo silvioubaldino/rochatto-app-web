@@ -16,35 +16,26 @@ import {
   type SortValue,
 } from "./data-table-model";
 
-/** Papel da coluna no cartão do celular (UX-P06): título, 2 linhas de contexto, valor, status. */
 export type PhoneRole = "title" | "subtitle" | "meta" | "value" | "badge" | "hidden";
 
 export interface DataTableColumn<T> {
   id: string;
   header: string;
   cell: (row: T) => ReactNode;
-  /** Presente = coluna ordenável. */
   sortValue?: (row: T) => SortValue;
   align?: "left" | "right";
-  /** Largura CSS (só desktop). */
   width?: string;
-  /** Papel no cartão do celular; padrão `meta`. A primeira coluna `title` vira o link da linha. */
   phone?: PhoneRole;
-  /** Rodapé de totais da coluna (desktop; no celular some — use `summary`). */
   footer?: ReactNode;
 }
 
 export interface DataTableGrouping<T> {
   keyOf: (row: T) => string;
-  /** Cabeçalho do grupo. */
   label: (key: string, rows: T[]) => ReactNode;
-  /** Resumo do grupo (somas) mostrado no cabeçalho. */
   summary?: (key: string, rows: T[]) => ReactNode;
-  /** Ações do grupo (ex.: "Pagar tudo deste credor"), ao lado do cabeçalho — fora do botão que recolhe. */
   actions?: (key: string, rows: T[]) => ReactNode;
   order?: readonly string[];
   lastKeys?: readonly string[];
-  /** Grupos começam recolhidos? (padrão: expandidos) */
   startCollapsed?: boolean;
 }
 
@@ -52,34 +43,21 @@ export interface DataTableProps<T> {
   columns: readonly DataTableColumn<T>[];
   rows: readonly T[];
   rowKey: (row: T) => string;
-  /** LINK REAL da linha (abre em nova aba, teclado, leitor de tela — F16). */
   rowHref?: (row: T) => string | undefined;
   isLoading?: boolean;
   error?: unknown;
   onRetry?: () => void;
   empty?: { title: string; description?: string; action?: StateAction };
   grouping?: DataTableGrouping<T>;
-  /** Linha de totais abaixo da lista (desktop e celular). */
   summary?: ReactNode;
-  /** Ordenação inicial. */
   defaultSort?: SortState | null;
-  /** `auto` = cartões no celular, tabela no resto. Force em testes/telas especiais. */
   mode?: "auto" | "table" | "cards";
-  /** Nome acessível da tabela. */
   caption: string;
   className?: string;
 }
 
 const ALIGN: Record<"left" | "right", string> = { left: "text-left", right: "text-right" };
 
-/**
- * Lista padrão do app (UX-P06): ordenação, linha-link real, cartões no celular, agrupamento
- * recolhível, totais, e estados vazio/erro/carregando com esqueleto. Substitui as tabelas
- * escritas à mão (`<table>` fora daqui é barrado por lint).
- *
- * Elementos interativos DENTRO de uma linha (EntityLink, botões) devem ter `relative z-10`
- * para ficarem acima do link da linha.
- */
 export function DataTable<T>({
   columns,
   rows,

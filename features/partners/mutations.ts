@@ -5,7 +5,6 @@ import { useApiMutation } from "@/lib/mutation";
 import type { toPartnerPayload } from "@/lib/schemas";
 import type { Partner } from "@/lib/types";
 
-/** Criar ou atualizar um Partner. Emite PARTNER_CHANGED. */
 export function useSavePartner(entity?: Partner) {
   return useApiMutation({
     run: (payload: ReturnType<typeof toPartnerPayload>) =>
@@ -16,7 +15,6 @@ export function useSavePartner(entity?: Partner) {
   });
 }
 
-/** Exclui um Partner (soft-delete). O erro sobe para o ConfirmDialog. */
 export function useDeletePartner() {
   return useApiMutation({
     run: async (id: string) => {

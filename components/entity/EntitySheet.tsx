@@ -18,18 +18,6 @@ import {
   type PeekRef,
 } from "./entity-model";
 
-/**
- * EntitySheet (UX-P04): prévia lateral de uma entidade, ligada à URL (`?peek=sale:<id>`).
- * Desktop: painel à direita. Celular: folha de baixo para cima, tela cheia.
- * "Voltar" do navegador/gesto FECHA o painel em vez de sair da tela.
- *
- * Registrar uma prévia (feito em `features/<domínio>/previews.tsx`, carregado por
- * `features/register.ts`):
- * ```ts
- * registerPreview("customer", { title: (c) => c.nome, useData: (id) => ..., Body: CustomerPreviewBody });
- * ```
- */
-
 export interface PreviewData<T> {
   data: T | undefined;
   isLoading: boolean;
@@ -38,13 +26,9 @@ export interface PreviewData<T> {
 }
 
 export interface PreviewDefinition<T> {
-  /** Título do painel (nome humano: "Venda nº 98 · Alejandra"). */
   title: (data: T) => string;
-  /** Hook de leitura (chaves SWR = caminhos da api, para a invalidação por eventos). */
   useData: (id: string) => PreviewData<T>;
-  /** O essencial da entidade. */
   Body: ComponentType<{ data: T }>;
-  /** Ações principais do painel (Receber, Marcar entregue…); "Abrir página" é sempre incluído. */
   Actions?: ComponentType<{ data: T }>;
 }
 
@@ -58,17 +42,13 @@ export function hasPreview(type: EntityType): boolean {
   return previews.has(type);
 }
 
-/** Só para testes. */
 export function clearPreviewRegistry(): void {
   previews.clear();
 }
 
-// --- Estado na URL ---------------------------------------------------------------------
-
 // A abertura empilha UMA entrada de histórico; fechar volta nela (back) se foi o app que a abriu.
 let pushedByApp = false;
 
-/** Lê e controla a prévia aberta: `{ peek, open(type, id), close() }`. */
 export function usePeek() {
   const router = useRouter();
   const pathname = usePathname();
@@ -102,12 +82,9 @@ export function usePeek() {
   return { peek, open, close };
 }
 
-/** Abre a prévia a partir de um clique "simples" (sem Ctrl/⌘/Shift, botão esquerdo). */
 export function isPlainClick(e: { button: number; metaKey: boolean; ctrlKey: boolean; shiftKey: boolean; altKey: boolean }) {
   return e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
 }
-
-// --- Painel ----------------------------------------------------------------------------
 
 function PreviewContent({ type, id, onClose }: { type: EntityType; id: string; onClose: () => void }) {
   const def = previews.get(type) as PreviewDefinition<unknown> | undefined;
@@ -197,7 +174,6 @@ function SheetInner() {
   );
 }
 
-/** Monte UMA vez (AppShell). `useSearchParams` exige o Suspense. */
 export function EntitySheetHost() {
   return (
     <Suspense fallback={null}>

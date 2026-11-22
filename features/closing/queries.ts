@@ -5,10 +5,6 @@ import { useEntityOptions } from "@/components/entity/entity-queries";
 import { http } from "@/lib/http";
 import type { StockBalance } from "@/lib/types";
 
-/**
- * O que o Fechar venda consulta: fornecedor habitual por produto (C8) e saldo atual (aviso
- * de estoque, RN-16). Mesmas chaves das listas, então os eventos de domínio revalidam.
- */
 export function useClosingLookups(enabled: boolean) {
   const products = useEntityOptions("product", "", enabled).options;
   const { data } = useSWR<StockBalance[] | { items: StockBalance[] }>(enabled ? "/stock/balance" : null, http.get);

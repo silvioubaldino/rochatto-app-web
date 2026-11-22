@@ -1,13 +1,7 @@
 import type { Page, Route } from "@playwright/test";
 
-/**
- * API simulada para as tarefas-ouro (TDR-001): o build de e2e usa `NEXT_PUBLIC_API_URL=""`, então a
- * web chama `/api/v1/*` no mesmo servidor e o Playwright responde aqui. Estado em memória,
- * suficiente para os fluxos TO-1..TO-6; registra as escritas para o teste conferir.
- */
 export interface MockApi {
   writes: { method: string; path: string; body: unknown }[];
-  /** Última escrita para `method path` (path sem o prefixo /api/v1). */
   last(method: string, path: string | RegExp): { body: unknown } | undefined;
 }
 

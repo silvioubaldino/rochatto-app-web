@@ -8,7 +8,6 @@ import type { PendingActionGroup, PendingSaleItemGroup } from "@/lib/types";
 import { groupSummary, groupTitle } from "../model";
 import { PendingRow } from "./PendingRow";
 
-/** Um grupo de pendências: resumo numa linha; "›" expande as linhas com a ação de cada uma. */
 export function PendingGroupCard({
   group,
   today,

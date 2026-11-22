@@ -9,8 +9,8 @@ describe("supplierStats", () => {
     const s = supplierStats(
       [
         { total_cost: 100, created_at: "2026-11-01T10:00:00Z" },
-        { total_cost: 50.5, created_at: "2026-09-01T10:00:00Z" }, // dentro de 90 dias
-        { total_cost: 999, created_at: "2026-01-01T10:00:00Z" }, // fora
+        { total_cost: 50.5, created_at: "2026-09-01T10:00:00Z" },
+        { total_cost: 999, created_at: "2026-01-01T10:00:00Z" },
       ],
       [{ open: 30.1, overdue: true }, { open: 0, overdue: true }, { open: 20, overdue: false }],
       group,

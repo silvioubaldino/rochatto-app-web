@@ -149,7 +149,6 @@ function Content({ direction }: { direction: ObligationDirection }) {
   );
 }
 
-/** A receber / A pagar (T14): chips de vencimento, credor por combobox (inclui Partners), agrupar por credor, seleção múltipla. */
 export function ObligationsPage({ direction }: { direction: ObligationDirection }) {
   return (
     <Suspense fallback={null}>

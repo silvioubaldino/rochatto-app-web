@@ -9,7 +9,6 @@ export interface CustomerStats {
   lastSale: string | null;
 }
 
-/** Números do Cliente 360 (T08): canceladas não entram (RN-04). */
 export function customerStats(sales: readonly Venda[], receivables: readonly Obligation[]): CustomerStats {
   const active = sales.filter((s) => s.delivery_status !== "CANCELED");
   return {
@@ -21,7 +20,6 @@ export function customerStats(sales: readonly Venda[], receivables: readonly Obl
   };
 }
 
-/** Só os dígitos do telefone; com 10–11 dígitos assume Brasil (55). Vazio → null. */
 export function whatsappHref(phone: string | null | undefined): string | null {
   const digits = (phone ?? "").replace(/\D/g, "");
   if (digits.length < 10) return null;

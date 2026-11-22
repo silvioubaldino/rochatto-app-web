@@ -7,8 +7,6 @@ import { docNumber, formatCounterparty, formatLeadSource } from "@/lib/format";
 import type { Cliente, Obligation, Quote, Venda } from "@/lib/types";
 import { EntityLink } from "./EntityLink";
 
-/** Listas compactas de uma entidade (abas das páginas 360 de Cliente e Parceiro). */
-
 export function QuotesTable({ rows, isLoading }: { rows: readonly Quote[]; isLoading?: boolean }) {
   return (
     <DataTable
@@ -49,7 +47,6 @@ export function SalesTable({ rows, isLoading }: { rows: readonly Venda[]; isLoad
   );
 }
 
-/** Contas a receber de um cliente ou a pagar a um parceiro (comissões). */
 export function ObligationsTable({ rows, isLoading, empty }: { rows: readonly Obligation[]; isLoading?: boolean; empty: string }) {
   return (
     <DataTable

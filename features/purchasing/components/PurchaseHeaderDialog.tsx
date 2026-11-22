@@ -15,7 +15,6 @@ import { emptyToNull } from "@/lib/schemas";
 
 const FORM_ID = "purchase-header-form";
 
-/** Previsão no fornecedor e observações da compra. */
 export function PurchaseHeaderDialog({ purchase, onClose }: { purchase: PurchaseDetail; onClose: () => void }) {
   const update = useUpdatePurchase(purchase);
   const { control, register, handleSubmit } = useForm<PurchaseHeaderFormData>({

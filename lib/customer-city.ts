@@ -1,16 +1,8 @@
 import type { Cliente, Quote, QuoteStatus, Venda } from "@/lib/types";
 
-/**
- * Cidade de uma Sale/Quote = `cidade` do Customer (RF-01: cidade/endereço da obra), juntada no
- * cliente pelo id do Customer — `GET /vendas` e `GET /quotes` não trazem a cidade (SPEC-012). Texto livre: agrupa e filtra
- * por uma chave normalizada (sem acento, caixa ou espaços extras) e exibe a grafia mais usada.
- */
-
-/** Valor do filtro `?cidade=` para Sales cujo Customer não tem cidade. */
 export const NO_CITY = "__none__";
 export const NO_CITY_LABEL = "Sem cidade";
 
-/** Chave de agrupamento: "  São  Paulo " e "sao paulo" → "sao paulo"; vazio → NO_CITY. */
 export function cityKey(raw: string | null | undefined): string {
   const key = (raw ?? "")
     .normalize("NFD")
@@ -22,9 +14,7 @@ export function cityKey(raw: string | null | undefined): string {
 }
 
 export interface CityIndex {
-  /** cliente_id → chave da cidade */
   keyByCustomer: Map<string, string>;
-  /** chave → rótulo exibido (grafia mais frequente entre os Customers) */
   labelByKey: Map<string, string>;
 }
 
@@ -50,7 +40,6 @@ export function buildCityIndex(clientes: Cliente[]): CityIndex {
   return { keyByCustomer, labelByKey };
 }
 
-/** Chave da cidade do Customer (desconhecido → NO_CITY). */
 export function customerCityKey(customerId: string, index: CityIndex): string {
   return index.keyByCustomer.get(customerId) ?? NO_CITY;
 }
@@ -59,7 +48,6 @@ export function cityLabel(key: string, index: CityIndex): string {
   return index.labelByKey.get(key) ?? key;
 }
 
-/** Ordem: alfabética (pt-BR), "Sem cidade" por último. */
 function compareCities(a: { key: string; label: string }, b: { key: string; label: string }) {
   if (a.key === NO_CITY) return b.key === NO_CITY ? 0 : 1;
   if (b.key === NO_CITY) return -1;
@@ -72,10 +60,6 @@ export interface CityOption {
   count: number;
 }
 
-/**
- * Opções do filtro: cidades presentes nas linhas já filtradas pelos demais filtros, com a
- * contagem. A cidade selecionada entra mesmo sem linhas (count 0), para não sumir do select.
- */
 export function cityOptions<T>(
   rows: T[],
   getCustomerId: (row: T) => string,
@@ -99,7 +83,6 @@ export interface CityGroup<T> {
   rows: T[];
 }
 
-/** Agrupa mantendo a ordem da API dentro de cada cidade. */
 export function groupByCity<T>(
   rows: T[],
   getCustomerId: (row: T) => string,
@@ -119,7 +102,6 @@ export function groupByCity<T>(
 }
 
 export interface SalesSummary {
-  /** Somas sem as Sales canceladas (RN-04: canceladas não entram em totais). */
   total: number;
   receivable: number;
   profit: number;
@@ -139,7 +121,6 @@ export function summarizeSales(vendas: Venda[]): SalesSummary {
 }
 
 export interface QuotesSummary {
-  /** Σ total dos Quotes abertos (o que ainda está em negociação). */
   openTotal: number;
   byStatus: Record<QuoteStatus, number>;
 }

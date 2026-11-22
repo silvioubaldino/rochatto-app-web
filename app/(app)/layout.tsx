@@ -14,7 +14,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const openSearch = useCallback(() => setSearchOpen(true), []);
   useCommandPaletteShortcut(openSearch);
-  // O badge de "Hoje" = pendências vencidas (C10); só carrega com sessão.
   const overdue = useOverdueCount(!!user);
 
   useEffect(() => {

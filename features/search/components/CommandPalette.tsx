@@ -17,7 +17,6 @@ function isTypingTarget(target: EventTarget | null): boolean {
   return el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName);
 }
 
-/** ⌘K / Ctrl+K em qualquer tela; "/" quando não se está digitando. */
 export function useCommandPaletteShortcut(onOpen: () => void) {
   useEffect(() => {
     function onKey(e: globalThis.KeyboardEvent) {
@@ -35,14 +34,9 @@ export function useCommandPaletteShortcut(onOpen: () => void) {
   }, [onOpen]);
 }
 
-/**
- * Busca global e ações (UX-P01): nome ou número ("154" acha Orçamento, Venda e Compra nº 154).
- * `Enter` abre a página; `→` (ou o botão do olho, no toque) abre a prévia. Tela cheia no celular.
- */
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange} title="Buscar" size="lg">
-      {/* O corpo monta ao abrir: cada abertura começa limpa, sem efeito de reset. */}
       {open && <PaletteBody onClose={() => onOpenChange(false)} />}
     </ResponsiveDialog>
   );

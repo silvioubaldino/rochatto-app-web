@@ -1,7 +1,5 @@
 import type { ReactNode } from "react";
 
-/** Blocos de apresentação para o corpo das prévias (EntitySheet). */
-
 export function PreviewFields({ rows }: { rows: ReadonlyArray<{ label: string; value: ReactNode }> }) {
   return (
     <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
@@ -24,7 +22,6 @@ export function PreviewSection({ title, children }: { title: string; children: R
   );
 }
 
-/** Lista curta (até `max`) com "e mais N". */
 export function PreviewList<T>({
   items,
   max = 5,

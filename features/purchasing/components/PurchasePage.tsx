@@ -37,7 +37,6 @@ import { PurchaseItemsSection } from "./PurchaseItemsSection";
 import { PurchasePayables } from "./PurchasePayables";
 import { PurchaseStatusTrail } from "./PurchaseStatusTrail";
 
-/** Compra (T12) no DetailLayout: trilha de status, próximo passo, Items, custo e rateio, contas a pagar. */
 export function PurchasePage({ id }: { id: string }) {
   const router = useRouter();
   const phone = useIsPhone();

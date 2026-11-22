@@ -2,8 +2,6 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { hasHorizontalScroll } from "./helpers";
 
-// Smoke: a tela pública de login carrega, sem rolagem lateral e sem violação séria de
-// acessibilidade, em desktop e nos dois perfis de celular. Pula se não houver servidor.
 test.beforeAll(async ({ baseURL }) => {
   const reachable = await fetch(baseURL ?? "http://localhost:3000", { method: "HEAD" })
     .then((r) => r.status < 500)

@@ -5,7 +5,6 @@ import { MoneyText } from "@/components/patterns/values";
 import { useDashboardKpis } from "@/hooks/useDashboard";
 import { formatPercent } from "@/lib/format";
 
-/** "Este mês: Faturamento · Lucro · Conversão" com atalho para Indicadores. */
 export function MonthSummary({ today }: { today: string }) {
   const { kpis } = useDashboardKpis(`${today.slice(0, 8)}01`, today, !!today);
   if (!kpis) return null;

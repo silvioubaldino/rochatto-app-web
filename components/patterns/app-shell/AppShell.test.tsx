@@ -26,7 +26,7 @@ describe("AppShell", () => {
   it("o shell aparece ANTES da autenticação e o conteúdo vira esqueleto (sem spinner de página)", () => {
     renderShell({ user: null });
     expect(screen.getByRole("navigation", { name: "Navegação principal" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Menu principal")).toBeInTheDocument(); // lateral do desktop
+    expect(screen.getByLabelText("Menu principal")).toBeInTheDocument();
     expect(screen.queryByText("conteúdo da página")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Carregando")).toHaveAttribute("aria-busy", "true");
   });

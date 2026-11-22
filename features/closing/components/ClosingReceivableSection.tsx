@@ -6,7 +6,6 @@ import { FieldShell } from "@/components/patterns/fields";
 import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS, formatMoney } from "@/lib/format";
 import type { PaymentMethod } from "@/lib/types";
 
-/** ③ Recebimento: presets de plano, "Recebi a entrada agora" e a forma de pagamento. */
 export function ClosingReceivableSection({
   total,
   today,
@@ -24,7 +23,6 @@ export function ClosingReceivableSection({
   onPlanChange: (plan: PlanState) => void;
   receivedNow: boolean;
   method: PaymentMethod | "";
-  /** Valor da primeira parcela (o que "Recebi agora" quita); null se não há plano. */
   firstAmount: number | null;
   onReceivedNowChange: (v: boolean) => void;
   onMethodChange: (m: PaymentMethod | "") => void;

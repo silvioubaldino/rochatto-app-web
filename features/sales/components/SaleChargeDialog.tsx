@@ -17,7 +17,6 @@ import { useSaveSaleCharge } from "../mutations";
 const FORM_ID = "sale-charge-form";
 const KIND_OPTIONS = SALE_CHARGE_KINDS.map((k) => ({ value: k, label: SALE_CHARGE_KIND_LABELS[k] }));
 
-/** Cobrança adicional ao cliente (frete cobrado…): soma ao preço e à conta a receber. */
 export function SaleChargeDialog({ saleId, charge, onClose }: { saleId: string; charge?: SaleCharge; onClose: () => void }) {
   const save = useSaveSaleCharge(saleId, charge);
   const {

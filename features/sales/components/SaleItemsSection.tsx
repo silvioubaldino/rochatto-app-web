@@ -11,7 +11,6 @@ import type { Venda } from "@/lib/types";
 import { attendanceView, lockReasonFor, type PurchaseInfo } from "../model";
 import { useSaveSaleItems } from "../mutations";
 
-/** Items e atendimento da venda (T06 §1): grade única, travas explicadas, salvar a diferença. */
 export function SaleItemsSection({
   sale,
   purchases,

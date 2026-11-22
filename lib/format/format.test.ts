@@ -29,7 +29,7 @@ describe("money", () => {
     expect(nbsp(formatMoney(1234.5))).toBe("R$ 1.234,50");
     expect(nbsp(formatMoney(-10))).toBe("-R$ 10,00");
     expect(nbsp(formatMoney(null))).toBe("R$ 0,00");
-    expect(nbsp(formatMoeda(2))).toBe("R$ 2,00"); // nome legado
+    expect(nbsp(formatMoeda(2))).toBe("R$ 2,00");
   });
 
   it("formata sem símbolo", () => {

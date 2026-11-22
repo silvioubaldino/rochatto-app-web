@@ -22,18 +22,11 @@ export interface ConfirmDialogProps {
   description?: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
-  /** `danger` = irreversível (cancelar venda, excluir): botão e ícone em destaque. */
   tone?: "default" | "danger";
-  /**
-   * Executa a ação. Se lançar, o erro aparece NO diálogo (409 no contexto — UX-P09) e ele
-   * continua aberto; se resolver, fecha.
-   */
   onConfirm: () => Promise<unknown> | void;
-  /** Motivo que desabilita a confirmação (regra explicada ANTES — UX-9). */
   disabledReason?: string;
 }
 
-/** Confirmação do IRREVERSÍVEL (UX-8). `window.confirm` é proibido. */
 export function ConfirmDialog({
   open,
   onOpenChange,
@@ -104,13 +97,10 @@ export function ConfirmDialog({
   );
 }
 
-// --- Forma imperativa: `if (await confirm({...})) …` (substitui window.confirm) ------------
-
 export type ConfirmOptions = Omit<ConfirmDialogProps, "open" | "onOpenChange" | "onConfirm">;
 
 const ConfirmContext = createContext<((options: ConfirmOptions) => Promise<boolean>) | null>(null);
 
-/** Monta o diálogo único de confirmação (uma vez, no AppShell). */
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [options, setOptions] = useState<ConfirmOptions | null>(null);
   const resolver = useRef<((ok: boolean) => void) | null>(null);
@@ -146,21 +136,14 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/** `const confirm = useConfirm(); if (!(await confirm({ title: "…" }))) return;` */
 export function useConfirm(): (options: ConfirmOptions) => Promise<boolean> {
   const ctx = useContext(ConfirmContext);
   if (!ctx) throw new Error("useConfirm precisa de <ConfirmProvider> (já incluído no AppShell).");
   return ctx;
 }
 
-// --- Desfazer (UX-8: o reversível age e oferece "Desfazer", 8 s) --------------------------
-
 export const UNDO_DURATION_MS = 8000;
 
-/**
- * `const undoable = useUndoToast(); undoable("Venda marcada como entregue.", () => revert())`.
- * O toast oferece "Desfazer" por 8 s; `undo` roda uma vez, e se falhar mostra o erro.
- */
 export function useUndoToast() {
   return useCallback((message: string, undo: () => Promise<unknown> | void, duration = UNDO_DURATION_MS) => {
     toast(message, {

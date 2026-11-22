@@ -20,7 +20,6 @@ interface Row {
   charge?: PurchaseCharge;
 }
 
-/** Custo e rateio (T12): composição por credor, método de rateio e custo de entrada por linha, num cartão só. */
 export function PurchaseCostCard({
   purchase,
   readOnlyAllocation,

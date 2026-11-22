@@ -8,7 +8,6 @@ import { DateText, MoneyText, QuantityText } from "@/components/patterns/values"
 import { useProduto } from "@/hooks/useProdutos";
 import { STOCK_MOVEMENT_KIND_LABELS } from "@/lib/format";
 import type { Produto } from "@/lib/types";
-// A prévia mostra o extrato do estoque; a leitura é do mesmo caminho da api (T13).
 import { useStockStatement } from "@/features/stock/queries";
 import { movementHref } from "@/features/stock/model";
 import { EntityLink } from "@/components/entity/EntityLink";
@@ -62,7 +61,6 @@ function ProductPreviewBody({ data }: { data: Produto }) {
   );
 }
 
-/** "Comprar para estoque" e "Novo ajuste" levam à tela dona do fluxo, já com o produto. */
 function ProductPreviewActions({ data }: { data: Produto }) {
   return (
     <>

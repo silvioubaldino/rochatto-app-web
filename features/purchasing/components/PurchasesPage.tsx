@@ -42,7 +42,6 @@ function PurchasesContent() {
   const { purchases, isLoading, error, refresh } = usePurchases(filtersFromUrl(v));
   const { groups } = usePendingPurchaseQueue();
   const router = useRouter();
-  // `?repor=<produto>` (da prévia do produto) abre a compra para estoque já com o produto.
   const reporId = useSearchParams().get("repor") ?? "";
   const reporProduct = useProduto(reporId).produto;
   const [replenish, setReplenish] = useState(false);

@@ -6,12 +6,10 @@ export interface PartnerStats {
   quotes: number;
   sales: number;
   revenue: number;
-  /** Orçamentos ganhos / orçamentos indicados (0..1); null sem orçamentos. */
   conversion: number | null;
   commissionsOpen: number;
 }
 
-/** Números do Parceiro 360 (T09). Vendas canceladas não entram no faturamento. */
 export function partnerStats(
   customers: readonly unknown[],
   quotes: readonly Quote[],

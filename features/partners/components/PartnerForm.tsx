@@ -17,7 +17,6 @@ const TYPE_OPTIONS = [
   ...PARTNER_TYPES.map((t) => ({ value: t, label: PARTNER_TYPE_LABELS[t] })),
 ];
 
-/** Cadastro enxuto de Partner (RF-04). */
 export function PartnerForm({ formId, entity, initialName, onSaved, onPendingChange }: EntityFormProps<"partner">) {
   const {
     register,

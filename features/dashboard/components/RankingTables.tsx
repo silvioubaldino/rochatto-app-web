@@ -9,10 +9,8 @@ import { formatPercent } from "@/lib/format";
 import type { ProdutoMaisVendido, ServicoMaisVendido } from "@/lib/types";
 import { RANKING_SIZE, marginTone } from "../model";
 
-/** Margem média com o tom do mapa único (verde/amarelo/vermelho = bom/atenção/ruim). */
 const Margin = ({ value }: { value: number | null | undefined }) => <StatusBadge tone={marginTone(value)}>{formatPercent(value ?? 0)}</StatusBadge>;
 
-/** Products mais vendidos (RF-16): receita, preço e custo médios e margem; a linha abre a prévia do produto. */
 export function ProductsRanking({ rows, isLoading }: { rows: readonly ProdutoMaisVendido[]; isLoading?: boolean }) {
   const params = useSearchParams();
   const columns: DataTableColumn<ProdutoMaisVendido>[] = [
@@ -37,7 +35,6 @@ export function ProductsRanking({ rows, isLoading }: { rows: readonly ProdutoMai
   );
 }
 
-/** Services vendidos (AYD-010): fora do ranking de Products. */
 export function ServicesRanking({ rows, isLoading }: { rows: readonly ServicoMaisVendido[]; isLoading?: boolean }) {
   const columns: DataTableColumn<ServicoMaisVendido>[] = [
     { id: "name", header: "Serviço", phone: "title", cell: (s) => s.service_name },

@@ -20,19 +20,12 @@ export interface ResponsiveDialogProps {
   onOpenChange: (open: boolean) => void;
   title: string;
   description?: string;
-  /** Ações fixas: no celular ficam coladas embaixo (acima do teclado e da área segura). */
   footer?: ReactNode;
   size?: ResponsiveDialogSize;
   children: ReactNode;
-  /** Impede fechar por clique fora/Esc (ex.: enquanto salva). */
   dismissible?: boolean;
 }
 
-/**
- * Diálogo do desktop; TELA CHEIA no celular, com cabeçalho (voltar/fechar) e ação fixos
- * (UX-P13). Um só DOM — o layout muda por CSS (`md:`), então nada pisca ao girar o aparelho.
- * Foco preso, Esc fecha, `aria-labelledby` no título (Base UI).
- */
 export function ResponsiveDialog({
   open,
   onOpenChange,
@@ -59,7 +52,6 @@ export function ResponsiveDialog({
             "fixed z-50 flex flex-col bg-popover text-sm text-popover-foreground outline-none",
             // celular: tela cheia (dvh = altura útil com a barra do navegador)
             "inset-0 h-dvh w-full",
-            // desktop: caixa centralizada
             "md:inset-auto md:top-1/2 md:left-1/2 md:h-auto md:max-h-[85dvh] md:w-full md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-xl md:ring-1 md:ring-foreground/10",
             SIZE_CLASSES[size],
           )}

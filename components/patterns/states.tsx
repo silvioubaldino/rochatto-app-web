@@ -27,7 +27,6 @@ function ActionButton({ action, variant = "default" }: { action: StateAction; va
   );
 }
 
-/** Lista/seção vazia COM ação: "Nenhum orçamento aberto · Criar orçamento" (UX-P06). */
 export function EmptyState({
   title,
   description,
@@ -56,7 +55,6 @@ export function EmptyState({
   );
 }
 
-/** Erro de lista/seção com "Tentar de novo". */
 export function ErrorState({
   message = "Não foi possível carregar.",
   onRetry,

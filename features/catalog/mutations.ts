@@ -6,7 +6,6 @@ import { emptyToNull, type toServicePayload } from "@/lib/schemas";
 import type { ProductCategory, Produto, Service } from "@/lib/types";
 import type { ProductFormData } from "./schemas";
 
-/** Criar ou atualizar um Product. Emite CATALOG_CHANGED. */
 export function useSaveProduct(entity?: Produto) {
   return useApiMutation({
     run: (payload: ProductFormData) => {
@@ -20,7 +19,6 @@ export function useSaveProduct(entity?: Produto) {
   });
 }
 
-/** Criar ou atualizar um Service. Emite CATALOG_CHANGED. 409 = nome já usado (mensagem da api). */
 export function useSaveService(entity?: Service) {
   return useApiMutation({
     run: (payload: ReturnType<typeof toServicePayload>) =>
@@ -31,7 +29,6 @@ export function useSaveService(entity?: Service) {
   });
 }
 
-/** Exclui um Product (soft-delete). 409/erro sobe para o ConfirmDialog. */
 export function useDeleteProduct() {
   return useApiMutation({
     run: async (id: string) => {
@@ -56,7 +53,6 @@ export function useDeleteService() {
   });
 }
 
-/** Criar ou renomear uma Product category. 409 = nome já usado (erro no campo). */
 export function useSaveCategory(entity?: ProductCategory) {
   return useApiMutation({
     run: (name: string) =>

@@ -13,10 +13,6 @@ export interface PeriodSelectorProps {
   className?: string;
 }
 
-/**
- * Período com atalhos (Este mês · Mês passado · 90 dias · Este ano) + De/Até.
- * Um só seletor para Indicadores, Resultado e listas (UX-5). Regras em `lib/finance.ts`.
- */
 export function PeriodSelector({ period, onChange, className }: PeriodSelectorProps) {
   const uid = useId();
   const active = useMemo(() => matchFinancePreset(period), [period]);

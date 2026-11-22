@@ -52,7 +52,6 @@ function Content() {
   );
 }
 
-/** Parceiros / indicadores (T09): lista com busca e filtro por tipo; a linha abre o Parceiro 360. */
 export function PartnersList() {
   return (
     <Suspense fallback={null}>

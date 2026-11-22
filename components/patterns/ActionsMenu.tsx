@@ -8,14 +8,11 @@ export interface ActionItem {
   id: string;
   label: string;
   onSelect: () => void;
-  /** Ação destrutiva (excluir, cancelar). */
   danger?: boolean;
   disabled?: boolean;
-  /** Por que está desabilitada (mostrada no item — UX-9). */
   disabledReason?: string;
 }
 
-/** Menu "⋯" das ações secundárias do cabeçalho (UX-P07): visível no celular, sem hover. */
 export function ActionsMenu({ items, label = "Mais ações" }: { items: readonly ActionItem[]; label?: string }) {
   if (items.length === 0) return null;
   return (

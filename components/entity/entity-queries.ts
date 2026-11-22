@@ -6,7 +6,6 @@ import { PARTNER_TYPE_LABELS, SUPPLIER_KIND_LABELS } from "@/lib/format";
 import type { Cliente, Fornecedor, Partner, Produto, Service } from "@/lib/types";
 import { normalizeText, type EntityKind } from "./entity-model";
 
-/** O registro cru da api de cada entidade selecionável. */
 export interface EntityRawMap {
   customer: Cliente;
   product: Produto;
@@ -18,15 +17,12 @@ export interface EntityRawMap {
 export interface EntityOption<K extends EntityKind = EntityKind> {
   id: string;
   label: string;
-  /** Linha secundária: cidade, tipo, unidade… */
   description?: string;
   raw: EntityRawMap[K];
 }
 
 interface Source<K extends EntityKind> {
-  /** Chave SWR (= caminho da api, para a invalidação por eventos casar) da lista. */
   listKey: (query: string) => string;
-  /** O servidor já filtra por `query`? Senão filtramos no cliente. */
   serverSearch: boolean;
   itemKey: (id: string) => string;
   toOption: (raw: EntityRawMap[K]) => EntityOption<K>;
@@ -76,11 +72,6 @@ export function toEntityOption<K extends EntityKind>(kind: K, raw: EntityRawMap[
   return (SOURCES[kind] as Source<K>).toOption(raw);
 }
 
-/**
- * Opções de uma entidade para o combobox. Lê pela mesma chave SWR das listas do app, então
- * um evento de domínio (CATALOG_CHANGED…) revalida o seletor junto com o resto.
- * `query` é a busca JÁ com debounce (o combobox cuida disso).
- */
 export function useEntityOptions<K extends EntityKind>(kind: K, query: string, enabled = true) {
   const source = SOURCES[kind] as Source<K>;
   const key = enabled ? source.listKey(source.serverSearch ? query : "") : null;
@@ -91,14 +82,12 @@ export function useEntityOptions<K extends EntityKind>(kind: K, query: string, e
   return { options, isLoading, error };
 }
 
-/** Um registro pelo id (mostra o NOME do que veio da URL/valor salvo — F18). */
 export function useEntityById<K extends EntityKind>(kind: K, id: string | null | undefined) {
   const source = SOURCES[kind] as Source<K>;
   const { data, error, isLoading } = useSWR<EntityRawMap[K]>(id ? source.itemKey(id) : null, api.get);
   return { option: data ? source.toOption(data) : null, isLoading, error };
 }
 
-/** Unidade por produto e por serviço (a Quote não grava a unidade no Item). Mesmas chaves das listas. */
 export function useCatalogUnits(enabled = true) {
   const products = useSWR<Produto[]>(enabled ? "/produtos" : null, api.get);
   const services = useSWR<Service[]>(enabled ? "/services" : null, api.get);
@@ -108,7 +97,6 @@ export function useCatalogUnits(enabled = true) {
   return units;
 }
 
-/** Todos os Customers (`GET /clientes`) — para juntar a cidade nas listas de Sale e Quote. */
 export function useAllCustomers() {
   const { data, isLoading } = useSWR<Cliente[]>("/clientes", api.get);
   return { customers: data ?? [], isLoading };

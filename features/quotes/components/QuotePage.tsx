@@ -6,7 +6,6 @@ import { useQuote } from "@/hooks/useQuote";
 import { QuoteEditor } from "./QuoteEditor";
 import { QuoteReadOnlyView } from "./QuoteReadOnlyView";
 
-/** Orçamento por id: aberto = editor; ganho/perdido = visualização (T03/T04). */
 export function QuotePage({ id }: { id: string }) {
   const { quote, isLoading, error, refresh } = useQuote(id);
   if (error) return <ErrorState message="Orçamento não encontrado." />;

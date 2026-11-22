@@ -15,34 +15,20 @@ import { ResponsiveDialog, type ResponsiveDialogSize } from "@/components/patter
 import type { EntityKind } from "./entity-model";
 import type { EntityRawMap } from "./entity-queries";
 
-/**
- * QuickCreate: criar um cadastro SEM sair da tela (UX-3). O formulário de cada entidade
- * se REGISTRA aqui (`features/register.ts`) e o `EntityCombobox` / menu "Novo" o abrem por
- * `useQuickCreate().open(kind, …)`. O registro criado volta por `onCreated`.
- */
-
-/** Contrato de TODO formulário de cadastro (criar e editar), usado dentro de um diálogo. */
 export interface EntityFormProps<K extends EntityKind> {
-  /** `id` do <form>: o botão de enviar do diálogo (rodapé fixo) o referencia por `form=`. */
   formId: string;
-  /** Editando um registro existente (sem isto = criando). */
   entity?: EntityRawMap[K];
-  /** Texto digitado no combobox, para pré-preencher o nome. */
   initialName?: string;
-  /** Chamado com o registro devolvido pela api (criado ou atualizado). */
   onSaved: (entity: EntityRawMap[K]) => void;
-  /** Informa ao diálogo que está salvando (desabilita o botão, mostra o indicador). */
   onPendingChange?: (pending: boolean) => void;
 }
 
 export interface QuickCreateDefinition<K extends EntityKind> {
-  /** Título do diálogo: "Novo cliente". */
   title: string;
   Form: ComponentType<EntityFormProps<K>>;
   size?: ResponsiveDialogSize;
 }
 
-// Registro de módulo (preenchido por `features/register.ts`; testes registram os seus).
 const registry = new Map<EntityKind, QuickCreateDefinition<EntityKind>>();
 
 export function registerQuickCreate<K extends EntityKind>(kind: K, definition: QuickCreateDefinition<K>): void {
@@ -53,7 +39,6 @@ export function hasQuickCreate(kind: EntityKind): boolean {
   return registry.has(kind);
 }
 
-/** Só para testes. */
 export function clearQuickCreateRegistry(): void {
   registry.clear();
 }
@@ -73,17 +58,11 @@ interface OpenState {
   kind: EntityKind;
   initialName: string;
   onCreated?: (entity: EntityRawMap[EntityKind]) => void;
-  /** Identifica a abertura (chave do React, id do <form>). */
   nonce: number;
 }
 
 let nonceCounter = 0;
 
-/**
- * Hospeda os diálogos de criação rápida (uma vez, no AppShell). É uma PILHA: criar um
- * parceiro de dentro do cadastro de cliente empilha outro diálogo por cima, sem perder o
- * que já foi digitado no de baixo.
- */
 export function QuickCreateProvider({ children }: { children: ReactNode }) {
   const [stack, setStack] = useState<OpenState[]>([]);
 
@@ -155,7 +134,6 @@ function QuickCreateDialog({ entry, onClose }: { entry: OpenState; onClose: () =
 
 const NOOP_API: QuickCreateApi = { open: () => {} };
 
-/** `const quickCreate = useQuickCreate(); quickCreate.open("customer", { initialName, onCreated })`. */
 export function useQuickCreate(): QuickCreateApi {
   return useContext(QuickCreateContext) ?? NOOP_API;
 }

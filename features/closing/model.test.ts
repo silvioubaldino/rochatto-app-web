@@ -51,7 +51,6 @@ describe("saldo", () => {
 describe("lucro previsto ao vivo", () => {
   it("preço − custos dos Items − custos previstos", () => {
     const t = closingTotals(items, 100, [{ key: "c", kind: "FREIGHT", amount: 150, payeeId: "", description: "" }]);
-    // preço: 4842 + 1000 + 900 + 100 = 6842; custo: 2970 + 600 + 540 = 4110; extra 150
     expect(t).toMatchObject({ price: 6842, itemsCost: 4110, extraCosts: 150, profit: 2582 });
     expect(t.margin).toBe(37.74);
   });

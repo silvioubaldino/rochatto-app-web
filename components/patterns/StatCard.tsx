@@ -6,18 +6,15 @@ import { TONE_SUBTLE_CLASSES, type Tone } from "@/lib/format";
 
 export interface StatCardProps {
   title: string;
-  /** O número, já formatado (`MoneyText` ou texto). */
   value: ReactNode;
   subtitle?: ReactNode;
   tone?: Tone;
   icon?: ReactNode;
   isLoading?: boolean;
-  /** Vira um LINK real para a lista que compõe o número (drill-down — UX-4). */
   href?: string;
   className?: string;
 }
 
-/** Indicador (KPI): número em destaque, tom semântico e link para a lista de origem. */
 export function StatCard({ title, value, subtitle, tone, icon, isLoading, href, className }: StatCardProps) {
   if (isLoading) {
     return (

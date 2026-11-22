@@ -16,7 +16,6 @@ import type {
   Venda,
 } from "@/lib/types";
 
-/** Status de entrega da Sale (manual) — PATCH /vendas/{id}/delivery-status. */
 export function useSetDelivery() {
   return useApiMutation({
     run: async (saleId: string, status: SaleDeliveryStatus) => {
@@ -28,7 +27,6 @@ export function useSetDelivery() {
   });
 }
 
-/** Cancelar a venda (terminal): a regra RN-15 volta como 409 no diálogo. */
 export function useCancelSale() {
   return useApiMutation({
     run: async (saleId: string) => {
@@ -41,7 +39,6 @@ export function useCancelSale() {
   });
 }
 
-/** Prazo de entrega e observações (PUT /vendas/{id}: substituição completa, via `toSaleUpdatePayload`). */
 export function useUpdateSale() {
   return useApiMutation({
     run: async (sale: Venda, overrides: { data_entrega_prevista: string | null; observacoes: string | null }) => {
@@ -95,7 +92,6 @@ export function useSaveSaleItems(saleId: string, original: readonly ItemLine[]) 
   });
 }
 
-/** Atendimento em lote (C6): origem e fornecedor de 1..50 Items, tudo ou nada. Erro fica no diálogo. */
 export function useBatchFulfillment(saleId: string) {
   return useApiMutation({
     run: (items: BatchFulfillmentItem[]) =>
@@ -106,15 +102,11 @@ export function useBatchFulfillment(saleId: string) {
   });
 }
 
-/** Plano de recebimento da conta a receber: o mesmo hook das contas (features/finance). */
 export { useSetInstallments } from "@/features/finance/mutations";
-
-// --- Composição da venda (AYD-009): cobranças ao cliente e custos da venda com credor -------------
 
 type ChargePayload = ReturnType<typeof toSaleChargePayload>;
 type CostPayload = ReturnType<typeof toSaleCostPayload>;
 
-/** Cobrança adicional (frete cobrado): criar ou editar. Devolve a cobrança. */
 export function useSaveSaleCharge(saleId: string, charge?: SaleCharge) {
   return useApiMutation({
     run: (payload: ChargePayload) =>
@@ -125,7 +117,6 @@ export function useSaveSaleCharge(saleId: string, charge?: SaleCharge) {
   });
 }
 
-/** Remove a cobrança (quem chama oferece "Desfazer" recriando-a). */
 export function useDeleteSaleCharge(saleId: string) {
   return useApiMutation({
     run: async (chargeId: string) => {
@@ -145,7 +136,6 @@ export function useRestoreSaleCharge(saleId: string) {
   });
 }
 
-/** Custo da venda (frete pago, instalador, comissão, outro): criar ou editar. `warnings` = OVERSETTLED. */
 export function useSaveSaleCost(saleId: string, cost?: SaleCost) {
   return useApiMutation({
     run: (payload: CostPayload) =>

@@ -54,7 +54,6 @@ export function useProdutosMaisVendidos(
   };
 }
 
-/** Serviços vendidos no período (AYD-010 §3); fora do ranking de Products. */
 export function useServicosMaisVendidos(from?: string, to?: string, enabled = true) {
   const params = new URLSearchParams();
   if (from) params.set("from", from);

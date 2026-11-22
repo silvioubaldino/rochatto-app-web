@@ -4,7 +4,6 @@ import useSWR from "swr";
 import { api } from "@/lib/api";
 import type { Fornecedor, SupplierKind } from "@/lib/types";
 
-/** Lista de fornecedores e prestadores; `kind` filtra por tipo (AYD-007 §1). */
 export function useFornecedores(kind?: SupplierKind) {
   const { data, error, isLoading, mutate } = useSWR<Fornecedor[]>(
     kind ? `/fornecedores?kind=${kind}` : "/fornecedores",

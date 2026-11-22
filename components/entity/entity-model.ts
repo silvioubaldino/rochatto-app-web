@@ -1,9 +1,5 @@
-// Regras puras da "cola de entidade": rotas, prévia na URL, busca/ordenação de opções.
-
-/** Entidades que o dono ESCOLHE num campo (combobox) e CRIA sem sair da tela (quick-create). */
 export type EntityKind = "customer" | "product" | "service" | "supplier" | "partner";
 
-/** Entidades que têm LINK e podem ter prévia. */
 export type EntityType = EntityKind | "quote" | "sale" | "purchase" | "obligation";
 
 export const ENTITY_TYPES: readonly EntityType[] = [
@@ -18,7 +14,6 @@ export const ENTITY_TYPES: readonly EntityType[] = [
   "obligation",
 ];
 
-/** Nome da entidade na linguagem do dono (singular, minúsculo) — "Criar cliente 'Fulano'". */
 export const ENTITY_LABELS: Record<EntityType, string> = {
   customer: "cliente",
   product: "produto",
@@ -31,10 +26,6 @@ export const ENTITY_LABELS: Record<EntityType, string> = {
   obligation: "conta",
 };
 
-/**
- * Página da entidade. ÚNICO lugar onde isso é definido: as fases U4–U5 criam páginas novas
- * e só mudam este mapa. Produto e serviço ainda abrem a lista do cadastro.
- */
 export function entityHref(type: EntityType, id: string): string {
   switch (type) {
     case "customer":
@@ -58,8 +49,6 @@ export function entityHref(type: EntityType, id: string): string {
   }
 }
 
-// --- Prévia na URL: ?peek=sale:<id> ----------------------------------------------------
-
 export const PEEK_PARAM = "peek";
 
 export interface PeekRef {
@@ -71,7 +60,6 @@ export function formatPeek(ref: PeekRef): string {
   return `${ref.type}:${ref.id}`;
 }
 
-/** `sale:abc` → `{ type: "sale", id: "abc" }`; qualquer coisa inválida → null. */
 export function parsePeek(value: string | null | undefined): PeekRef | null {
   if (!value) return null;
   const i = value.indexOf(":");
@@ -82,7 +70,6 @@ export function parsePeek(value: string | null | undefined): PeekRef | null {
   return { type, id };
 }
 
-/** Query string (sem "?") com `peek` aplicado/removido, preservando os outros parâmetros. */
 export function peekQuery(current: URLSearchParams | string, ref: PeekRef | null): string {
   const params = new URLSearchParams(typeof current === "string" ? current : current.toString());
   if (ref) params.set(PEEK_PARAM, formatPeek(ref));
@@ -90,9 +77,6 @@ export function peekQuery(current: URLSearchParams | string, ref: PeekRef | null
   return params.toString();
 }
 
-// --- Opções de combobox ---------------------------------------------------------------
-
-/** Minúsculo, sem acento e sem espaços nas pontas: "Mármore " → "marmore". */
 export function normalizeText(text: string): string {
   return text
     .normalize("NFD")
@@ -106,10 +90,6 @@ export interface RankableOption {
   label: string;
 }
 
-/**
- * Filtra por `query` (contém, sem acento/caixa) e ordena: preferidos (contexto — ex.: kind
- * STONE para fornecedor de Item) → recentes → começa-com → contém → ordem original.
- */
 export function rankOptions<T extends RankableOption>(
   options: readonly T[],
   query: string,
@@ -141,7 +121,6 @@ export function rankOptions<T extends RankableOption>(
     .map((x) => x.option);
 }
 
-/** Mostra "＋ Criar …" para este texto? (há texto e nenhuma opção com o MESMO nome.) */
 export function shouldOfferCreate(query: string, options: readonly RankableOption[]): boolean {
   const q = normalizeText(query);
   if (!q) return false;
@@ -153,7 +132,6 @@ export function createOptionLabel(kind: EntityKind, query: string): string {
   return name ? `＋ Criar ${ENTITY_LABELS[kind]} "${name}"` : `＋ Criar ${ENTITY_LABELS[kind]}`;
 }
 
-/** Recentes: o id escolhido vai para o início, sem repetir, no máximo `max`. */
 export function pushRecent(recents: readonly string[], id: string, max = 8): string[] {
   return [id, ...recents.filter((r) => r !== id)].slice(0, max);
 }

@@ -11,20 +11,13 @@ import type { EntityFormProps } from "./quick-create";
 export interface EntityFormDialogProps<K extends EntityKind> {
   open: boolean;
   onClose: () => void;
-  /** Título para criar e para editar ("Novo cliente" / "Editar cliente"). */
   titles: { create: string; edit: string };
   Form: React.ComponentType<EntityFormProps<K>>;
-  /** Registro em edição; sem isto o diálogo cria. */
   entity?: EntityRawMap[K];
   size?: ResponsiveDialogSize;
-  /** Chamado com o registro salvo, ANTES de fechar. */
   onSaved?: (entity: EntityRawMap[K]) => void;
 }
 
-/**
- * Diálogo de criar/editar um cadastro com o `Form` da entidade (UX-5: um formulário por
- * entidade, o mesmo no QuickCreate e na edição). Os `*Modal` antigos são só invólucros disto.
- */
 export function EntityFormDialog<K extends EntityKind>({
   open,
   onClose,

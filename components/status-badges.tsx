@@ -9,10 +9,6 @@ import type {
 } from "@/lib/types";
 import { StatusBadge } from "@/components/patterns/StatusBadge";
 
-// Atalhos legados dos badges de status: todos delegam ao `StatusBadge` (mapa único de
-// rótulo e tom em lib/format/tones.ts). Código novo usa `<StatusBadge kind value />`.
-
-/** `serviceOnly`: Sale só de serviço lê "A executar / Executado" (AYD-010 §3). */
 export function SaleDeliveryBadge({
   status,
   serviceOnly = false,
