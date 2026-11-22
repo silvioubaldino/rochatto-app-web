@@ -42,7 +42,7 @@ describe("resultContext", () => {
 describe("resultRows", () => {
   it("aponta para a página e carrega a entidade para a prévia", () => {
     const rows = resultRows(groups);
-    expect(rows.map((r) => r.href)).toEqual(["/orcamentos/q1", "/vendas/s1", "/clientes/c1", "/fornecedores"]);
+    expect(rows.map((r) => r.href)).toEqual(["/orcamentos/q1", "/vendas/s1", "/clientes/c1", "/fornecedores/f1"]);
     expect(rows[0].entity).toEqual({ type: "quote", id: "q1" });
   });
 });

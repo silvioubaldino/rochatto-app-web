@@ -1,29 +1,18 @@
 // Regras do Fechar venda (T05, C5): estado, payload `closing`, lucro previsto, avisos e erros — puras e testadas.
 import { resolvePlan, toInstallmentsPayload, validatePlan, type PlanState } from "@/components/entity/installment-plan";
 import { round2 } from "@/components/entity/items-grid";
-import type { ClosingCostInput, ClosingItemInput, ClosingRequest, ItemKind, ItemOrigin, PaymentMethod, SaleCostKind } from "@/lib/types";
+import {
+  defaultItemState,
+  effectiveSupplier,
+  stockShortfall,
+  type ClosingItem,
+  type ClosingItemState,
+} from "@/components/entity/closing-items/closing-items-model";
+import type { ClosingCostInput, ClosingItemInput, ClosingRequest, PaymentMethod, SaleCostKind } from "@/lib/types";
 
-/** Um Item a fechar, como o diálogo o recebe (do Quote aberto ou do editor da venda rápida). */
-export interface ClosingItem {
-  /** `quoteItemId` em /convert; `index` em /quick-sale. */
-  ref: { quoteItemId?: string; index?: number };
-  kind: ItemKind;
-  productId: string | null;
-  name: string;
-  unit: string | null;
-  quantity: number;
-  unitPrice: number;
-  unitCost: number;
-}
-
-export interface ClosingItemState {
-  origin: ItemOrigin;
-  /** `null` = o dono não mexeu: vale o fornecedor habitual do produto (C8). */
-  supplierId: string | null;
-  /** Credor do custo de mão de obra (só serviço). */
-  laborPayeeId: string;
-  selected: boolean;
-}
+// O atendimento dos Items vive em `components/entity/closing-items`; reexportado para quem já importava daqui.
+export { defaultItemState, effectiveSupplier, stockShortfall };
+export type { ClosingItem, ClosingItemState };
 
 export interface ClosingCostDraft {
   key: string;
@@ -43,29 +32,6 @@ export interface ClosingState {
 }
 
 export type ClosingSection = "items" | "delivery" | "receivable" | "costs";
-
-export const defaultItemState = (): ClosingItemState => ({
-  origin: "MADE_TO_ORDER",
-  supplierId: null,
-  laborPayeeId: "",
-  selected: false,
-});
-
-/** Fornecedor que vale para o Item: o escolhido, ou o habitual do produto. */
-export function effectiveSupplier(
-  state: ClosingItemState,
-  item: ClosingItem,
-  defaults: ReadonlyMap<string, string>,
-): string {
-  if (state.supplierId !== null) return state.supplierId;
-  return (item.productId && defaults.get(item.productId)) || "";
-}
-
-/** Quanto falta do saldo para atender a quantidade (0 = tem saldo ou não se sabe). */
-export function stockShortfall(balance: number | undefined, quantity: number): number {
-  if (balance === undefined) return 0;
-  return Math.max(round2(quantity - balance), 0);
-}
 
 export interface ClosingTotals {
   price: number;

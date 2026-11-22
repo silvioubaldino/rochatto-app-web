@@ -77,6 +77,22 @@ export const services = [
   { id: "sv1", name: "Instalação", unit: "m²", reference_price: 50, reference_cost: 30, notes: null, created_at: "2026-01-01T00:00:00Z" },
 ];
 
+export const queueGroups = [
+  {
+    supplier_id: "f1",
+    supplier_name: "Matheus RJ",
+    items: [
+      { id: "si1", sale_id: "s1", customer_name: "Alejandra Souza", produto_id: "p1", produto_nome: "Rock face", quantidade: 18, custo_unit: 165, sale_date: "2026-11-20" },
+      { id: "si2", sale_id: "s2", customer_name: "Bruno Lima", produto_id: "p1", produto_nome: "Rock face", quantidade: 10, custo_unit: 165, sale_date: "2026-11-21" },
+    ],
+  },
+  { supplier_id: null, supplier_name: null, items: [{ id: "si3", sale_id: "s3", customer_name: "Carla", produto_id: "p2", produto_nome: "Moledo", quantidade: 5, custo_unit: 60, sale_date: "2026-11-19" }] },
+];
+
+export const purchaseRows = [
+  { id: "pu1", number: 12, kind: "MADE_TO_ORDER", status: "OPEN", supplier_id: "f1", supplier_name: "Matheus RJ", expected_date: null, notes: null, ordered_at: null, received_at: null, total_cost: 2970, payable: 2970, paid: 0, created_at: "2026-11-20T10:00:00Z" },
+];
+
 /** Handlers padrão. Cada teste sobrescreve o que precisar com `server.use(...)`. */
 export const handlers = [
   http.get(`${API}/produtos`, () => HttpResponse.json(products)),
@@ -87,6 +103,8 @@ export const handlers = [
   }),
   http.get(`${API}/services`, () => HttpResponse.json(services)),
   http.get(`${API}/stock/balance`, () => HttpResponse.json([{ product_id: "p2", balance: 4 }, { product_id: "p1", balance: 25 }])),
+  http.get(`${API}/purchases/pending-sale-items`, () => HttpResponse.json(queueGroups)),
+  http.get(`${API}/purchases`, () => HttpResponse.json(purchaseRows)),
   http.get(`${API}/pending-actions`, () => HttpResponse.json(pendingActions)),
   http.get(`${API}/search`, () => HttpResponse.json(searchResult)),
   http.get(`${API}/dashboard/kpis`, () =>

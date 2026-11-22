@@ -2,7 +2,16 @@
 
 import { http } from "@/lib/http";
 import { useApiMutation } from "@/lib/mutation";
-import type { PendingSaleItemGroup, PurchaseDetail, PurchaseStatus, PurchaseStatusResponse } from "@/lib/types";
+import type {
+  AllocationMethod,
+  PendingSaleItemGroup,
+  PurchaseCharge,
+  PurchaseChargeKind,
+  PurchaseDetail,
+  PurchaseItem,
+  PurchaseStatus,
+  PurchaseStatusResponse,
+} from "@/lib/types";
 
 /** Marca a compra como pedida/recebida (PATCH /purchases/{id}/status). */
 export function useSetPurchaseStatus() {
@@ -49,4 +58,152 @@ export function useAttachToPurchase() {
 /** Ids dos Items da fila de um fornecedor. */
 export function queueItemIds(groups: readonly PendingSaleItemGroup[], supplierId: string): string[] {
   return groups.find((g) => g.supplier_id === supplierId)?.items.map((i) => i.id) ?? [];
+}
+
+/** Previsão, observações e rateio (PUT /purchases/{id}: substituição completa dos três campos). */
+export function useUpdatePurchase(purchase: Pick<PurchaseDetail, "id" | "expected_date" | "notes" | "allocation_method">) {
+  return useApiMutation({
+    run: (patch: Partial<Pick<PurchaseDetail, "expected_date" | "notes" | "allocation_method">>) => {
+      const next = { ...purchase, ...patch };
+      return http.put<unknown>(`/purchases/${purchase.id}`, {
+        expected_date: next.expected_date ? next.expected_date.slice(0, 10) : null,
+        notes: next.notes || null,
+        allocation_method: next.allocation_method,
+      });
+    },
+    emits: "PURCHASE_CHANGED",
+    successMessage: "Compra atualizada.",
+    errorFallback: "Erro ao salvar a compra.",
+  });
+}
+
+export interface PurchaseChargePayload {
+  kind: PurchaseChargeKind;
+  amount: number;
+  description: string | null;
+  payee_supplier_id: string | null;
+}
+
+/** Custo adicional da compra (criar ou editar). Devolve o custo com `warnings` (OVERSETTLED). */
+export function useSavePurchaseCharge(purchaseId: string, charge?: PurchaseCharge) {
+  return useApiMutation({
+    run: (payload: PurchaseChargePayload) =>
+      charge
+        ? http.put<PurchaseCharge>(`/purchases/${purchaseId}/charges/${charge.id}`, payload)
+        : http.post<PurchaseCharge>(`/purchases/${purchaseId}/charges`, payload),
+    emits: "PURCHASE_CHANGED",
+    successMessage: charge ? "Custo adicional atualizado." : "Custo adicional lançado.",
+    toastOnError: false,
+  });
+}
+
+/** Remove um custo adicional (a quem chama cabe oferecer "Desfazer" recriando-o). */
+export function useDeletePurchaseCharge(purchaseId: string) {
+  return useApiMutation({
+    run: async (chargeId: string) => {
+      await http.delete(`/purchases/${purchaseId}/charges/${chargeId}`);
+      return true as const;
+    },
+    emits: "PURCHASE_CHANGED",
+    errorFallback: "Erro ao remover o custo adicional.",
+  });
+}
+
+/** Recria um custo adicional removido (desfazer). */
+export function useRestorePurchaseCharge(purchaseId: string) {
+  return useApiMutation({
+    run: (c: PurchaseCharge) =>
+      http.post<PurchaseCharge>(`/purchases/${purchaseId}/charges`, {
+        kind: c.kind,
+        amount: c.amount,
+        description: c.description,
+        payee_supplier_id: c.payee_supplier_id,
+      }),
+    emits: "PURCHASE_CHANGED",
+    errorFallback: "Não foi possível desfazer.",
+  });
+}
+
+/** Tira um Item de venda da compra (volta para a fila "a comprar"). */
+export function useDetachSaleItem(purchaseId: string) {
+  return useApiMutation({
+    run: async (saleItemId: string) => {
+      await http.delete(`/purchases/${purchaseId}/sale-items/${saleItemId}`);
+      return true as const;
+    },
+    emits: ["PURCHASE_CHANGED", "SALE_CHANGED"],
+    errorFallback: "Erro ao remover o Item.",
+  });
+}
+
+export interface PurchaseItemPayload {
+  product_id: string;
+  quantity: number;
+  unit_cost: number;
+}
+
+/** Linha de reposição (criar ou editar; só compra aberta). */
+export function useSavePurchaseItem(purchaseId: string, item?: PurchaseItem) {
+  return useApiMutation({
+    run: (payload: PurchaseItemPayload) =>
+      item
+        ? http.put<unknown>(`/purchases/${purchaseId}/items/${item.id}`, payload)
+        : http.post<unknown>(`/purchases/${purchaseId}/items`, payload),
+    emits: "PURCHASE_CHANGED",
+    successMessage: item ? "Linha atualizada." : "Linha adicionada.",
+    toastOnError: false,
+  });
+}
+
+export function useDeletePurchaseItem(purchaseId: string) {
+  return useApiMutation({
+    run: async (itemId: string) => {
+      await http.delete(`/purchases/${purchaseId}/items/${itemId}`);
+      return true as const;
+    },
+    emits: "PURCHASE_CHANGED",
+    errorFallback: "Erro ao remover a linha.",
+  });
+}
+
+export function useRestorePurchaseItem(purchaseId: string) {
+  return useApiMutation({
+    run: (i: PurchaseItem) =>
+      http.post<unknown>(`/purchases/${purchaseId}/items`, { product_id: i.product_id, quantity: i.quantity, unit_cost: i.unit_cost }),
+    emits: "PURCHASE_CHANGED",
+    errorFallback: "Não foi possível desfazer.",
+  });
+}
+
+/** Exclui a compra aberta; os Items de venda voltam para a fila (erro mostrado no ConfirmDialog). */
+export function useDeletePurchase() {
+  return useApiMutation({
+    run: async (purchaseId: string) => {
+      await http.delete(`/purchases/${purchaseId}`);
+      return true as const;
+    },
+    emits: ["PURCHASE_CHANGED", "SALE_CHANGED"],
+    successMessage: "Compra excluída. Os Items voltaram para a fila.",
+    toastOnError: false,
+  });
+}
+
+export interface ReplenishmentPayload {
+  kind: "STOCK_REPLENISHMENT";
+  supplier_id: string;
+  allocation_method: AllocationMethod;
+  expected_date: string | null;
+  notes: string | null;
+  sale_item_ids: string[];
+  items: PurchaseItemPayload[];
+}
+
+/** Nova compra para repor o estoque. */
+export function useCreateReplenishment() {
+  return useApiMutation({
+    run: (payload: ReplenishmentPayload) => http.post<PurchaseDetail>("/purchases", payload),
+    emits: ["PURCHASE_CHANGED", "STOCK_CHANGED"],
+    successMessage: "Compra para estoque criada.",
+    toastOnError: false,
+  });
 }

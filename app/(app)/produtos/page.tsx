@@ -1,14 +1,15 @@
 "use client";
 
-import { CategoriesTab } from "@/components/catalogs/CategoriesTab";
-import { ProductsTab } from "@/components/catalogs/ProductsTab";
-import { useUrlTab } from "@/components/patterns/useUrlTab";
+import { Suspense } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUrlTab } from "@/components/patterns/useUrlTab";
+import { CategoriesList } from "@/features/catalog/components/CategoriesList";
+import { ProductsList } from "@/features/catalog/components/ProductsList";
 
 const TABS = ["produtos", "categorias"] as const;
 type ProductsTabId = (typeof TABS)[number];
 
-export default function ProductsPage() {
+function Content() {
   // Categorias moram dentro de Produtos (AYD-011 §5.1); a aba fica na URL (?tab=).
   const [tab, setTab] = useUrlTab(TABS, "produtos");
   return (
@@ -19,13 +20,17 @@ export default function ProductsPage() {
           <TabsTrigger value="produtos">Produtos</TabsTrigger>
           <TabsTrigger value="categorias">Categorias</TabsTrigger>
         </TabsList>
-        <TabsContent value="produtos">
-          <ProductsTab />
-        </TabsContent>
-        <TabsContent value="categorias">
-          <CategoriesTab />
-        </TabsContent>
+        <TabsContent value="produtos" className="mt-4"><ProductsList /></TabsContent>
+        <TabsContent value="categorias" className="mt-4"><CategoriesList /></TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={null}>
+      <Content />
+    </Suspense>
   );
 }

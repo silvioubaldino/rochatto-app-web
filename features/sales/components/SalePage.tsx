@@ -12,7 +12,7 @@ import { StatusBadge } from "@/components/patterns/StatusBadge";
 import { SettleDialog } from "@/components/obligations/SettleDialog";
 import { SaleCompositionCard } from "@/components/sales/SaleCompositionCard";
 import { useGeneratePurchase, useAttachToPurchase } from "@/features/purchasing/mutations";
-import { useStockBalance } from "@/hooks/useStock";
+import { useStockBalance } from "@/features/stock/queries";
 import { useVenda } from "@/hooks/useVenda";
 import { useEmit } from "@/lib/events";
 import { docTitle, isServiceOnlySale, todayISO } from "@/lib/format";

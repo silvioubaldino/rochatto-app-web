@@ -5,7 +5,7 @@ import { registerPreview, type PreviewData } from "@/components/entity/EntityShe
 import { PreviewFields, PreviewList, PreviewSection } from "@/components/entity/preview-parts";
 import { StatusBadge } from "@/components/patterns/StatusBadge";
 import { DateText, MoneyText } from "@/components/patterns/values";
-import { usePurchase } from "@/hooks/usePurchases";
+import { usePurchase } from "./queries";
 import { PURCHASE_KIND_LABELS } from "@/lib/format";
 import { docTitle } from "@/lib/format";
 import type { PurchaseDetail } from "@/lib/types";

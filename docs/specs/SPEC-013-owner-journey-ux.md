@@ -240,9 +240,15 @@ vazio/erro/esqueleto), `FilterBar` + `useUrlFilters`, `useUrlTab`, `DetailLayout
 - **E2E:** build com `NEXT_PUBLIC_E2E=1 NEXT_PUBLIC_API_URL=` entra como o dono e chama `/api/v1` no próprio servidor
   (`e2e/mock-api.ts`); `E2E_CHROME_PATH` permite rodar com um Chrome do sistema.
 
-### U4 · Operação — a fazer
+### U4 · Operação — entregue
 
-Compras e Compra (`nextStep(purchase)`, trilha de status, composição + rateio num cartão), Fornecedor 360, Estoque/Produto com prévia e "Comprar para estoque".
+1. [x] Compras (T11): `features/purchasing` — lista no `DataTable` com chips Abertas · Pedidas · Recebidas · Todas, filtros na URL (fornecedor, tipo, contas, período), previsão atrasada em `danger`, aba "A comprar · N".
+2. [x] A comprar: agrupada por fornecedor, tudo marcado por padrão, "Gerar compra · N itens" e "Adicionar à Compra nº X"; grupo sem fornecedor abre o atendimento em lote da venda (`/vendas/{id}?atendimento=1`).
+3. [x] Compra (T12) no `DetailLayout`: trilha `Aberta → Pedida → Recebida`, `nextStep(purchase)` em `model.ts`, Items com venda/entrega e "Marcar entregue", **Custo e rateio** num cartão (composição por credor + método de rateio + custo de entrada por linha), contas a pagar; Pedida/Voltar/remoções com "Desfazer", Recebida e Excluir com confirmação; diálogos de custo adicional, linha de reposição, dados e compra para estoque em `ResponsiveDialog` + `EntityCombobox`.
+4. [x] Fornecedor 360 (T10) em `/fornecedores/[id]` (`entityHref("supplier")` aponta para ele): a pagar (vencidas), comprado em 90 dias, fila; abas Compras · Contas a pagar · A comprar; "Gerar compra da fila" e "Pagar contas em aberto".
+5. [x] Estoque (T13) em `features/stock`: abas na URL, saldo no `DataTable` com chip "Saldo negativo" e linha → prévia do produto (`?peek=product:id`) com extrato, "Comprar para estoque" (`/compras?repor=id`) e "Novo ajuste" (`/estoque?ajuste=id`); ajuste em `ResponsiveDialog` (somar/baixar + quantidade positiva).
+6. [x] Cadastros (T16): Clientes, Produtos, Categorias, Serviços, Fornecedores e Parceiros em `CatalogList` (`components/entity`) sobre `DataTable`, com busca/filtros na URL e menu Editar/Excluir; `components/catalogs`, `components/forms`, `components/purchases`, `components/stock` e `components/tables/DataTable` removidos.
+7. [x] §9.4: `ClosingItemsSection` (e o modelo de atendimento dos Items) saiu de `features/closing` para `components/entity/closing-items`; `features/sales` deixou de importar componente de `features/closing`.
 
 ### U5 · Financeiro — a fazer
 
@@ -297,7 +303,7 @@ A receber / A pagar (chips, credor por combobox incluindo Partners — F13, agru
 - [x] U1 — ESLint (regras 2 e 4), testes (unitário, componente), Playwright com 3 perfis, Lighthouse CI, CI (lint → tsc → test → build)
 - [x] U2 — Hoje, menu agrupado/rotas novas, ⌘K, "Novo" global, números humanos
 - [x] U3 — `ItemsGrid`, editor de orçamento, Fechar venda, detalhe da venda, Cliente/Parceiro 360, listas migradas (pendências: ver "Entregue em U2/U3")
-- [ ] U4 — Compras, Fornecedor 360, Estoque/Produto
+- [x] U4 — Compras, Fornecedor 360, Estoque/Produto, cadastros em `CatalogList`
 - [ ] U5 — A receber/A pagar, `SettleFlow`, `InstallmentPlanEditor`, Movimentações, Resultado, Indicadores
 - [ ] Zero aviso de lint `no-restricted-*` em `app/` e `components/` (legado migrado) e componentes antigos removidos
 - [ ] Tarefas-ouro TO-1..TO-7 em e2e (desktop + iPhone + Pixel) e metas de desempenho verdes no CI — TO-1, TO-2, TO-3, TO-4 e TO-6 escritas (verdes em desktop e Pixel; iPhone/WebKit só no CI); faltam TO-5 e TO-7 (U5)

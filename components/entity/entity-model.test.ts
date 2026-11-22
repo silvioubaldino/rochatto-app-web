@@ -42,7 +42,7 @@ describe("entityHref", () => {
     expect(entityHref("partner", "1")).toBe("/parceiros/1");
     expect(entityHref("product", "1")).toBe("/produtos");
     expect(entityHref("service", "1")).toBe("/servicos");
-    expect(entityHref("supplier", "1")).toBe("/fornecedores");
+    expect(entityHref("supplier", "1")).toBe("/fornecedores/1");
   });
 });
 

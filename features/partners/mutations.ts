@@ -15,3 +15,16 @@ export function useSavePartner(entity?: Partner) {
     errorFallback: "Erro ao salvar parceiro.",
   });
 }
+
+/** Exclui um Partner (soft-delete). O erro sobe para o ConfirmDialog. */
+export function useDeletePartner() {
+  return useApiMutation({
+    run: async (id: string) => {
+      await http.delete(`/partners/${id}`);
+      return true as const;
+    },
+    emits: "PARTNER_CHANGED",
+    successMessage: "Parceiro excluído.",
+    toastOnError: false,
+  });
+}

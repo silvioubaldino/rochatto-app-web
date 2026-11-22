@@ -15,7 +15,7 @@ import { useConfirm } from "@/components/patterns/ConfirmDialog";
 import { MoneyText } from "@/components/patterns/values";
 import { useUnsavedChangesGuard } from "@/components/patterns/useUnsavedChangesGuard";
 import { CloseSaleDialog } from "@/features/closing/components/CloseSaleDialog";
-import type { ClosingItem } from "@/features/closing/model";
+import type { ClosingItem } from "@/components/entity/closing-items";
 import { formatPercent, todayISO } from "@/lib/format";
 import { useIsPhone } from "@/lib/media";
 import type { ClosingResponse, Quote } from "@/lib/types";
@@ -71,7 +71,7 @@ export function QuoteEditor({ quote, refresh, initial }: QuoteEditorProps) {
   const [lostOpen, setLostOpen] = useState(false);
   const closeMutation = quote ? convert : quickSale;
 
-  const { confirmDiscard } = useUnsavedChangesGuard(isDirty && !isSubmitting);
+  useUnsavedChangesGuard(isDirty && !isSubmitting);
   const totals = gridTotals(items);
   const chargesTotal = charges.reduce((s, c) => s + (c.amount > 0 ? c.amount : 0), 0);
   const busy = isSubmitting || create.pending || save.pending;

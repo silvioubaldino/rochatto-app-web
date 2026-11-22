@@ -23,7 +23,7 @@ import {
 } from "../model";
 import { useClosingLookups } from "../queries";
 import { ClosingCostsSection } from "./ClosingCostsSection";
-import { ClosingItemsSection } from "./ClosingItemsSection";
+import { ClosingItemsSection } from "@/components/entity/closing-items";
 import { ClosingReceivableSection } from "./ClosingReceivableSection";
 
 export interface CloseSaleDialogProps {

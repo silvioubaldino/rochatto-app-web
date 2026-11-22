@@ -15,3 +15,16 @@ export function useSaveCustomer(entity?: Cliente) {
     errorFallback: "Erro ao salvar cliente.",
   });
 }
+
+/** Exclui um Customer (soft-delete). O erro sobe para o ConfirmDialog. */
+export function useDeleteCustomer() {
+  return useApiMutation({
+    run: async (id: string) => {
+      await http.delete(`/clientes/${id}`);
+      return true as const;
+    },
+    emits: "CUSTOMER_CHANGED",
+    successMessage: "Cliente excluído.",
+    toastOnError: false,
+  });
+}

@@ -1,12 +1,12 @@
 "use client";
 
-import { ServicesTab } from "@/components/catalogs/ServicesTab";
+import { ServicesList } from "@/features/catalog/components/ServicesList";
 
-export default function ServicesPage() {
+export default function Page() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Serviços</h1>
-      <ServicesTab />
+      <ServicesList />
     </div>
   );
 }
