@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSWRConfig } from "swr";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUrlTab } from "@/components/patterns/useUrlTab";
+import { useEmit } from "@/lib/events";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StockAdjustmentModal } from "@/components/stock/StockAdjustmentModal";
 import { StockStatementSheet } from "@/components/stock/StockStatementSheet";
@@ -20,9 +21,14 @@ import {
 } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 
+const STOCK_TABS = ["saldo", "ajustes"] as const;
+type StockTab = (typeof STOCK_TABS)[number];
+
 // Stock — AYD-002 §4: Balance por Product (calculado) + ajustes manuais imutáveis.
 export default function EstoquePage() {
-  const { mutate } = useSWRConfig();
+  const emit = useEmit();
+  // F21: a aba fica na URL (`?tab=`).
+  const [tab, setTab] = useUrlTab(STOCK_TABS, "saldo");
   const { produtos } = useProdutos();
 
   // Saldo
@@ -58,7 +64,7 @@ export default function EstoquePage() {
 
   function handleAdjustmentSaved() {
     // Saldo, extrato e lista de ajustes mudam juntos.
-    mutate((key) => typeof key === "string" && key.startsWith("/stock"));
+    void emit("STOCK_CHANGED");
   }
 
   return (
@@ -75,7 +81,7 @@ export default function EstoquePage() {
         ajustes. Itens sob encomenda não passam pelo estoque.
       </p>
 
-      <Tabs defaultValue="saldo">
+      <Tabs value={tab} onValueChange={(v) => setTab(v as StockTab)}>
         <TabsList>
           <TabsTrigger value="saldo">Saldo por produto</TabsTrigger>
           <TabsTrigger value="ajustes">Ajustes</TabsTrigger>

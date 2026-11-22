@@ -2,20 +2,12 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Ban, CheckCircle2, Loader2, RotateCcw, AlertTriangle } from "lucide-react";
-import { api, APIError } from "@/lib/api";
+import { Ban, CheckCircle2, RotateCcw } from "lucide-react";
+import { api } from "@/lib/api";
 import type { SaleDeliveryStatus } from "@/lib/types";
 import { saleDeliveryLabel } from "@/lib/formatters";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/patterns/ConfirmDialog";
 
 interface SaleDeliveryActionsProps {
   vendaId: string;
@@ -51,33 +43,19 @@ const CONFIRM_TEXT: Record<SaleDeliveryStatus, { title: string; description: str
 /** Status de entrega da Sale (manual) e cancelamento — PATCH /vendas/{id}/delivery-status. */
 export function SaleDeliveryActions({ vendaId, status, serviceOnly = false, onChanged }: SaleDeliveryActionsProps) {
   const [pending, setPending] = useState<PendingAction>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   if (status === "CANCELED") return null;
 
   function open(action: SaleDeliveryStatus) {
-    setError(null);
     setPending(action);
   }
 
+  // Erros (409: item em compra pedida/recebida) sobem para o ConfirmDialog e aparecem NO diálogo.
   async function confirm() {
     if (!pending) return;
-    setLoading(true);
-    setError(null);
-    try {
-      await api.patch(`/vendas/${vendaId}/delivery-status`, { delivery_status: pending });
-      toast.success(`Venda: ${saleDeliveryLabel(pending, serviceOnly)}.`);
-      setPending(null);
-      onChanged();
-    } catch (err) {
-      const message = err instanceof APIError ? err.message : "Erro ao atualizar o status.";
-      // 409 (ex.: item em compra pedida/recebida) fica visível no próprio diálogo.
-      setError(message);
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
+    await api.patch(`/vendas/${vendaId}/delivery-status`, { delivery_status: pending });
+    toast.success(`Venda: ${saleDeliveryLabel(pending, serviceOnly)}.`);
+    onChanged();
   }
 
   const base = pending ? CONFIRM_TEXT[pending] : null;
@@ -109,33 +87,15 @@ export function SaleDeliveryActions({ vendaId, status, serviceOnly = false, onCh
         </Button>
       </div>
 
-      <AlertDialog open={!!pending} onOpenChange={(o) => !o && !loading && setPending(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle
-              className={pending === "CANCELED" ? "flex items-center gap-2 text-destructive" : undefined}
-            >
-              {pending === "CANCELED" && <AlertTriangle className="h-5 w-5" />}
-              {text?.title}
-            </AlertDialogTitle>
-            <AlertDialogDescription>{text?.description}</AlertDialogDescription>
-          </AlertDialogHeader>
-          {error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
-          )}
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={loading}>Voltar</AlertDialogCancel>
-            <Button
-              variant={pending === "CANCELED" ? "destructive" : "default"}
-              onClick={confirm}
-              disabled={loading}
-            >
-              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {text?.cta}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!pending}
+        onOpenChange={(o) => !o && setPending(null)}
+        title={text?.title ?? ""}
+        description={text?.description}
+        confirmLabel={text?.cta}
+        tone={pending === "CANCELED" ? "danger" : "default"}
+        onConfirm={confirm}
+      />
     </>
   );
 }

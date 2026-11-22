@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useBack } from "@/lib/history";
 import { useSWRConfig } from "swr";
 import { toast } from "sonner";
 import {
@@ -43,15 +44,7 @@ import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/patterns/ConfirmDialog";
 
 interface Transition {
   to: PurchaseStatus;
@@ -100,6 +93,7 @@ function transitionsFor(status: PurchaseStatus, isReplenishment: boolean): Trans
 export default function CompraDetalhePage() {
   const params = useParams();
   const router = useRouter();
+  const back = useBack("/compras");
   const purchaseId = params.id as string;
   const { mutate } = useSWRConfig();
   const { purchase, isLoading, error, refresh } = usePurchase(purchaseId);
@@ -114,7 +108,6 @@ export default function CompraDetalhePage() {
   const [editingCharge, setEditingCharge] = useState<PurchaseCharge | undefined>();
   const [deletingCharge, setDeletingCharge] = useState<PurchaseCharge | null>(null);
   const [allocBusy, setAllocBusy] = useState(false);
-  const [busy, setBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   /** Purchase muda saldo do Stock, fila "a comprar", Sales (purchase_id) e painel. */
@@ -160,20 +153,13 @@ export default function CompraDetalhePage() {
     }
   }
 
+  // Erros (422 sem linhas ao pedir, 409 transição ilegal) sobem para o ConfirmDialog, que os
+  // mostra no próprio diálogo (UX-P09).
   async function runTransition() {
     if (!pendingTransition) return;
-    setBusy(true);
-    try {
-      await api.patch(`/purchases/${purchaseId}/status`, { status: pendingTransition.to });
-      toast.success("Status da compra atualizado.");
-      setPendingTransition(null);
-      refreshAll();
-    } catch (err) {
-      // 422 (sem linhas ao pedir) e 409 (transição ilegal) trazem a mensagem da API.
-      toast.error(err instanceof APIError ? err.message : "Erro ao atualizar status.");
-    } finally {
-      setBusy(false);
-    }
+    await api.patch(`/purchases/${purchaseId}/status`, { status: pendingTransition.to });
+    toast.success("Status da compra atualizado.");
+    refreshAll();
   }
 
   async function confirmDetach() {
@@ -218,7 +204,7 @@ export default function CompraDetalhePage() {
   if (error && !purchase) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" onClick={() => router.push("/compras")}>
+        <Button variant="ghost" size="sm" onClick={back}>
           <ArrowLeft className="h-4 w-4" />
           Compras
         </Button>
@@ -247,7 +233,7 @@ export default function CompraDetalhePage() {
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
       <div className="flex flex-wrap items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/compras")}>
+        <Button variant="ghost" size="icon" onClick={back}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-2xl font-bold">Compra</h1>
@@ -632,21 +618,13 @@ export default function CompraDetalhePage() {
         title="Remover custo adicional"
         description={`Remover "${deletingCharge ? PURCHASE_CHARGE_KIND_LABELS[deletingCharge.kind] : "este custo"}" da compra? O rateio e a conta do credor são recalculados.`}
       />
-      <AlertDialog open={!!pendingTransition} onOpenChange={(o) => !o && !busy && setPendingTransition(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{pendingTransition?.label}</AlertDialogTitle>
-            <AlertDialogDescription>{pendingTransition?.confirm}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>Voltar</AlertDialogCancel>
-            <Button onClick={runTransition} disabled={busy}>
-              {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-              Confirmar
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!pendingTransition}
+        onOpenChange={(o) => !o && setPendingTransition(null)}
+        title={pendingTransition?.label ?? ""}
+        description={pendingTransition?.confirm}
+        onConfirm={runTransition}
+      />
 
       <DeleteConfirmDialog
         open={!!detachingSaleItem}

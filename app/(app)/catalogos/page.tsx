@@ -34,6 +34,7 @@ import { PartnerModal } from "@/components/forms/PartnerModal";
 import { ProductCategoryModal } from "@/components/forms/ProductCategoryModal";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useUrlTab } from "@/components/patterns/useUrlTab";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 
@@ -714,12 +715,17 @@ function ServicosTab() {
 
 // --- Main Page ---
 
+const CATALOG_TABS = ["produtos", "servicos", "categorias", "fornecedores", "parceiros"] as const;
+type CatalogTab = (typeof CATALOG_TABS)[number];
+
 export default function CatalogosPage() {
+  // F21: a aba fica na URL (`?tab=`): recarregar e voltar mantêm onde o dono estava.
+  const [tab, setTab] = useUrlTab(CATALOG_TABS, "produtos");
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Catálogos</h1>
 
-      <Tabs defaultValue="produtos">
+      <Tabs value={tab} onValueChange={(v) => setTab(v as CatalogTab)}>
         <TabsList>
           <TabsTrigger value="produtos">Produtos</TabsTrigger>
           <TabsTrigger value="servicos">Serviços</TabsTrigger>

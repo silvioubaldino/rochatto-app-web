@@ -14,6 +14,10 @@ import { isServiceItem } from "@/lib/formatters";
 import { toQuoteChargesPayload } from "@/components/sales/ChargesEditor";
 import { QuoteChargesCard } from "@/components/sales/QuoteChargesCard";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
+import { useConfirm } from "@/components/patterns/ConfirmDialog";
+import { EntityLink } from "@/components/entity/EntityLink";
+import { useBack } from "@/lib/history";
+import { useEmit } from "@/lib/events";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -44,6 +48,9 @@ export default function OrcamentoDetalhePage() {
   const params = useParams();
   const router = useRouter();
   const quoteId = params.id as string;
+  const back = useBack("/orcamentos");
+  const confirm = useConfirm();
+  const emit = useEmit();
   const { quote, isLoading, refresh } = useQuote(quoteId);
   const { produtos } = useProdutos();
   const { services } = useServices();
@@ -237,7 +244,11 @@ export default function OrcamentoDetalhePage() {
 
   async function handleConvert() {
     if (!quote) return;
-    const confirmed = window.confirm("Confirma a conversão deste orçamento em venda?");
+    const confirmed = await confirm({
+      title: "Fechar venda",
+      description: "O orçamento vira uma venda com os mesmos itens e valores. Confirma?",
+      confirmLabel: "Fechar venda",
+    });
     if (!confirmed) return;
 
     setConverting(true);
@@ -246,7 +257,8 @@ export default function OrcamentoDetalhePage() {
         `/quotes/${quoteId}/convert`,
         {},
       );
-      toast.success("Orçamento convertido em venda!");
+      toast.success("Venda fechada!");
+      await emit(["QUOTE_CHANGED", "SALE_CHANGED"]);
       router.push(`/vendas/${result.sale_id}`);
     } catch (err) {
       const message = err instanceof APIError ? err.message : "Erro ao converter orçamento.";
@@ -270,12 +282,12 @@ export default function OrcamentoDetalhePage() {
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
       <div className="flex flex-wrap items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/orcamentos")}>
+        <Button variant="ghost" size="icon" onClick={back} aria-label="Voltar">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-2xl font-bold">Orçamento</h1>
         <span className="text-sm text-muted-foreground font-mono">
-          #{quote.id.slice(0, 8)}
+          {quote.number ? `nº ${quote.number}` : `#${quote.id.slice(0, 8)}`}
         </span>
 
         <span className="ml-auto inline-flex items-center gap-1.5">
@@ -295,12 +307,23 @@ export default function OrcamentoDetalhePage() {
         </span>
       </div>
 
+      {/* F05: orçamento ganho leva à venda (campo opcional da api — AYD-011 C2). */}
+      {quote.status === "WON" && quote.sale_id && (
+        <div role="status" className="flex flex-wrap items-center gap-2 rounded-lg bg-success-subtle px-4 py-3 text-success">
+          <CheckCircle2 className="h-4 w-4" aria-hidden />
+          <span className="font-medium">Virou a</span>
+          <EntityLink type="sale" id={quote.sale_id} className="font-medium underline">
+            {quote.sale_number ? `Venda nº ${quote.sale_number}` : "Venda"} ›
+          </EntityLink>
+        </div>
+      )}
+
       {isOpen && (
         <div className="flex flex-wrap gap-2">
           <Button onClick={handleConvert} disabled={converting}>
             {converting && <Loader2 className="h-4 w-4 animate-spin" />}
             <CheckCircle2 className="h-4 w-4" />
-            Converter em Sale
+            Fechar venda
           </Button>
           <Button variant="outline" onClick={() => setLostDialogOpen(true)}>
             Marcar como perdido

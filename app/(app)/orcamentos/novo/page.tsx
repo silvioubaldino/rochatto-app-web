@@ -1,29 +1,29 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useBack } from "@/lib/history";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { api, APIError } from "@/lib/api";
-import { formatMoeda, PARTNER_TYPE_LABELS } from "@/lib/formatters";
+import { formatMoeda } from "@/lib/formatters";
 import type { Cliente, Produto, Service } from "@/lib/types";
-import { useClientes } from "@/hooks/useClientes";
 import { useProdutos } from "@/hooks/useProdutos";
 import { useServices } from "@/hooks/useServices";
 import { ServicePicker } from "@/components/sales/ServicePicker";
-import { usePartners } from "@/hooks/usePartners";
 import { ChargesEditor, toQuoteChargesPayload, type ChargeDraft } from "@/components/sales/ChargesEditor";
-import { ClienteModal } from "@/components/forms/ClienteModal";
+import { EntityCombobox } from "@/components/entity/EntityCombobox";
+import { useUnsavedChangesGuard } from "@/components/patterns/useUnsavedChangesGuard";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, Plus, Trash2, ArrowLeft, Search } from "lucide-react";
+import { Loader2, Plus, Trash2, ArrowLeft } from "lucide-react";
 
 const itemSchema = z.object({
   kind: z.enum(["PRODUCT", "SERVICE"]),
@@ -75,6 +75,7 @@ function AutocompleteDropdown<T extends { id: string }>({
 
 export default function NovoOrcamentoPage() {
   const router = useRouter();
+  const back = useBack("/orcamentos");
 
   const {
     register,
@@ -83,7 +84,7 @@ export default function NovoOrcamentoPage() {
     watch,
     setValue,
     getValues,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<QuoteFormData>({
     resolver: zodResolver(quoteSchema),
     defaultValues: {
@@ -110,24 +111,17 @@ export default function NovoOrcamentoPage() {
   const watchItems = watch("items");
   const [charges, setCharges] = useState<ChargeDraft[]>([]);
 
-  const [clienteSearch, setClienteSearch] = useState("");
-  const [debouncedClienteSearch, setDebouncedClienteSearch] = useState("");
-  const [showClienteDropdown, setShowClienteDropdown] = useState(false);
-  const [selectedClienteNome, setSelectedClienteNome] = useState("");
-  const [clienteModalOpen, setClienteModalOpen] = useState(false);
+  // F25: avisa antes de perder o que foi digitado (fechar a aba, clicar no menu, Cancelar).
+  const { confirmDiscard } = useUnsavedChangesGuard((isDirty || charges.length > 0) && !isSubmitting);
+  async function handleBack() {
+    if (await confirmDiscard()) back();
+  }
 
   const [produtoSearches, setProdutoSearches] = useState<Record<number, string>>({});
   const [showProdutoDropdown, setShowProdutoDropdown] = useState<Record<number, boolean>>({});
 
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedClienteSearch(clienteSearch), 300);
-    return () => clearTimeout(timer);
-  }, [clienteSearch]);
-
-  const { clientes, refresh: refreshClientes } = useClientes(debouncedClienteSearch || undefined);
   const { produtos } = useProdutos();
   const { services } = useServices();
-  const { partners } = usePartners();
 
   const filteredProdutos = useCallback(
     (index: number) => {
@@ -147,15 +141,12 @@ export default function NovoOrcamentoPage() {
   const chargesTotal = charges.reduce((acc, c) => acc + (c.amount || 0), 0);
   const totalQuote = itemsTotal + chargesTotal;
 
-  function handleSelectCliente(cliente: Cliente) {
-    setValue("customer_id", cliente.id);
+  function handleSelectCliente(id: string, cliente: Cliente | null) {
+    setValue("customer_id", id, { shouldDirty: true, shouldValidate: !!id });
     // Customer que veio por um Partner: sugere a mesma indicação (editável).
-    if (cliente.lead_source === "PARTNER" && cliente.referrer_id && !getValues("referrer_id")) {
-      setValue("referrer_id", cliente.referrer_id);
+    if (cliente?.lead_source === "PARTNER" && cliente.referrer_id && !getValues("referrer_id")) {
+      setValue("referrer_id", cliente.referrer_id, { shouldDirty: true });
     }
-    setSelectedClienteNome(cliente.nome);
-    setClienteSearch("");
-    setShowClienteDropdown(false);
   }
 
   function handleSelectProduto(index: number, produto: Produto) {
@@ -231,7 +222,7 @@ export default function NovoOrcamentoPage() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/orcamentos")}>
+        <Button variant="ghost" size="icon" onClick={handleBack}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-2xl font-bold">Novo Orçamento</h1>
@@ -245,58 +236,22 @@ export default function NovoOrcamentoPage() {
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Cliente */}
-            <div className="space-y-2 relative">
-              <Label>Cliente *</Label>
-              {selectedClienteNome ? (
-                <div className="flex h-9 items-center gap-2 rounded-md border border-input bg-background px-3 text-sm">
-                  <span className="flex-1">{selectedClienteNome}</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setValue("customer_id", "");
-                      setSelectedClienteNome("");
-                    }}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <span className="sr-only">Remover</span>
-                    &times;
-                  </button>
-                </div>
-              ) : (
-                <div className="flex gap-1">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar cliente..."
-                      value={clienteSearch}
-                      onChange={(e) => {
-                        setClienteSearch(e.target.value);
-                        setShowClienteDropdown(true);
-                      }}
-                      onFocus={() => clienteSearch && setShowClienteDropdown(true)}
-                      onBlur={() => setTimeout(() => setShowClienteDropdown(false), 200)}
-                      className="pl-7"
-                    />
-                    <AutocompleteDropdown
-                      items={clientes}
-                      show={showClienteDropdown}
-                      onSelect={handleSelectCliente}
-                      renderLabel={(c) => c.nome}
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setClienteModalOpen(true)}
-                    title="Novo cliente"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-              <input type="hidden" {...register("customer_id")} />
+            {/* Cliente: busca e "＋ Criar" que já seleciona o criado (UX-P03) */}
+            <div className="space-y-2">
+              <Label htmlFor="customer_id">Cliente *</Label>
+              <Controller
+                control={control}
+                name="customer_id"
+                render={({ field }) => (
+                  <EntityCombobox
+                    kind="customer"
+                    id="customer_id"
+                    value={field.value}
+                    invalid={!!errors.customer_id}
+                    onChange={(id, option) => handleSelectCliente(id, option?.raw ?? null)}
+                  />
+                )}
+              />
               {errors.customer_id && (
                 <p className="text-xs text-destructive">{errors.customer_id.message}</p>
               )}
@@ -314,18 +269,19 @@ export default function NovoOrcamentoPage() {
             {/* Partner / lead source */}
             <div className="space-y-2">
               <Label htmlFor="referrer_id">Indicação (Parceiro)</Label>
-              <select
-                id="referrer_id"
-                {...register("referrer_id")}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="">Nenhuma</option>
-                {partners.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} — {PARTNER_TYPE_LABELS[p.type]}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                control={control}
+                name="referrer_id"
+                render={({ field }) => (
+                  <EntityCombobox
+                    kind="partner"
+                    id="referrer_id"
+                    value={field.value ?? ""}
+                    placeholder="Nenhuma"
+                    onChange={(id) => field.onChange(id)}
+                  />
+                )}
+              />
             </div>
           </div>
         </Card>
@@ -537,7 +493,7 @@ export default function NovoOrcamentoPage() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push("/orcamentos")}
+            onClick={handleBack}
             disabled={isSubmitting}
           >
             Cancelar
@@ -556,15 +512,6 @@ export default function NovoOrcamentoPage() {
           </Button>
         </div>
       </form>
-
-      <ClienteModal
-        open={clienteModalOpen}
-        onClose={() => setClienteModalOpen(false)}
-        onSuccess={() => {
-          refreshClientes();
-          setClienteModalOpen(false);
-        }}
-      />
     </div>
   );
 }

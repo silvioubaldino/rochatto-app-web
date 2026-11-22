@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useBack } from "@/lib/history";
 import { useSWRConfig } from "swr";
 import { AlertTriangle, ArrowLeft, CalendarPlus, Pencil, Wallet } from "lucide-react";
 import { isAccountingKey, useObligation } from "@/hooks/useObligations";
@@ -33,7 +34,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ContaDetalhePage() {
   const params = useParams();
-  const router = useRouter();
+  const back = useBack("/contas");
   const id = params.id as string;
   const { mutate } = useSWRConfig();
   const { obligation, isLoading, error, refresh } = useObligation(id);
@@ -62,7 +63,7 @@ export default function ContaDetalhePage() {
   if (error || !obligation) {
     return (
       <div className="max-w-4xl space-y-3">
-        <Button variant="ghost" size="sm" onClick={() => router.push("/contas")}>
+        <Button variant="ghost" size="sm" onClick={back}>
           <ArrowLeft className="h-4 w-4" />
           Contas
         </Button>
@@ -83,7 +84,7 @@ export default function ContaDetalhePage() {
   return (
     <div className="max-w-4xl space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/contas")} title="Voltar">
+        <Button variant="ghost" size="icon" onClick={back} title="Voltar">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-2xl font-bold">

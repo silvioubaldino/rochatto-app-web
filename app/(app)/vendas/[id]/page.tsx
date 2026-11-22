@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useBack } from "@/lib/history";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useVenda } from "@/hooks/useVenda";
@@ -33,7 +34,7 @@ import { ArrowLeft, Pencil, Loader2, Ban } from "lucide-react";
 
 export default function VendaDetalhePage() {
   const params = useParams();
-  const router = useRouter();
+  const back = useBack("/vendas");
   const vendaId = params.id as string;
   const { venda, isLoading, refresh } = useVenda(vendaId);
   const { produtos } = useProdutos();
@@ -89,7 +90,7 @@ export default function VendaDetalhePage() {
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
       <div className="flex flex-wrap items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/vendas")}>
+        <Button variant="ghost" size="icon" onClick={back}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-2xl font-bold">Venda</h1>

@@ -3,9 +3,9 @@
 import { Fragment, useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuotes } from "@/hooks/useQuotes";
-import { useClientes } from "@/hooks/useClientes";
 import type { Quote, QuoteStatus } from "@/lib/types";
 import {
+  quoteItemsSummary,
   formatMoeda,
   formatData,
   QUOTE_STATUS_LABELS,
@@ -13,7 +13,8 @@ import {
 } from "@/lib/formatters";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, X } from "lucide-react";
+import { Plus } from "lucide-react";
+import { EntityCombobox } from "@/components/entity/EntityCombobox";
 import { cn } from "@/lib/utils";
 import { summarizeQuotes } from "@/lib/customer-city";
 import { useCityView } from "@/hooks/useCityView";
@@ -37,18 +38,8 @@ export default function OrcamentosPage() {
   );
   const [from, setFrom] = useState(searchParams.get("from") || "");
   const [to, setTo] = useState(searchParams.get("to") || "");
-  const [clienteSearch, setClienteSearch] = useState("");
-  const [debouncedClienteSearch, setDebouncedClienteSearch] = useState("");
+  // F18: o filtro de cliente vindo da URL mostra o NOME (o combobox busca o registro pelo id).
   const [customerId, setCustomerId] = useState(searchParams.get("customer_id") || "");
-  const [customerName, setCustomerName] = useState("");
-  const [showClienteDropdown, setShowClienteDropdown] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedClienteSearch(clienteSearch), 300);
-    return () => clearTimeout(timer);
-  }, [clienteSearch]);
-
-  const { clientes } = useClientes(debouncedClienteSearch || undefined);
 
   const filters = useMemo(() => {
     const f: Record<string, string> = {};
@@ -83,27 +74,11 @@ export default function OrcamentosPage() {
     router.replace(qs ? `/orcamentos?${qs}` : "/orcamentos", { scroll: false });
   }, [status, from, to, customerId, city.cidade, city.grouped, router]);
 
-  function handleSelectCliente(id: string, nome: string) {
-    setCustomerId(id);
-    setCustomerName(nome);
-    setClienteSearch("");
-    setShowClienteDropdown(false);
-  }
+  // F04: a coluna "Items" usa `first_item_name`/`items_count` (C3); se a api ainda não os traz
+  // (nem as linhas trazem Items), a coluna some em vez de mostrar "—" em todas as linhas.
+  const showItems = apiQuotes.some((q) => quoteItemsSummary(q) !== null);
 
-  function clearClienteFilter() {
-    setCustomerId("");
-    setCustomerName("");
-    setClienteSearch("");
-  }
-
-  function produtoResumo(quote: Quote): string {
-    if (!quote.items || quote.items.length === 0) return "—";
-    const first = quote.items[0].product_name;
-    if (quote.items.length === 1) return first;
-    return `${first} e mais ${quote.items.length - 1}`;
-  }
-
-  const columns = [
+  const allColumns = [
     {
       key: "quote_date",
       header: "Data",
@@ -116,9 +91,9 @@ export default function OrcamentosPage() {
     },
     {
       key: "produtos",
-      header: "Produto(s)",
+      header: "Items",
       render: (row: Quote) => (
-        <span className="text-muted-foreground">{produtoResumo(row)}</span>
+        <span className="text-muted-foreground">{quoteItemsSummary(row) ?? "—"}</span>
       ),
     },
     {
@@ -148,6 +123,8 @@ export default function OrcamentosPage() {
       ),
     },
   ];
+
+  const columns = allColumns.filter((c) => c.key !== "produtos" || showItems);
 
   function renderRow(quote: Quote) {
     return (
@@ -212,50 +189,19 @@ export default function OrcamentosPage() {
           />
         </div>
 
-        <div className="space-y-1 relative">
-          <label className="text-xs font-medium text-muted-foreground">Cliente</label>
-          {customerId ? (
-            <div className="flex h-8 items-center gap-1 rounded-md border border-input bg-background px-2 text-sm">
-              <span>{customerName}</span>
-              <button
-                onClick={clearClienteFilter}
-                className="ml-1 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar cliente..."
-                  value={clienteSearch}
-                  onChange={(e) => {
-                    setClienteSearch(e.target.value);
-                    setShowClienteDropdown(true);
-                  }}
-                  onFocus={() => clienteSearch && setShowClienteDropdown(true)}
-                  onBlur={() => setTimeout(() => setShowClienteDropdown(false), 200)}
-                  className="h-8 w-48 pl-7"
-                />
-              </div>
-              {showClienteDropdown && clientes.length > 0 && (
-                <div className="absolute top-full left-0 z-50 mt-1 w-48 rounded-md border bg-popover shadow-md">
-                  {clientes.slice(0, 8).map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
-                      onMouseDown={() => handleSelectCliente(c.id, c.nome)}
-                    >
-                      {c.nome}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
+        <div className="space-y-1">
+          <label htmlFor="filter-customer" className="text-xs font-medium text-muted-foreground">
+            Cliente
+          </label>
+          <EntityCombobox
+            kind="customer"
+            id="filter-customer"
+            value={customerId}
+            allowCreate={false}
+            placeholder="Todos os clientes"
+            className="md:w-56"
+            onChange={(id) => setCustomerId(id)}
+          />
         </div>
 
         {/* City filter + grouping (SPEC-012) */}
@@ -310,7 +256,7 @@ export default function OrcamentosPage() {
                 return (
                   <Fragment key={g.key}>
                     <tr className="border-b bg-muted/30">
-                      <td colSpan={3} className="px-2 py-2">
+                      <td colSpan={columns.length - 2} className="px-2 py-2">
                         <CityGroupToggle
                           label={g.label}
                           count={g.rows.length}

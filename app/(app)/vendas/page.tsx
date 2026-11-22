@@ -3,11 +3,11 @@
 import { Fragment, useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useVendas } from "@/hooks/useVendas";
-import { useClientes } from "@/hooks/useClientes";
 import Link from "next/link";
 import type { Venda, SaleDeliveryStatus, SalePaymentStatus } from "@/lib/types";
 import type { VendasFilters } from "@/hooks/useVendas";
 import {
+  saleItemsSummary,
   formatMoeda,
   formatData,
   SALE_DELIVERY_STATUSES,
@@ -18,7 +18,8 @@ import {
 import { SaleDeliveryBadge, SalePaymentBadge } from "@/components/status-badges";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { FileText, Search, X } from "lucide-react";
+import { FileText } from "lucide-react";
+import { EntityCombobox } from "@/components/entity/EntityCombobox";
 import { summarizeSales } from "@/lib/customer-city";
 import { useCityView } from "@/hooks/useCityView";
 import { CityControls, CityGroupToggle, CustomerWithCity } from "@/components/tables/city-view";
@@ -64,19 +65,8 @@ export default function VendasPage() {
     searchParams.get("to") || searchParams.get("data_fim") || "",
   );
   // AYD-004: filtros vindos do painel Financeiro (saldos em aberto)
-  const [clienteSearch, setClienteSearch] = useState("");
-  const [debouncedClienteSearch, setDebouncedClienteSearch] = useState("");
+  // F18: o filtro de cliente vindo da URL mostra o NOME (o combobox busca o registro pelo id).
   const [clienteId, setClienteId] = useState(searchParams.get("cliente_id") || "");
-  const [clienteNome, setClienteNome] = useState("");
-  const [showClienteDropdown, setShowClienteDropdown] = useState(false);
-
-  // Debounce client search
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedClienteSearch(clienteSearch), 300);
-    return () => clearTimeout(timer);
-  }, [clienteSearch]);
-
-  const { clientes } = useClientes(debouncedClienteSearch || undefined);
 
   // Build filters
   const filters = useMemo<VendasFilters | undefined>(() => {
@@ -113,27 +103,11 @@ export default function VendasPage() {
     router.replace(qs ? `/vendas?${qs}` : "/vendas", { scroll: false });
   }, [deliveryStatus, paymentStatus, dataInicio, dataFim, clienteId, city.cidade, city.grouped, router]);
 
-  function handleSelectCliente(id: string, nome: string) {
-    setClienteId(id);
-    setClienteNome(nome);
-    setClienteSearch("");
-    setShowClienteDropdown(false);
-  }
+  // F04: a coluna "Items" usa `first_item_name`/`items_count` (C3); se a api ainda não os traz
+  // (nem as linhas trazem Items), a coluna some em vez de mostrar "—" em todas as linhas.
+  const showItems = apiVendas.some((v) => saleItemsSummary(v) !== null);
 
-  function clearClienteFilter() {
-    setClienteId("");
-    setClienteNome("");
-    setClienteSearch("");
-  }
-
-  function produtoResumo(venda: Venda): string {
-    if (!venda.itens || venda.itens.length === 0) return "—";
-    const first = venda.itens[0].produto_nome;
-    if (venda.itens.length === 1) return first;
-    return `${first} e mais ${venda.itens.length - 1}`;
-  }
-
-  const columns = [
+  const allColumns = [
     {
       key: "data_venda",
       header: "Data",
@@ -147,9 +121,9 @@ export default function VendasPage() {
     },
     {
       key: "produtos",
-      header: "Produto(s)",
+      header: "Items",
       render: (row: Venda) => (
-        <span className="text-muted-foreground">{produtoResumo(row)}</span>
+        <span className="text-muted-foreground">{saleItemsSummary(row) ?? "—"}</span>
       ),
     },
     {
@@ -191,6 +165,8 @@ export default function VendasPage() {
       render: (row: Venda) => <SalePaymentBadge status={row.payment_status} />,
     },
   ];
+
+  const columns = allColumns.filter((c) => c.key !== "produtos" || showItems);
 
   function renderRow(venda: Venda) {
     return (
@@ -285,51 +261,19 @@ export default function VendasPage() {
           />
         </div>
 
-        {/* Client search */}
-        <div className="space-y-1 relative">
-          <label className="text-xs font-medium text-muted-foreground">Cliente</label>
-          {clienteId ? (
-            <div className="flex h-8 items-center gap-1 rounded-md border border-input bg-background px-2 text-sm">
-              <span>{clienteNome}</span>
-              <button
-                onClick={clearClienteFilter}
-                className="ml-1 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar cliente..."
-                  value={clienteSearch}
-                  onChange={(e) => {
-                    setClienteSearch(e.target.value);
-                    setShowClienteDropdown(true);
-                  }}
-                  onFocus={() => clienteSearch && setShowClienteDropdown(true)}
-                  onBlur={() => setTimeout(() => setShowClienteDropdown(false), 200)}
-                  className="h-8 w-48 pl-7"
-                />
-              </div>
-              {showClienteDropdown && clientes.length > 0 && (
-                <div className="absolute top-full left-0 z-50 mt-1 w-48 rounded-md border bg-popover shadow-md">
-                  {clientes.slice(0, 8).map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
-                      onMouseDown={() => handleSelectCliente(c.id, c.nome)}
-                    >
-                      {c.nome}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
+        <div className="space-y-1">
+          <label htmlFor="filter-customer" className="text-xs font-medium text-muted-foreground">
+            Cliente
+          </label>
+          <EntityCombobox
+            kind="customer"
+            id="filter-customer"
+            value={clienteId}
+            allowCreate={false}
+            placeholder="Todos os clientes"
+            className="md:w-56"
+            onChange={(id) => setClienteId(id)}
+          />
         </div>
 
         {/* City filter + grouping (SPEC-012) */}
@@ -385,7 +329,7 @@ export default function VendasPage() {
                 return (
                   <Fragment key={g.key}>
                     <tr className="border-b bg-muted/30">
-                      <td colSpan={3} className="px-2 py-2">
+                      <td colSpan={columns.length - 5} className="px-2 py-2">
                         <CityGroupToggle
                           label={g.label}
                           count={g.rows.length}
