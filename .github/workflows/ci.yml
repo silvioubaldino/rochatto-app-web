@@ -66,6 +66,9 @@ jobs:
           NEXT_PUBLIC_API_URL: ""
       - run: npx playwright install --with-deps chromium webkit
       - run: npx playwright test
+      - name: Mostra o contexto das falhas (snapshot da página)
+        if: failure()
+        run: find test-results -name error-context.md -exec sh -c 'echo "=== $1"; head -c 6000 "$1"' _ {} \;
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

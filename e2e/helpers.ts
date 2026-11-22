@@ -15,7 +15,9 @@ export async function smallTouchTargets(page: Page, min = 44): Promise<string[]>
         const style = getComputedStyle(el);
         // Os campos escondidos do Select (Base UI) são só para formulário: `aria-hidden` e fora da ordem de tabulação.
         const hiddenFromUser = el.getAttribute("aria-hidden") === "true" || el.tabIndex === -1;
-        return r.width > 0 && r.height > 0 && style.visibility !== "hidden" && style.display !== "none" && !hiddenFromUser;
+        // Guardas de foco do popup (Base UI/Floating UI) são `span role=button` de 1×1 px; no Safari não ganham `aria-hidden`.
+        const visuallyHidden = r.width <= 1 || r.height <= 1;
+        return r.width > 0 && r.height > 0 && !visuallyHidden && style.visibility !== "hidden" && style.display !== "none" && !hiddenFromUser;
       })
       .filter((el) => {
         // Link de linha/cartão do DataTable: o ::after cobre o cartão todo, então o alvo é o cartão.
