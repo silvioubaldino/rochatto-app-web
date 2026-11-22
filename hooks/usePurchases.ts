@@ -1,6 +1,7 @@
 "use client";
 
 import useSWR from "swr";
+import { eventKeyFilter } from "@/lib/events";
 import { api } from "@/lib/api";
 import type {
   PendingSaleItemGroup,
@@ -61,15 +62,4 @@ export function usePendingSaleItems() {
 }
 
 /** Chaves SWR afetadas por mudanças em Purchases (lista, fila, Stock e Sales). */
-export function isPurchaseRelatedKey(key: unknown): boolean {
-  return (
-    typeof key === "string" &&
-    (key.startsWith("/purchases") ||
-      key.startsWith("/stock") ||
-      key.startsWith("/vendas") ||
-      key.startsWith("/obligations") ||
-      key.startsWith("/financial-movements") ||
-      key.startsWith("/finance") ||
-      key.startsWith("/dashboard"))
-  );
-}
+export const isPurchaseRelatedKey = eventKeyFilter("PURCHASE_CHANGED");

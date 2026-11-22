@@ -1,244 +1,27 @@
 "use client";
 
-import { useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toast } from "sonner";
-import { api, APIError } from "@/lib/api";
+import { EntityFormDialog } from "@/components/entity/EntityFormDialog";
+import { ProductForm } from "@/features/catalog/components/ProductForm";
 import type { Produto } from "@/lib/types";
-import { emptyToNull } from "@/lib/schemas";
-import { useProductCategories } from "@/hooks/useProductCategories";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { MoneyInput } from "@/components/ui/MoneyInput";
-import { Loader2 } from "lucide-react";
-
-const produtoSchema = z.object({
-  nome: z.string().min(1, "Nome é obrigatório"),
-  descricao: z.string(),
-  preco_referencia: z.number().min(0, "Valor deve ser >= 0"),
-  custo_referencia: z.number().min(0, "Valor deve ser >= 0"),
-  unidade: z.string(),
-  category_id: z.string(), // "" = sem categoria (enviado como null)
-});
-
-type ProdutoFormData = z.infer<typeof produtoSchema>;
 
 interface ProdutoModalProps {
   open: boolean;
   onClose: () => void;
   produto?: Produto;
+  /** Chamado depois de salvar (a revalidação das listas já é feita pelos eventos de domínio). */
   onSuccess: () => void;
 }
 
-export function ProdutoModal({
-  open,
-  onClose,
-  produto,
-  onSuccess,
-}: ProdutoModalProps) {
-  const isEdit = !!produto;
-  const { categories } = useProductCategories();
-  // Categoria excluída (soft-delete) continua vinculada ao Product: exibe como inativa.
-  const inactiveCategory =
-    produto?.category_id && !categories.some((c) => c.id === produto.category_id)
-      ? { id: produto.category_id, name: produto.category_name ?? "Categoria" }
-      : null;
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    control,
-    formState: { errors, isSubmitting },
-  } = useForm<ProdutoFormData>({
-    resolver: zodResolver(produtoSchema),
-  });
-
-  useEffect(() => {
-    if (open) {
-      reset(
-        produto
-          ? {
-              nome: produto.nome,
-              descricao: produto.descricao ?? "",
-              preco_referencia: produto.preco_referencia ?? 0,
-              custo_referencia: produto.custo_referencia ?? 0,
-              unidade: produto.unidade ?? "",
-              category_id: produto.category_id ?? "",
-            }
-          : {
-              nome: "",
-              descricao: "",
-              preco_referencia: 0,
-              custo_referencia: 0,
-              unidade: "",
-              category_id: "",
-            },
-      );
-    }
-  }, [open, produto, reset]);
-
-  async function onSubmit(data: ProdutoFormData) {
-    try {
-      const payload = { ...data, category_id: emptyToNull(data.category_id) };
-      if (isEdit) {
-        await api.put(`/produtos/${produto.id}`, payload);
-        toast.success("Produto atualizado com sucesso.");
-      } else {
-        await api.post("/produtos", payload);
-        toast.success("Produto criado com sucesso.");
-      }
-      onSuccess();
-      onClose();
-    } catch (err) {
-      const message =
-        err instanceof APIError ? err.message : "Erro ao salvar produto.";
-      toast.error(message);
-    }
-  }
-
+/** Invólucro legado: o formulário vive em `@/features/catalog/components/ProductForm`. */
+export function ProdutoModal({ open, onClose, produto, onSuccess }: ProdutoModalProps) {
   return (
-    <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            {isEdit ? "Editar Produto" : "Novo Produto"}
-          </DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="nome">Nome *</Label>
-            <Input id="nome" {...register("nome")} aria-invalid={!!errors.nome} />
-            {errors.nome && (
-              <p className="text-xs text-destructive">{errors.nome.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="category_id">Categoria</Label>
-            {/* Controlado: as opções chegam depois do reset (SWR), o valor precisa persistir. */}
-            <Controller
-              control={control}
-              name="category_id"
-              render={({ field }) => (
-                <select
-                  id="category_id"
-                  name={field.name}
-                  ref={field.ref}
-                  value={field.value ?? ""}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="">Sem categoria</option>
-                  {inactiveCategory && (
-                    <option value={inactiveCategory.id}>
-                      {inactiveCategory.name} (inativa)
-                    </option>
-                  )}
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-            />
-            {categories.length === 0 && (
-              <p className="text-xs text-muted-foreground">
-                Nenhuma categoria cadastrada — crie na aba Categorias.
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="descricao">Descrição</Label>
-            <Textarea id="descricao" {...register("descricao")} />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="preco_referencia">Preço de Referência</Label>
-              <Controller
-                control={control}
-                name="preco_referencia"
-                render={({ field }) => (
-                  <MoneyInput
-                    id="preco_referencia"
-                    value={field.value ?? 0}
-                    onChange={field.onChange}
-                  />
-                )}
-              />
-              {errors.preco_referencia && (
-                <p className="text-xs text-destructive">
-                  {errors.preco_referencia.message}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="custo_referencia">Custo de Referência</Label>
-              <Controller
-                control={control}
-                name="custo_referencia"
-                render={({ field }) => (
-                  <MoneyInput
-                    id="custo_referencia"
-                    value={field.value ?? 0}
-                    onChange={field.onChange}
-                  />
-                )}
-              />
-              {errors.custo_referencia && (
-                <p className="text-xs text-destructive">
-                  {errors.custo_referencia.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <p className="text-xs text-muted-foreground">
-            Estes valores são apenas referência. O preço real é definido em cada
-            venda.
-          </p>
-
-          <div className="space-y-2">
-            <Label htmlFor="unidade">Unidade</Label>
-            <Input
-              id="unidade"
-              placeholder="ex: m², peça, kg"
-              {...register("unidade")}
-            />
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isEdit ? "Salvar" : "Criar"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <EntityFormDialog<"product">
+      open={open}
+      onClose={onClose}
+      titles={{ create: "Novo produto", edit: "Editar produto" }}
+      Form={ProductForm}
+      entity={produto}
+      onSaved={() => onSuccess()}
+    />
   );
 }

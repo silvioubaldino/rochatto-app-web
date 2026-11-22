@@ -26,6 +26,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+- Implement SPEC-013 (U0–U1): Owner-journey UX foundation (AYD-011) — new `AppShell` (bottom bar on phone, shell before auth), pattern library (`DataTable`, `EntityCombobox` with "＋ Criar" quick-create, `EntitySheet` preview, `FilterBar`, `ResponsiveDialog`, `ConfirmDialog`…), semantic tokens and 44 px touch sizing, event-based SWR invalidation, test tooling (Vitest, Testing Library, MSW, Playwright, Lighthouse CI) and lint rules; fixes "Virou a Venda" link, Items column, history-aware back, "Fechar venda", customer filter name, tabs in URL and unsaved-changes guard.
 - Implement SPEC-012: Sales and quotes by city — customer city under the customer name, city filter with counts, and collapsible group-by-city view with per-city summaries on Vendas and Orçamentos (front-end only).
 - Implement SPEC-011: Services on sale (AYD-010) — Services catalog, service Items in quote/quick sale/sale (no origin or supplier), "A executar / Executado" labels for service-only sales, and a Services block on the dashboard.
 - Implement SPEC-010: Sale composition (AYD-009) — quote form/detail with charged freight (Sale charges), sale detail with "Preço ao cliente" (items + charges), "Custos da venda" with editable payee and linked account, expected profit; removes Sale freight/commission fields and Financeiro freight/commission rows.

@@ -116,6 +116,11 @@ export interface ItemVendaWriteResponse extends ItemVenda {
 
 export interface Venda {
   id: string;
+  /** AYD-011 C1: número humano ("Venda nº 98"); ausente enquanto a api não o devolve. */
+  number?: number;
+  /** AYD-011 C3 (listas): nº de Items e nome do primeiro, para a coluna "Items". */
+  items_count?: number;
+  first_item_name?: string | null;
   cliente_id: string;
   cliente_nome: string;
   // Legado: aponta para o mesmo registro do Partner (AYD-003 — mesmos IDs).
@@ -207,6 +212,14 @@ export interface QuoteItem {
 
 export interface Quote {
   id: string;
+  /** AYD-011 C1: número humano ("Orçamento nº 154"); ausente enquanto a api não o devolve. */
+  number?: number;
+  /** AYD-011 C2: Sale criada por este Quote (WON); null nos demais. */
+  sale_id?: string | null;
+  sale_number?: number | null;
+  /** AYD-011 C3 (listas): nº de Items e nome do primeiro, para a coluna "Items". */
+  items_count?: number;
+  first_item_name?: string | null;
   customer_id: string;
   customer_name: string;
   referrer_id?: string;
@@ -372,6 +385,8 @@ export interface PurchaseLine {
 
 export interface PurchaseDetail {
   id: string;
+  /** AYD-011 C1: número humano ("Compra nº 12"). */
+  number?: number;
   kind: PurchaseKind;
   status: PurchaseStatus;
   supplier_id: string;

@@ -1,6 +1,7 @@
 "use client";
 
 import useSWR from "swr";
+import { eventKeyFilter } from "@/lib/events";
 import { api } from "@/lib/api";
 import { obligationApiQuery, type ObligationFilters } from "@/lib/obligations";
 import type { Obligation, ObligationList } from "@/lib/types";
@@ -39,14 +40,4 @@ export function useOriginObligations(originType: "SALE" | "PURCHASE", originId: 
  * Chaves SWR afetadas por pagar/receber/parcelar: contas, movimentações, painel, Sales,
  * Purchases (saldos vêm das contas) e dashboard.
  */
-export function isAccountingKey(key: unknown): boolean {
-  return (
-    typeof key === "string" &&
-    (key.startsWith("/obligations") ||
-      key.startsWith("/financial-movements") ||
-      key.startsWith("/finance") ||
-      key.startsWith("/vendas") ||
-      key.startsWith("/purchases") ||
-      key.startsWith("/dashboard"))
-  );
-}
+export const isAccountingKey = eventKeyFilter("MONEY_MOVED");

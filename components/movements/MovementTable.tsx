@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Pencil, Trash2 } from "lucide-react";
 import { MOVEMENT_CATEGORY_LABELS, formatData, formatMoeda, formatPaymentMethod } from "@/lib/formatters";
 import type { FinancialMovement } from "@/lib/types";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { StatusBadge } from "@/components/patterns/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -64,11 +64,9 @@ export function MovementTable({ items, isLoading, onEdit, onVoid }: MovementTabl
                 <span className="flex flex-wrap items-center gap-1">
                   {MOVEMENT_CATEGORY_LABELS[m.category] ?? "—"}
                   {m.corrected_at && (
-                    <StatusBadge
-                      label="Corrigida"
-                      colorClassName="bg-gray-200 text-gray-700"
-                      title={`Corrigida em ${formatData(m.corrected_at)}`}
-                    />
+                    <StatusBadge tone="neutral" title={`Corrigida em ${formatData(m.corrected_at)}`}>
+                      Corrigida
+                    </StatusBadge>
                   )}
                 </span>
               </td>
@@ -80,11 +78,9 @@ export function MovementTable({ items, isLoading, onEdit, onVoid }: MovementTabl
               <td className="px-3 py-2">
                 <span className="flex flex-wrap items-center gap-1">
                   {m.unallocated > 0 && (
-                    <StatusBadge
-                      label={`Sem alocação · ${formatMoeda(m.unallocated)}`}
-                      colorClassName="bg-orange-100 text-orange-800"
-                      title="Parte do valor não quita nenhuma conta"
-                    />
+                    <StatusBadge tone="warning" title="Parte do valor não quita nenhuma conta">
+                      {`Sem alocação · ${formatMoeda(m.unallocated)}`}
+                    </StatusBadge>
                   )}
                   {m.settlements.map((s) => (
                     <Link

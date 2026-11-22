@@ -20,9 +20,9 @@ export function useDashboardKpis(from: string, to: string, enabled = true) {
   return { kpis: data ?? null, isLoading, error, refresh: mutate };
 }
 
-export function useNotificacoes() {
+export function useNotificacoes(enabled = true) {
   const { data, error, isLoading, mutate } = useSWR<NotificacoesResponse>(
-    "/dashboard/notificacoes",
+    enabled ? "/dashboard/notificacoes" : null,
     api.get,
     { refreshInterval: 5 * 60 * 1000 },
   );

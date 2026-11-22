@@ -7,21 +7,10 @@ import type {
   ObligationStatus,
   InstallmentStatus,
 } from "@/lib/types";
-import {
-  PURCHASE_STATUS_COLORS,
-  PURCHASE_STATUS_LABELS,
-  SALE_DELIVERY_STATUS_COLORS,
-  saleDeliveryLabel,
-  SALE_PAYMENT_STATUS_COLORS,
-  SALE_PAYMENT_STATUS_LABELS,
-  OBLIGATION_STATUS_COLORS,
-  OBLIGATION_STATUS_LABELS,
-  INSTALLMENT_STATUS_COLORS,
-  INSTALLMENT_STATUS_LABELS,
-} from "@/lib/formatters";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { StatusBadge } from "@/components/patterns/StatusBadge";
 
-// Badges dos status do AYD-002 e AYD-007 (rótulo + cor vindos dos mapas de lib/formatters.ts).
+// Atalhos legados dos badges de status: todos delegam ao `StatusBadge` (mapa único de
+// rótulo e tom em lib/format/tones.ts). Código novo usa `<StatusBadge kind value />`.
 
 /** `serviceOnly`: Sale só de serviço lê "A executar / Executado" (AYD-010 §3). */
 export function SaleDeliveryBadge({
@@ -31,55 +20,29 @@ export function SaleDeliveryBadge({
   status: SaleDeliveryStatus;
   serviceOnly?: boolean;
 }) {
-  return (
-    <StatusBadge
-      label={saleDeliveryLabel(status, serviceOnly)}
-      colorClassName={SALE_DELIVERY_STATUS_COLORS[status] ?? ""}
-      title="Status de entrega"
-    />
-  );
+  return <StatusBadge kind="saleDelivery" value={status} serviceOnly={serviceOnly} title="Status de entrega" />;
 }
 
 export function SalePaymentBadge({ status }: { status: SalePaymentStatus }) {
-  return (
-    <StatusBadge
-      label={SALE_PAYMENT_STATUS_LABELS[status] ?? "—"}
-      colorClassName={SALE_PAYMENT_STATUS_COLORS[status] ?? ""}
-      title="Status de pagamento"
-    />
-  );
+  return <StatusBadge kind="salePayment" value={status} title="Status de pagamento" />;
 }
 
 export function PurchaseStatusBadge({ status }: { status: PurchaseStatus }) {
-  return (
-    <StatusBadge
-      label={PURCHASE_STATUS_LABELS[status] ?? "—"}
-      colorClassName={PURCHASE_STATUS_COLORS[status] ?? ""}
-      title="Status da compra"
-    />
-  );
+  return <StatusBadge kind="purchase" value={status} title="Status da compra" />;
 }
 
 export function ObligationStatusBadge({ status }: { status: ObligationStatus }) {
-  return (
-    <StatusBadge
-      label={OBLIGATION_STATUS_LABELS[status] ?? "—"}
-      colorClassName={OBLIGATION_STATUS_COLORS[status] ?? ""}
-      title="Status da conta"
-    />
-  );
+  return <StatusBadge kind="obligation" value={status} title="Status da conta" />;
 }
 
 export function InstallmentStatusBadge({ status }: { status: InstallmentStatus }) {
-  return (
-    <StatusBadge
-      label={INSTALLMENT_STATUS_LABELS[status] ?? "—"}
-      colorClassName={INSTALLMENT_STATUS_COLORS[status] ?? ""}
-      title="Status da parcela"
-    />
-  );
+  return <StatusBadge kind="installment" value={status} title="Status da parcela" />;
 }
 
 export function OverdueBadge() {
-  return <StatusBadge label="Vencida" colorClassName="bg-red-100 text-red-800" title="Conta vencida" />;
+  return (
+    <StatusBadge tone="danger" title="Conta vencida">
+      Vencida
+    </StatusBadge>
+  );
 }

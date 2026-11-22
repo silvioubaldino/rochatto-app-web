@@ -44,3 +44,8 @@ next-env.d.ts
 
 # Espelho read-only do repo de contexto. Gerado por docs/scripts/sync-context.sh
 docs/shared/
+# testes (TDR-001)
+/playwright-report/
+/test-results/
+/.lighthouseci/
+/coverage/
