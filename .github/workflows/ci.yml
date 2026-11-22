@@ -8,16 +8,18 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Placeholders públicos: o build não precisa de segredos (NEXT_PUBLIC_* vão para o bundle).
+  NEXT_PUBLIC_API_URL: http://localhost:8080
+  NEXT_PUBLIC_FIREBASE_API_KEY: ci-placeholder
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ci-placeholder.firebaseapp.com
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: ci-placeholder
+  NEXT_TELEMETRY_DISABLED: "1"
+
 jobs:
+  # lint (com as regras do AYD-011 §9.4) → typecheck → unitário/componente → build (TDR-001)
   build:
     runs-on: ubuntu-latest
-    env:
-      # Placeholders públicos: o build não precisa de segredos (NEXT_PUBLIC_* vão para o bundle).
-      NEXT_PUBLIC_API_URL: http://localhost:8080
-      NEXT_PUBLIC_FIREBASE_API_KEY: ci-placeholder
-      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ci-placeholder.firebaseapp.com
-      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ci-placeholder
-      NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v4
 
@@ -29,4 +31,65 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npx tsc --noEmit
+      - run: npm test
       - run: npm run build
+
+      - name: Guarda o build para os jobs de e2e e desempenho
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: |
+            .next
+            public
+            package.json
+            package-lock.json
+            next.config.ts
+          include-hidden-files: true
+          retention-days: 1
+
+  # e2e (desktop + iPhone/WebKit + Pixel/Chromium) com axe — UX-P13: mesma experiência no celular.
+  # Tarefas-ouro TO-1, TO-2, TO-3, TO-4 e TO-6 sobre a api simulada (e2e/mock-api.ts): bloqueia o PR.
+  # O build de e2e entra como o dono (NEXT_PUBLIC_E2E) e chama /api/v1 no próprio servidor.
+  e2e:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_E2E: "1"
+          NEXT_PUBLIC_API_URL: ""
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npx playwright test
+      - name: Mostra o contexto das falhas (snapshot da página)
+        if: failure()
+        run: find test-results -name error-context.md -exec sh -c 'echo "=== $1"; head -c 6000 "$1"' _ {} \;
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+
+  # Lighthouse CI em perfil de celular (rede e CPU limitadas): metas de UX-P13 (LCP, CLS).
+  # Informativo até as rotas Hoje/Orçamento/Fechar venda/Venda/A receber existirem (U2–U5).
+  performance:
+    needs: build
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: next-build
+      - run: npm run lhci

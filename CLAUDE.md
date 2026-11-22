@@ -47,28 +47,34 @@ app/
   (auth)/login/              → tela pública de login (aceita ?next= interno para voltar após o login)
   conectar/                  → consentimento do Assistant connector (?request_id=); FORA de (app) para preservar a query no login (SPEC-006)
   (app)/                     → layout protegido (redireciona se não autenticado)
-    dashboard/               → página inicial — KPIs do período (conversão, ticket médio), saldos em aberto com drill-down, gráfico mensal, ranking de Products e alertas (SPEC-005)
+    hoje/                    → página inicial: pendências do dia (GET /pending-actions) com a ação de cada uma (SPEC-013 U2)
+    indicadores/             → ex-dashboard: KPIs do período, saldos em aberto, gráfico mensal, ranking de Products (SPEC-005)
     orcamentos/              → orçamentos: listagem, emissão (e venda rápida), detalhe/conversão; lista com cidade do cliente, filtro e agrupamento por cidade (SPEC-012)
     vendas/                  → listagem e detalhe (sem criação direta — nasce do orçamento): preço ao cliente (itens + frete cobrado) e custos da venda com credor e conta (SPEC-010); lista com cidade do cliente, filtro e agrupamento recolhível por cidade (SPEC-012)
     compras/                 → compras ao fornecedor, fila "a comprar", detalhe: composição (custos adicionais, rateio), contas e custo de entrada (SPEC-009)
     clientes/                → CRUD de clientes
     estoque/                 → saldo por produto, valor em estoque, extrato e ajustes
     financeiro/              → painel: vendas do período, movimento, despesas, resultado e saldos em aberto (SPEC-004, SPEC-008)
-    contas/                  → contas a pagar/receber (abas, filtros na URL, pagar várias) e detalhe /contas/[id]: componentes, parcelas, quitações (SPEC-008)
+    contas/receber|pagar     → contas a receber / a pagar (filtros na URL, pagar várias) e detalhe /contas/[id]: componentes, parcelas, quitações (SPEC-008)
     movimentacoes/           → dinheiro executado: lista, despesa/receita avulsa, corrigir, anular (SPEC-008)
-    catalogos/               → produtos, serviços (SPEC-011), categorias, fornecedores, parceiros
+    produtos/ servicos/ fornecedores/ parceiros/ → cadastros (ex-catalogos); parceiros/[id] = Parceiro 360; clientes/[id] = Cliente 360 (SPEC-013 U3)
     integracoes/             → Connections do Assistant connector: listar e desconectar (SPEC-006)
+features/                    → um diretório por domínio (customers, partners, suppliers, catalog, sales, quotes, purchasing…): `mutations.ts` (escrita + eventos), `components/` (formulários `*Form`), `previews.tsx`; `register.ts` registra QuickCreate e prévias (SPEC-013, AYD-011 §9)
 components/
-  ui/                        → shadcn/ui (nunca editar diretamente; StatusBadge/MoneyInput são nossos)
-  forms/                     → formulários reutilizáveis
+  ui/                        → shadcn/ui (só editado para as variantes de toque do celular: `h-11 md:h-8`, `text-base md:text-sm`)
+  patterns/                  → padrões sem domínio: AppShell, DataTable, FilterBar, ResponsiveDialog, ConfirmDialog, StatusBadge, campos (Money/Quantity/Date), Select, detalhe (DetailLayout…), PeriodSelector; regras puras em `*-model.ts` (SPEC-013)
+  entity/                    → cola de entidade: EntityCombobox, QuickCreate (registro), EntityLink, EntitySheet (`?peek=type:id`) + registro de prévias
+  forms/                     → invólucros legados `*Modal` (delegam aos `*Form` de features/)
   sales/ purchases/ stock/   → blocos das telas de venda, compra e estoque
   obligations/ movements/    → diálogos Pagar/Receber, pagar várias, parcelas e movimentações (SPEC-008)
   tables/                    → tabelas de listagem
   dashboard/                 → cards e gráficos
 lib/
-  api.ts                     → fetch wrapper autenticado
+  http.ts / errors.ts        → cliente HTTP autenticado e `ApiError {status,message,field}` (`api.ts` = re-export legado)
   firebase.ts                → configuração do Firebase
-  formatters.ts              → formatação de moeda, data, quantidade e rótulos/cores dos enums
+  format/                    → dinheiro, data, quantidade+unidade, rótulos e TONS dos enums (`formatters.ts` = re-export legado)
+  events.ts / mutation.ts    → eventos de domínio → chaves SWR (`useEmit`) e `useApiMutation` (escrita + eventos + toast)
+  history.ts / media.ts      → `useBack` (voltar pelo histórico do app) e `useIsPhone`
   schemas.ts                 → schemas zod + montadores de payload
   sales.ts                   → payloads da Sale/Item (PUTs legados são de substituição completa)
   types.ts                   → tipos TypeScript espelhando os contratos da API
@@ -124,6 +130,12 @@ Rótulos e cores ficam em `lib/formatters.ts`; badges em `components/status-badg
 | Ajuste de estoque (`reason`) | INITIAL → Carga inicial · COUNT → Contagem · OTHER → Outro |
 | Forma de pagamento (`payment_method`, AYD-004) | PIX → Pix · CASH → Dinheiro · CARD → Cartão · BOLETO → Boleto · TRANSFER → Transferência · null → Não informado |
 
+### Padrões de UI (SPEC-013 / AYD-011 §9) e mesma experiência no celular
+- Use os padrões de `components/patterns` e `components/entity`: `<select>` nativo, `<table>` fora do `DataTable`, cor crua do Tailwind (use tokens `text-success`, `bg-warning-subtle`…) e `window.confirm` são proibidos (lint: **erro** em `features/` e `components/patterns|entity`, aviso no legado)
+- Seletor de entidade = `EntityCombobox` (com "＋ Criar" que seleciona o criado); diálogos = `ResponsiveDialog` (tela cheia no celular); confirmação do irreversível = `ConfirmDialog`/`useConfirm`
+- Celular é critério de aceite (UX-P13): alvos ≥ 44 px, campos 16 px, sem rolagem lateral, esqueleto no lugar de spinner de página; filtros, abas e prévia na URL
+- Regra de apresentação é função pura em `model.ts` com teste
+
 ## Variáveis de ambiente
 
 ```env
@@ -144,6 +156,10 @@ cp .env.local.example .env.local
 npm run dev
 ```
 
+Qualidade (CI: lint → tsc → test → build): `npm run lint && npx tsc --noEmit && npm test && npm run build`.
+E2E (Playwright, perfis desktop/iPhone/Pixel): `npm run build && npm start` e `npm run e2e`
+(1ª vez: `npx playwright install`). Desempenho: `npm run lhci`. Decisões: TDR-001.
+
 ## Fases de implementação
 
 | Fase | Arquivo | Escopo |
@@ -157,7 +173,7 @@ npm run dev
 
 > As fases acima (`.claude/specs/`) são o plano histórico. As entregas atuais seguem as
 > SPECs em `docs/specs/` (SPEC-001 Orçamentos, SPEC-002 Atendimento da venda, SPEC-003
-> Cadastros comerciais, SPEC-004 Financeiro, SPEC-005 Dashboard, SPEC-006 Assistant connector, SPEC-008 Contas e movimentações, SPEC-009 Composição da compra, SPEC-010 Composição da venda, SPEC-011 Serviços na venda, SPEC-012 Vendas e orçamentos por cidade).
+> Cadastros comerciais, SPEC-004 Financeiro, SPEC-005 Dashboard, SPEC-006 Assistant connector, SPEC-008 Contas e movimentações, SPEC-009 Composição da compra, SPEC-010 Composição da venda, SPEC-011 Serviços na venda, SPEC-012 Vendas e orçamentos por cidade, **SPEC-013 Jornada do dono e UX (AYD-011) — fases U0–U5**).
 
 ## Deploy (Vercel — Free Tier)
 

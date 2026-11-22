@@ -1,17 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogCancel,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { ConfirmDialog } from "@/components/patterns/ConfirmDialog";
 
 interface DeleteConfirmDialogProps {
   open: boolean;
@@ -19,7 +8,6 @@ interface DeleteConfirmDialogProps {
   onConfirm: () => Promise<void>;
   title: string;
   description: string;
-  /** Rótulo do botão de confirmação (padrão: "Excluir"). */
   confirmLabel?: string;
 }
 
@@ -31,39 +19,16 @@ export function DeleteConfirmDialog({
   description,
   confirmLabel = "Excluir",
 }: DeleteConfirmDialogProps) {
-  const [loading, setLoading] = useState(false);
-
-  async function handleConfirm() {
-    setLoading(true);
-    try {
-      await onConfirm();
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
-    <AlertDialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-            <AlertTriangle className="h-5 w-5" />
-            {title}
-          </AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
-          <Button
-            variant="destructive"
-            onClick={handleConfirm}
-            disabled={loading}
-          >
-            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            {confirmLabel}
-          </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <ConfirmDialog
+      open={open}
+      onOpenChange={(o) => !o && onClose()}
+      title={title}
+      description={description}
+      confirmLabel={confirmLabel}
+      cancelLabel="Cancelar"
+      tone="danger"
+      onConfirm={onConfirm}
+    />
   );
 }

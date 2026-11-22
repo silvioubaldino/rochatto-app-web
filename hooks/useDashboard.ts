@@ -4,7 +4,6 @@ import useSWR from "swr";
 import { api } from "@/lib/api";
 import type {
   DashboardKpis,
-  NotificacoesResponse,
   VendasPorMesResponse,
   ProdutosMaisVendidosResponse,
   ServicosMaisVendidosResponse,
@@ -18,20 +17,6 @@ export function useDashboardKpis(from: string, to: string, enabled = true) {
     api.get,
   );
   return { kpis: data ?? null, isLoading, error, refresh: mutate };
-}
-
-export function useNotificacoes() {
-  const { data, error, isLoading, mutate } = useSWR<NotificacoesResponse>(
-    "/dashboard/notificacoes",
-    api.get,
-    { refreshInterval: 5 * 60 * 1000 },
-  );
-  return {
-    notificacoes: data?.notificacoes ?? [],
-    isLoading,
-    error,
-    refresh: mutate,
-  };
 }
 
 export function useVendasPorMes(meses: number) {
@@ -69,7 +54,6 @@ export function useProdutosMaisVendidos(
   };
 }
 
-/** Serviços vendidos no período (AYD-010 §3); fora do ranking de Products. */
 export function useServicosMaisVendidos(from?: string, to?: string, enabled = true) {
   const params = new URLSearchParams();
   if (from) params.set("from", from);

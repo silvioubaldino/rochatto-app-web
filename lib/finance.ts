@@ -8,8 +8,6 @@ import {
   subMonths,
 } from "date-fns";
 
-// Período do painel Financeiro — AYD-004 (`GET /finance/summary?from&to`, YYYY-MM-DD).
-
 export type FinancePreset = "this_month" | "last_month" | "last_90_days" | "this_year";
 
 export const FINANCE_PRESETS: { value: FinancePreset; label: string }[] = [
@@ -26,7 +24,6 @@ export interface FinancePeriod {
 
 const iso = (d: Date) => format(d, "yyyy-MM-dd");
 
-/** Período de um atalho, relativo a `today` (injetável para testes). "Este mês" termina hoje. */
 export function financePresetPeriod(preset: FinancePreset, today: Date = new Date()): FinancePeriod {
   switch (preset) {
     case "this_month":
@@ -42,7 +39,6 @@ export function financePresetPeriod(preset: FinancePreset, today: Date = new Dat
   }
 }
 
-/** Atalho que corresponde exatamente ao período, ou null (período personalizado). */
 export function matchFinancePreset(period: FinancePeriod, today: Date = new Date()): FinancePreset | null {
   for (const { value } of FINANCE_PRESETS) {
     const p = financePresetPeriod(value, today);
@@ -59,7 +55,6 @@ function isValidISODate(v: string | null | undefined): v is string {
   return !Number.isNaN(d.getTime()) && iso(d) === v;
 }
 
-/** Lê `from`/`to` da URL; datas ausentes ou inválidas caem no padrão (mês corrente). */
 export function parseFinancePeriod(
   from: string | null | undefined,
   to: string | null | undefined,
@@ -72,7 +67,6 @@ export function parseFinancePeriod(
   };
 }
 
-/** Mensagem de erro do período (a API devolve 400 se from > to) ou null. */
 export function validateFinancePeriod(period: FinancePeriod): string | null {
   if (!isValidISODate(period.from) || !isValidISODate(period.to)) return "Informe as duas datas.";
   if (period.from > period.to) return "A data inicial não pode ser depois da final.";

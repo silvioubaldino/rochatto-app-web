@@ -3,8 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { useAuthorizationRequest } from "@/hooks/useConnections";
-import { api, APIError } from "@/lib/api";
+import { decideAuthorization, useAuthorizationRequest } from "@/hooks/useConnections";
+import { isApiError } from "@/lib/errors";
 import { loginUrlWithNext } from "@/lib/navigation";
 import { formatConnectionScope, formatDataHora } from "@/lib/formatters";
 import type { AuthorizationDecision } from "@/lib/types";
@@ -17,10 +17,10 @@ import { Loader2, ShieldCheck } from "lucide-react";
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-teal-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-muted via-background to-muted px-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
             Rochatto App
           </h1>
           <p className="text-muted-foreground font-medium">Conectar assistente</p>
@@ -33,7 +33,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 function Spinner() {
   return (
-    <div className="flex h-screen items-center justify-center bg-gray-50">
+    <div className="flex h-screen items-center justify-center bg-muted">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
     </div>
   );
@@ -61,7 +61,6 @@ function Notice({
   );
 }
 
-/** O `redirect_to` vem da API (confiável), mas só navegamos para http(s). */
 function isNavigable(url: unknown): url is string {
   return typeof url === "string" && /^https?:\/\//i.test(url);
 }
@@ -91,10 +90,7 @@ function ConnectContent() {
     setDeciding(action);
     setDecisionError(null);
     try {
-      const res = await api.post<AuthorizationDecision>(
-        `/oauth/authorization-requests/${encodeURIComponent(requestId)}/${action}`,
-        {},
-      );
+      const res = await decideAuthorization<AuthorizationDecision>(requestId, action);
       if (!isNavigable(res?.redirect_to)) {
         setDecisionError("Resposta inesperada do servidor. Refaça a conexão pelo Claude.");
         setDeciding(null);
@@ -104,15 +100,15 @@ function ConnectContent() {
       window.location.assign(res.redirect_to);
     } catch (err) {
       setDeciding(null);
-      if (err instanceof APIError && err.status === 409) {
+      if (isApiError(err) && err.status === 409) {
         setDecisionError("Este pedido já foi decidido. Volte ao Claude.");
-      } else if (err instanceof APIError && err.status === 404) {
+      } else if (isApiError(err) && err.status === 404) {
         setDecisionError("Pedido de conexão expirado. Refaça pelo Claude.");
-      } else if (err instanceof APIError && err.status === 403) {
+      } else if (isApiError(err) && err.status === 403) {
         setDecisionError("Esta conta não tem autorização para conectar o assistente.");
       } else {
         setDecisionError(
-          err instanceof APIError ? err.message : "Não foi possível concluir. Tente novamente.",
+          isApiError(err) ? err.message : "Não foi possível concluir. Tente novamente.",
         );
       }
     }
@@ -129,7 +125,7 @@ function ConnectContent() {
   if (loading || !user || isLoading) return <Spinner />;
 
   if (error) {
-    if (error instanceof APIError && error.status === 403) {
+    if (isApiError(error) && error.status === 403) {
       return (
         <Notice
           title="Conta sem autorização"
@@ -146,7 +142,7 @@ function ConnectContent() {
         </Notice>
       );
     }
-    if (error instanceof APIError && error.status === 404) {
+    if (isApiError(error) && error.status === 404) {
       return (
         <Notice
           title="Pedido expirado"
