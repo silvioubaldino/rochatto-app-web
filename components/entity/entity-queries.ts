@@ -97,3 +97,19 @@ export function useEntityById<K extends EntityKind>(kind: K, id: string | null |
   const { data, error, isLoading } = useSWR<EntityRawMap[K]>(id ? source.itemKey(id) : null, api.get);
   return { option: data ? source.toOption(data) : null, isLoading, error };
 }
+
+/** Unidade por produto e por serviço (a Quote não grava a unidade no Item). Mesmas chaves das listas. */
+export function useCatalogUnits(enabled = true) {
+  const products = useSWR<Produto[]>(enabled ? "/produtos" : null, api.get);
+  const services = useSWR<Service[]>(enabled ? "/services" : null, api.get);
+  const units = new Map<string, string>();
+  for (const p of products.data ?? []) if (p.unidade) units.set(p.id, p.unidade);
+  for (const s of services.data ?? []) if (s.unit) units.set(s.id, s.unit);
+  return units;
+}
+
+/** Todos os Customers (`GET /clientes`) — para juntar a cidade nas listas de Sale e Quote. */
+export function useAllCustomers() {
+  const { data, isLoading } = useSWR<Cliente[]>("/clientes", api.get);
+  return { customers: data ?? [], isLoading };
+}

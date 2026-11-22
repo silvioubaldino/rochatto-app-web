@@ -10,6 +10,8 @@ interface QuotesFilters {
   to?: string;
   customer_id?: string;
   q?: string;
+  /** AYD-011 C4: Quotes indicados por este Partner. */
+  referrer_id?: string;
 }
 
 function buildQuery(filters?: QuotesFilters): string {
@@ -20,6 +22,7 @@ function buildQuery(filters?: QuotesFilters): string {
   if (filters.to) params.set("to", filters.to);
   if (filters.customer_id) params.set("customer_id", filters.customer_id);
   if (filters.q) params.set("q", filters.q);
+  if (filters.referrer_id) params.set("referrer_id", filters.referrer_id);
   const qs = params.toString();
   return qs ? `/quotes?${qs}` : "/quotes";
 }

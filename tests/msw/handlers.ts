@@ -65,8 +65,28 @@ export const searchResult = {
   ],
 };
 
+export const products = [
+  { id: "p1", nome: "Rock face", unidade: "m²", preco_referencia: 269, custo_referencia: 165, default_supplier_id: "f1", created_at: "2026-01-01T00:00:00Z" },
+  { id: "p2", nome: "Moledo", unidade: "m²", preco_referencia: 100, custo_referencia: 60, created_at: "2026-01-01T00:00:00Z" },
+];
+export const suppliers = [
+  { id: "f1", nome: "Matheus RJ", kind: "STONE", created_at: "2026-01-01T00:00:00Z" },
+  { id: "f2", nome: "Nivaldo", kind: "LABOR", created_at: "2026-01-01T00:00:00Z" },
+];
+export const services = [
+  { id: "sv1", name: "Instalação", unit: "m²", reference_price: 50, reference_cost: 30, notes: null, created_at: "2026-01-01T00:00:00Z" },
+];
+
 /** Handlers padrão. Cada teste sobrescreve o que precisar com `server.use(...)`. */
 export const handlers = [
+  http.get(`${API}/produtos`, () => HttpResponse.json(products)),
+  http.get(`${API}/fornecedores`, () => HttpResponse.json(suppliers)),
+  http.get(`${API}/fornecedores/:id`, ({ params }) => {
+    const found = suppliers.find((f) => f.id === params.id);
+    return found ? HttpResponse.json(found) : HttpResponse.json({ error: "não encontrado" }, { status: 404 });
+  }),
+  http.get(`${API}/services`, () => HttpResponse.json(services)),
+  http.get(`${API}/stock/balance`, () => HttpResponse.json([{ product_id: "p2", balance: 4 }, { product_id: "p1", balance: 25 }])),
   http.get(`${API}/pending-actions`, () => HttpResponse.json(pendingActions)),
   http.get(`${API}/search`, () => HttpResponse.json(searchResult)),
   http.get(`${API}/dashboard/kpis`, () =>

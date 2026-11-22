@@ -10,7 +10,8 @@ import type { ProductFormData } from "./schemas";
 export function useSaveProduct(entity?: Produto) {
   return useApiMutation({
     run: (payload: ProductFormData) => {
-      const body = { ...payload, category_id: emptyToNull(payload.category_id) };
+      // C8: no PUT, campo AUSENTE mantém o valor; aqui o formulário sempre o envia (null limpa).
+      const body = { ...payload, category_id: emptyToNull(payload.category_id), default_supplier_id: emptyToNull(payload.default_supplier_id) };
       return entity ? http.put<Produto>(`/produtos/${entity.id}`, body) : http.post<Produto>("/produtos", body);
     },
     emits: "CATALOG_CHANGED",

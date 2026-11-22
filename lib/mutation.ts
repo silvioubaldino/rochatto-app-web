@@ -51,5 +51,25 @@ export function useApiMutation<TArgs extends unknown[], TResult>(options: ApiMut
     [run, emit, emits, successMessage, errorFallback, toastOnError],
   );
 
-  return { mutate, pending, error, reset: () => setError(null) };
+  /** Como `mutate`, mas RELANÇA o erro (para o `ConfirmDialog` mostrá-lo no próprio diálogo — UX-P09). */
+  const mutateAsync = useCallback(
+    async (...args: TArgs): Promise<TResult> => {
+      setPending(true);
+      setError(null);
+      try {
+        const result = await run(...args);
+        await emit(emits);
+        if (successMessage) toast.success(typeof successMessage === "function" ? successMessage(result) : successMessage);
+        return result;
+      } catch (err) {
+        setError(err);
+        throw err;
+      } finally {
+        setPending(false);
+      }
+    },
+    [run, emit, emits, successMessage],
+  );
+
+  return { mutate, mutateAsync, pending, error, reset: () => setError(null) };
 }

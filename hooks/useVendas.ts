@@ -11,6 +11,10 @@ export interface VendasFilters {
   data_inicio?: string;
   data_fim?: string;
   cliente_id?: string;
+  /** AYD-011 C4: nome do cliente, número da Sale ou nome de Item (contém). */
+  q?: string;
+  /** AYD-011 C4: Sales indicadas por este Partner. */
+  referrer_id?: string;
   /** data_venda entre from e to (inclusive), YYYY-MM-DD */
   from?: string;
   to?: string;
@@ -24,6 +28,8 @@ function buildQuery(filters?: VendasFilters): string {
   if (filters.data_inicio) params.set("data_inicio", filters.data_inicio);
   if (filters.data_fim) params.set("data_fim", filters.data_fim);
   if (filters.cliente_id) params.set("cliente_id", filters.cliente_id);
+  if (filters.q) params.set("q", filters.q);
+  if (filters.referrer_id) params.set("referrer_id", filters.referrer_id);
   if (filters.from) params.set("from", filters.from);
   if (filters.to) params.set("to", filters.to);
   const qs = params.toString();

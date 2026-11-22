@@ -76,7 +76,7 @@ const eslintConfig = defineConfig([
   },
   // Exceções documentadas: a tabela mora no DataTable; leitura de entidades mora em *-queries.
   {
-    files: ["components/patterns/DataTable.tsx"],
+    files: ["components/patterns/DataTable.tsx", "components/entity/items-grid/ItemsGrid.tsx"],
     rules: syntaxRules("error", { table: false }),
   },
   {

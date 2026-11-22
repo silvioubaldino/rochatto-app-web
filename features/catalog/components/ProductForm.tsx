@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { EntityCombobox } from "@/components/entity/EntityCombobox";
 import type { EntityFormProps } from "@/components/entity/quick-create";
 import { FieldShell, MoneyField } from "@/components/patterns/fields";
 import { Select } from "@/components/patterns/Select";
@@ -40,6 +41,7 @@ export function ProductForm({ formId, entity, initialName, onSaved, onPendingCha
       custo_referencia: entity?.custo_referencia ?? 0,
       unidade: entity?.unidade ?? "",
       category_id: entity?.category_id ?? "",
+      default_supplier_id: entity?.default_supplier_id ?? "",
     },
   });
 
@@ -93,6 +95,16 @@ export function ProductForm({ formId, entity, initialName, onSaved, onPendingCha
         </FieldShell>
       </div>
       <p className="text-xs text-muted-foreground">Estes valores são só referência. O preço real é definido em cada venda.</p>
+
+      <FieldShell label="Fornecedor habitual" htmlFor="product-supplier" hint="Só uma sugestão: já vem preenchido ao fechar a venda.">
+        <Controller
+          control={control}
+          name="default_supplier_id"
+          render={({ field }) => (
+            <EntityCombobox kind="supplier" id="product-supplier" value={field.value} placeholder="Nenhum" prefer={(f) => f.kind === "STONE"} onChange={(id) => field.onChange(id)} />
+          )}
+        />
+      </FieldShell>
 
       <FieldShell label="Descrição" htmlFor="product-description">
         <Textarea id="product-description" {...register("descricao")} />
