@@ -103,8 +103,10 @@ function SalesContent() {
         <FieldShell label="Até" htmlFor="sf-to"><DateField id="sf-to" shortcuts={false} value={v.to} onChange={(x) => f.set({ to: x })} /></FieldShell>
         <FieldShell label="Cliente" htmlFor="sf-customer"><EntityCombobox kind="customer" id="sf-customer" value={v.cliente_id} allowCreate={false} placeholder="Todos os clientes" onChange={(id) => f.set({ cliente_id: id })} /></FieldShell>
         <FieldShell label="Parceiro" htmlFor="sf-referrer"><EntityCombobox kind="partner" id="sf-referrer" value={v.referrer_id} allowCreate={false} placeholder="Todos os parceiros" onChange={(id) => f.set({ referrer_id: id })} /></FieldShell>
-        <CityFilters cidade={v.cidade} agrupar={v.agrupar} options={city.options} onChange={(p) => f.set(p)} />
       </FilterBar>
+      <div className="grid grid-cols-1 items-end gap-3 sm:flex sm:flex-wrap [&>*:first-child]:sm:w-64">
+        <CityFilters cidade={v.cidade} agrupar={v.agrupar} options={city.options} onChange={(p) => f.set(p)} />
+      </div>
       <DataTable
         caption="Vendas"
         columns={columns}

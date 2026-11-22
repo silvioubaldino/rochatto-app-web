@@ -86,8 +86,10 @@ function QuotesContent() {
         <FieldShell label="Até" htmlFor="qf-to"><DateField id="qf-to" shortcuts={false} value={v.to} onChange={(x) => f.set({ to: x })} /></FieldShell>
         <FieldShell label="Cliente" htmlFor="qf-customer"><EntityCombobox kind="customer" id="qf-customer" value={v.customer_id} allowCreate={false} placeholder="Todos os clientes" onChange={(id) => f.set({ customer_id: id })} /></FieldShell>
         <FieldShell label="Indicação" htmlFor="qf-referrer"><EntityCombobox kind="partner" id="qf-referrer" value={v.referrer_id} allowCreate={false} placeholder="Todos os parceiros" onChange={(id) => f.set({ referrer_id: id })} /></FieldShell>
-        <CityFilters cidade={v.cidade} agrupar={v.agrupar} options={city.options} onChange={(p) => f.set(p)} />
       </FilterBar>
+      <div className="grid grid-cols-1 items-end gap-3 sm:flex sm:flex-wrap [&>*:first-child]:sm:w-64">
+        <CityFilters cidade={v.cidade} agrupar={v.agrupar} options={city.options} onChange={(p) => f.set(p)} />
+      </div>
       <DataTable
         caption="Orçamentos"
         columns={columns}

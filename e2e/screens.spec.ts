@@ -35,3 +35,21 @@ for (const [path, title] of SCREENS) {
     expect(await hasHorizontalScroll(page)).toBe(false);
   });
 }
+
+for (const path of ["/vendas", "/orcamentos"]) {
+  test(`${path} mostra o agrupamento por cidade sem abrir os filtros`, async ({ page }) => {
+    await mockApi(page);
+    await page.goto(path);
+    await expect(page.getByRole("button", { name: "Agrupar por cidade" })).toBeVisible();
+    await expect(page.getByRole("combobox", { name: "Cidade" })).toBeVisible();
+  });
+}
+
+test("/vendas agrupa por cidade", async ({ page }) => {
+  await mockApi(page);
+  await page.goto("/vendas");
+  await page.getByRole("button", { name: "Agrupar por cidade" }).click();
+  await expect(page).toHaveURL(/agrupar=cidade/);
+  await expect(page.getByText(/Bonito\/MS · 1/).first()).toBeVisible();
+  expect(await hasHorizontalScroll(page)).toBe(false);
+});
