@@ -1,5 +1,6 @@
 "use client";
 
+import { docNumber } from "@/lib/format";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -236,8 +237,8 @@ export default function CompraDetalhePage() {
         <Button variant="ghost" size="icon" onClick={back}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-2xl font-bold">Compra</h1>
-        <span className="font-mono text-sm text-muted-foreground">#{purchase.id.slice(0, 8)}</span>
+        <h1 className="text-2xl font-bold">{docNumber("Compra", purchase.number, purchase.id)}</h1>
+        <span className="text-sm text-muted-foreground">{purchase.supplier_name}</span>
         <PurchaseStatusBadge status={purchase.status} />
 
         <div className="ml-auto flex flex-wrap gap-2">

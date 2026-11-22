@@ -33,7 +33,8 @@ function MovimentacoesView() {
   const searchParams = useSearchParams();
   const { mutate } = useSWRConfig();
   const [filters, setFilters] = useState<MovementFilters>(() => parseMovementFilters(searchParams));
-  const [formOpen, setFormOpen] = useState(false);
+  // "＋ Novo → Despesa" chega com ?nova=despesa e já abre o lançamento.
+  const [formOpen, setFormOpen] = useState(() => searchParams.get("nova") === "despesa");
   const [editing, setEditing] = useState<FinancialMovement | undefined>();
   const [voiding, setVoiding] = useState<FinancialMovement | null>(null);
 

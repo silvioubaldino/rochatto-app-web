@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSWRConfig } from "swr";
 import { X } from "lucide-react";
@@ -34,11 +34,14 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: ALL_STATUSES, label: "Todas" },
 ];
 
-function ContasView() {
+const BASE_PATHS = { RECEIVABLE: "/contas/receber", PAYABLE: "/contas/pagar" } as const;
+
+/** A receber (`/contas/receber`) ou A pagar (`/contas/pagar`) — AYD-011 §5.1, AYD-007 §2. */
+export function ObligationsView({ direction }: { direction: ObligationFilters["direction"] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { mutate } = useSWRConfig();
-  const [filters, setFilters] = useState<ObligationFilters>(() => parseObligationFilters(searchParams));
+  const [filters, setFilters] = useState<ObligationFilters>(() => ({ ...parseObligationFilters(searchParams), direction }));
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkOpen, setBulkOpen] = useState(false);
 
@@ -50,17 +53,20 @@ function ContasView() {
 
   // Reflete os filtros na URL (compartilhável / sobrevive ao recarregar)
   useEffect(() => {
-    router.replace(`/contas?${obligationFiltersToParams(filters).toString()}`, { scroll: false });
-  }, [filters, router]);
+    const params = obligationFiltersToParams(filters);
+    params.delete("direction"); // a direção é a rota
+    const qs = params.toString();
+    router.replace(qs ? `${BASE_PATHS[direction]}?${qs}` : BASE_PATHS[direction], { scroll: false });
+  }, [filters, direction, router]);
 
   function update(patch: Partial<ObligationFilters>) {
     setSelected(new Set());
     setFilters((f) => ({ ...f, offset: 0, ...patch }));
   }
 
-  function changeDirection(direction: ObligationFilters["direction"]) {
-    // Credor de uma direção não faz sentido na outra; selecionadas também não se misturam.
-    update({ direction, counterparty_type: undefined, counterparty_id: undefined });
+  function changeDirection(next: ObligationFilters["direction"]) {
+    // Credor de uma direção não faz sentido na outra: a rota muda e os filtros do credor saem.
+    if (next !== direction) router.push(BASE_PATHS[next]);
   }
 
   const items = useMemo(() => list?.items ?? [], [list]);
@@ -110,7 +116,7 @@ function ContasView() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Contas</h1>
+        <h1 className="text-2xl font-bold">{receiving ? "A receber" : "A pagar"}</h1>
         <Button disabled={!canBulk} onClick={() => setBulkOpen(true)}>
           {receiving ? "Receber várias contas" : "Pagar várias contas"}
           {selectedItems.length > 0 && ` (${selectedItems.length})`}
@@ -265,10 +271,3 @@ function ContasView() {
   );
 }
 
-export default function ContasPage() {
-  return (
-    <Suspense fallback={null}>
-      <ContasView />
-    </Suspense>
-  );
-}

@@ -6,7 +6,7 @@ import { PreviewFields, PreviewList, PreviewSection } from "@/components/entity/
 import { StatusBadge } from "@/components/patterns/StatusBadge";
 import { DateText, MoneyText, QuantityText } from "@/components/patterns/values";
 import { useVenda } from "@/hooks/useVenda";
-import { isServiceOnlySale } from "@/lib/format";
+import { docTitle, isServiceOnlySale } from "@/lib/format";
 import type { Venda } from "@/lib/types";
 
 function useSalePreview(id: string): PreviewData<Venda> {
@@ -15,7 +15,7 @@ function useSalePreview(id: string): PreviewData<Venda> {
 }
 
 export function saleTitle(v: Venda): string {
-  return `${v.number ? `Venda nº ${v.number}` : "Venda"} · ${v.cliente_nome}`;
+  return docTitle("Venda", v.number, v.id, v.cliente_nome);
 }
 
 function SalePreviewBody({ data }: { data: Venda }) {

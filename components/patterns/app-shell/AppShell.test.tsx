@@ -48,7 +48,7 @@ describe("AppShell", () => {
       "Mais",
     ]);
     expect(within(bar).getByRole("link", { name: "Vendas" })).toHaveAttribute("aria-current", "page");
-    expect(within(bar).getByRole("link", { name: "Hoje" })).toHaveAttribute("href", "/dashboard");
+    expect(within(bar).getByRole("link", { name: "Hoje" })).toHaveAttribute("href", "/hoje");
   });
 
   it("badge do Hoje mostra os vencidos", () => {

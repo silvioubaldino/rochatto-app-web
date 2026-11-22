@@ -6,6 +6,7 @@ import { PreviewFields, PreviewList, PreviewSection } from "@/components/entity/
 import { StatusBadge } from "@/components/patterns/StatusBadge";
 import { DateText, MoneyText, QuantityText } from "@/components/patterns/values";
 import { useQuote } from "@/hooks/useQuote";
+import { docTitle } from "@/lib/format";
 import type { Quote } from "@/lib/types";
 
 function useQuotePreview(id: string): PreviewData<Quote> {
@@ -48,7 +49,7 @@ function QuotePreviewBody({ data }: { data: Quote }) {
 }
 
 registerPreview<Quote>("quote", {
-  title: (q) => `${q.number ? `Orçamento nº ${q.number}` : "Orçamento"} · ${q.customer_name}`,
+  title: (q) => docTitle("Orçamento", q.number, q.id, q.customer_name),
   useData: useQuotePreview,
   Body: QuotePreviewBody,
 });

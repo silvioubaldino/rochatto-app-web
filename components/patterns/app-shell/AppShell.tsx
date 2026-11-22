@@ -18,7 +18,12 @@ import {
   Truck,
   Users,
   Wallet,
+  ChartColumn,
   BookOpen,
+  Handshake,
+  HandCoins,
+  Hammer,
+  Store,
   type LucideIcon,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -45,15 +50,20 @@ import {
 
 const ICONS: Record<NavIconName, LucideIcon> = {
   home: LayoutDashboard,
+  indicators: ChartColumn,
   quotes: FileText,
   sales: ShoppingCart,
   customers: Users,
+  partners: Handshake,
   purchases: Truck,
   stock: Package,
+  suppliers: Store,
   receivables: Landmark,
+  payables: HandCoins,
   movements: ArrowLeftRight,
   results: Wallet,
-  catalog: BookOpen,
+  products: BookOpen,
+  services: Hammer,
   integrations: Plug,
 };
 
@@ -125,7 +135,14 @@ function ShellLayout({ user, badges = {}, onSignOut, onSearch, children }: AppSh
           <div className="px-4 py-5">
             <p className="text-lg font-bold tracking-tight">Gestão de Vendas</p>
           </div>
-          <div className="px-3 pb-2">
+          <div className="space-y-2 px-3 pb-2">
+            {onSearch && (
+              <Button variant="outline" className="w-full justify-start text-muted-foreground" onClick={onSearch}>
+                <Search aria-hidden />
+                <span className="flex-1 text-left">Buscar</span>
+                <kbd className="rounded border px-1.5 text-xs">Ctrl K</kbd>
+              </Button>
+            )}
             <Button className="w-full" onClick={() => setNewOpen(true)}>
               <Plus aria-hidden />
               Novo

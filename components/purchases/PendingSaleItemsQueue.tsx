@@ -1,5 +1,6 @@
 "use client";
 
+import { docNumber } from "@/lib/format";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -245,7 +246,7 @@ function SupplierGroup({
             >
               {openPurchases.map((p) => (
                 <option key={p.id} value={p.id}>
-                  #{p.id.slice(0, 8)} · {formatMoeda(p.total_cost)}
+                  {docNumber("Compra", p.number, p.id)} · {formatMoeda(p.total_cost)}
                   {p.expected_date ? ` · prev. ${formatData(p.expected_date)}` : ""}
                 </option>
               ))}

@@ -16,3 +16,4 @@ export const formatData = formatDate;
 export const formatDataHora = formatDateTime;
 export const formatQuantidade = formatQuantityNumber;
 export * from "./items-summary";
+export * from "./doc-number";

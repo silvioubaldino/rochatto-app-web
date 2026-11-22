@@ -8,8 +8,76 @@ export const customers = [
   { id: "c2", nome: "Alberto Lima", cidade: "Campo Grande/MS", created_at: "2026-01-01T00:00:00Z" },
 ];
 
+export const pendingActions = {
+  today: "2026-11-22",
+  horizon_days: 7,
+  total_overdue: 2,
+  groups: [
+    {
+      kind: "RECEIVABLE_DUE",
+      count: 2,
+      overdue_count: 1,
+      amount: 3200,
+      items: [
+        {
+          entity: { type: "OBLIGATION", id: "o1" },
+          number: null,
+          title: "Alejandra Souza",
+          date: "2026-11-21",
+          overdue: true,
+          amount: 1200,
+          quantity: null,
+        },
+      ],
+    },
+    {
+      kind: "DELIVERY_DUE",
+      count: 1,
+      overdue_count: 0,
+      amount: null,
+      items: [
+        {
+          entity: { type: "SALE", id: "s1" },
+          number: 98,
+          title: "Alejandra Souza",
+          date: "2026-11-22",
+          overdue: false,
+          amount: null,
+          quantity: null,
+        },
+      ],
+    },
+  ],
+};
+
+export const searchResult = {
+  groups: [
+    {
+      type: "QUOTE",
+      items: [
+        { id: "q154", number: 154, title: "Alejandra Souza", date: "2026-11-20", amount: 5842, status: "OPEN", city: "Bonito/MS", kind: null },
+      ],
+    },
+    {
+      type: "SALE",
+      items: [{ id: "s154", number: 154, title: "Alejandra Souza", date: "2026-11-21", amount: 5842, status: "TO_DELIVER", city: null, kind: null }],
+    },
+  ],
+};
+
 /** Handlers padrão. Cada teste sobrescreve o que precisar com `server.use(...)`. */
 export const handlers = [
+  http.get(`${API}/pending-actions`, () => HttpResponse.json(pendingActions)),
+  http.get(`${API}/search`, () => HttpResponse.json(searchResult)),
+  http.get(`${API}/dashboard/kpis`, () =>
+    HttpResponse.json({
+      period: { from: "2026-11-01", to: "2026-11-22" },
+      sales: { count: 3, revenue: 48200, profit: 14900, average_ticket: 16066 },
+      quotes: { created: 7, won: 3, lost: 1, open: 3, conversion_rate: 0.42 },
+      balances: { receivable: 0, payable: 0, payable_by_counterparty_kind: [] },
+      open_deliveries: 1,
+    }),
+  ),
   http.get(`${API}/clientes/search`, ({ request }) => {
     const q = (new URL(request.url).searchParams.get("q") ?? "").toLowerCase();
     return HttpResponse.json(customers.filter((c) => c.nome.toLowerCase().includes(q)));

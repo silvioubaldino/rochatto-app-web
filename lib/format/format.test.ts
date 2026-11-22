@@ -131,3 +131,24 @@ describe("mapas legados derivados dos tons", () => {
     expect(QUOTE_STATUS_COLORS.LOST).toBe("bg-danger-subtle text-danger");
   });
 });
+
+import { formatPercent } from "./money";
+
+describe("formatPercent", () => {
+  it("usa vírgula e uma casa", () => {
+    expect(formatPercent(38.66)).toBe("38,7%");
+    expect(formatPercent(0)).toBe("0,0%");
+    expect(formatPercent(null)).toBe("—");
+  });
+});
+
+import { docNumber, docTitle } from "./doc-number";
+
+describe("docNumber / docTitle", () => {
+  it("número humano, com id curto de reserva", () => {
+    expect(docNumber("Venda", 98)).toBe("Venda nº 98");
+    expect(docNumber("Compra", undefined, "3f9a12bc-1111")).toBe("Compra #3f9a12bc");
+    expect(docTitle("Orçamento", 154, "x", "Alejandra")).toBe("Orçamento nº 154 · Alejandra");
+    expect(docTitle("Venda", 1, "x")).toBe("Venda nº 1");
+  });
+});

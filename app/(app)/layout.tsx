@@ -1,17 +1,21 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/patterns/app-shell/AppShell";
 import { useAuth } from "@/hooks/useAuth";
-import { useNotificacoes } from "@/hooks/useDashboard";
+import { useOverdueCount } from "@/features/home/queries";
+import { CommandPalette, useCommandPaletteShortcut } from "@/features/search/components/CommandPalette";
 import "@/features/register";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
-  // As notificações só carregam com sessão (o cliente HTTP espera o Firebase resolver).
-  const { notificacoes } = useNotificacoes(!!user);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const openSearch = useCallback(() => setSearchOpen(true), []);
+  useCommandPaletteShortcut(openSearch);
+  // O badge de "Hoje" = pendências vencidas (C10); só carrega com sessão.
+  const overdue = useOverdueCount(!!user);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -25,10 +29,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AppShell
       user={user ? { displayName: user.displayName, photoURL: user.photoURL, email: user.email } : null}
-      badges={{ today: notificacoes.length }}
+      badges={{ today: overdue }}
       onSignOut={handleSignOut}
+      onSearch={openSearch}
     >
       {children}
+      {user && <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />}
     </AppShell>
   );
 }

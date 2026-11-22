@@ -49,3 +49,9 @@ export function moneyToInput(value: number | null | undefined): string {
 export function sumMoney(values: ReadonlyArray<number>): number {
   return values.reduce((acc, v) => acc + Math.round(v * 100), 0) / 100;
 }
+
+/** Percentual em pt-BR: `formatPercent(38.66)` → "38,7%"; vazio → "—". */
+export function formatPercent(value: number | null | undefined, digits = 1): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return "—";
+  return `${value.toLocaleString("pt-BR", { minimumFractionDigits: digits, maximumFractionDigits: digits })}%`;
+}

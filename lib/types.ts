@@ -63,6 +63,9 @@ export interface Produto {
   // AYD-003: categoria (category_name vem mesmo se a categoria foi excluída)
   category_id?: string | null;
   category_name?: string | null;
+  /** AYD-011 C8: fornecedor habitual — só sugestão para o atendimento sob encomenda. */
+  default_supplier_id?: string | null;
+  default_supplier_name?: string | null;
   created_at: string;
 }
 
@@ -107,6 +110,8 @@ export interface ItemVenda {
   /** AYD-010: ausente em respostas antigas = PRODUCT. */
   kind?: ItemKind;
   service_id?: string | null;
+  /** AYD-011 C7: Balance atual do Product quando origin = FROM_STOCK; null nos demais. */
+  stock_balance?: number | null;
 }
 
 /** Resposta de POST/PUT /vendas/{id}/itens[/{itemId}] — o Item + avisos (AYD-002 §1). */
@@ -754,4 +759,119 @@ export interface Connection {
   scopes: ConnectionScope[];
   created_at: string;
   last_used_at: string | null;
+}
+
+// --- Jornada do dono (AYD-011 §6) ---------------------------------------------------------
+
+/** C10 — pendências do dia (`GET /pending-actions`). Ordem do enum = ordem de exibição. */
+export type PendingActionKind =
+  | "RECEIVABLE_DUE"
+  | "PAYABLE_DUE"
+  | "DELIVERY_DUE"
+  | "ITEMS_WITHOUT_SUPPLIER"
+  | "ITEMS_TO_PURCHASE"
+  | "PURCHASE_TO_ORDER"
+  | "PURCHASE_TO_RECEIVE"
+  | "RECEIVABLE_WITHOUT_PLAN"
+  | "COST_WITHOUT_PAYEE"
+  | "QUOTE_STALE"
+  | "NEGATIVE_STOCK";
+
+export type PendingEntityType = "SALE" | "QUOTE" | "PURCHASE" | "OBLIGATION" | "PRODUCT" | "SUPPLIER";
+
+export interface PendingActionItem {
+  entity: { type: PendingEntityType; id: string };
+  number: number | null;
+  title: string;
+  date: string | null;
+  overdue: boolean;
+  amount: number | null;
+  quantity: number | null;
+}
+
+export interface PendingActionGroup {
+  kind: PendingActionKind;
+  count: number;
+  overdue_count: number;
+  amount: number | null;
+  items: PendingActionItem[];
+}
+
+export interface PendingActions {
+  today: string;
+  horizon_days: number;
+  total_overdue: number;
+  groups: PendingActionGroup[];
+}
+
+/** C9 — busca global (`GET /search`). */
+export type SearchType = "CUSTOMER" | "QUOTE" | "SALE" | "PURCHASE" | "PRODUCT" | "SERVICE" | "SUPPLIER" | "PARTNER";
+
+export interface SearchItem {
+  id: string;
+  number: number | null;
+  title: string;
+  date: string | null;
+  amount: number | null;
+  status: string | null;
+  city: string | null;
+  kind: string | null;
+}
+
+export interface SearchGroup {
+  type: SearchType;
+  items: SearchItem[];
+}
+
+export interface SearchResponse {
+  groups: SearchGroup[];
+}
+
+/** C5 — fechamento da venda (corpo de `closing` em convert / quick-sale). */
+export interface ClosingItemInput {
+  quote_item_id?: string;
+  item_index?: number;
+  origin?: ItemOrigin;
+  supplier_id?: string | null;
+  labor_payee_id?: string | null;
+}
+
+export interface ClosingCostInput {
+  kind: SaleCostKind;
+  amount: number;
+  payee_id?: string | null;
+  description?: string | null;
+}
+
+export interface ClosingRequest {
+  delivery_due_date?: string | null;
+  items?: ClosingItemInput[];
+  costs?: ClosingCostInput[];
+  receivable_plan?: { installments: InstallmentInput[] };
+  down_payment?: { amount: number; occurred_on: string; payment_method: PaymentMethod };
+}
+
+export interface ClosingWarning {
+  code: "INSUFFICIENT_STOCK";
+  quote_item_id?: string;
+  item_index?: number;
+}
+
+export interface ClosingResponse {
+  sale_id: string;
+  quote_id: string;
+  sale_number?: number;
+  warnings?: ClosingWarning[];
+}
+
+/** C6 — atendimento em lote (`PATCH /vendas/{id}/itens/fulfillment`). */
+export interface BatchFulfillmentItem {
+  id: string;
+  origin: ItemOrigin;
+  fornecedor_id: string | null;
+}
+
+export interface BatchFulfillmentResponse {
+  itens: ItemVenda[];
+  warnings?: { item_id: string; code: "INSUFFICIENT_STOCK" }[];
 }

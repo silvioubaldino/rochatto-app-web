@@ -24,8 +24,8 @@ export type DomainEvent =
 /** Prefixos de caminho da api afetados por cada evento. */
 export const EVENT_PATHS: Record<DomainEvent, readonly string[]> = {
   // Venda mexe em fila de compra, estoque (outflow), contas e painéis.
-  SALE_CHANGED: ["/vendas", "/quotes", "/purchases", "/stock", "/obligations", "/finance", "/dashboard", "/relatorios"],
-  QUOTE_CHANGED: ["/quotes", "/dashboard", "/relatorios"],
+  SALE_CHANGED: ["/vendas", "/quotes", "/purchases", "/stock", "/obligations", "/finance", "/dashboard", "/relatorios", "/pending-actions"],
+  QUOTE_CHANGED: ["/quotes", "/dashboard", "/relatorios", "/pending-actions"],
   PURCHASE_CHANGED: [
     "/purchases",
     "/stock",
@@ -34,10 +34,19 @@ export const EVENT_PATHS: Record<DomainEvent, readonly string[]> = {
     "/financial-movements",
     "/finance",
     "/dashboard",
+    "/pending-actions",
   ],
   // Pagar/receber/parcelar: contas, movimentações, painéis, Sales e Purchases (saldos).
-  MONEY_MOVED: ["/obligations", "/financial-movements", "/finance", "/vendas", "/purchases", "/dashboard"],
-  STOCK_CHANGED: ["/stock", "/vendas", "/finance"],
+  MONEY_MOVED: [
+    "/obligations",
+    "/financial-movements",
+    "/finance",
+    "/vendas",
+    "/purchases",
+    "/dashboard",
+    "/pending-actions",
+  ],
+  STOCK_CHANGED: ["/stock", "/vendas", "/finance", "/pending-actions"],
   CATALOG_CHANGED: ["/produtos", "/services", "/product-categories", "/stock", "/relatorios"],
   CUSTOMER_CHANGED: ["/clientes", "/quotes", "/vendas"],
   PARTNER_CHANGED: ["/partners", "/clientes", "/quotes", "/vendas"],

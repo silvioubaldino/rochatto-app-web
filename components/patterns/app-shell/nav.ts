@@ -1,17 +1,22 @@
 // Navegação do app: grupos, item ativo e barra inferior do celular — puro e testado.
-// Rotas atuais do app; as fases U2–U5 trocam `href` aqui (ex.: Hoje → /hoje) e mais nada.
+// Estrutura de AYD-011 §5.1 (U2). Trocar uma rota = mudar `href` aqui e em `entityHref`.
 
 export type NavIconName =
   | "home"
+  | "indicators"
   | "quotes"
   | "sales"
   | "customers"
+  | "partners"
   | "purchases"
   | "stock"
+  | "suppliers"
   | "receivables"
+  | "payables"
   | "movements"
   | "results"
-  | "catalog"
+  | "products"
+  | "services"
   | "integrations";
 
 export interface NavItem {
@@ -33,8 +38,10 @@ export const NAV_GROUPS: readonly NavGroup[] = [
   {
     id: "home",
     label: "Início",
-    // U2 cria /hoje e /indicadores; por ora "Hoje" aponta para o dashboard atual.
-    items: [{ id: "today", label: "Hoje", href: "/dashboard", icon: "home" }],
+    items: [
+      { id: "today", label: "Hoje", href: "/hoje", icon: "home" },
+      { id: "indicators", label: "Indicadores", href: "/indicadores", icon: "indicators" },
+    ],
   },
   {
     id: "commercial",
@@ -43,6 +50,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { id: "quotes", label: "Orçamentos", href: "/orcamentos", icon: "quotes" },
       { id: "sales", label: "Vendas", href: "/vendas", icon: "sales" },
       { id: "customers", label: "Clientes", href: "/clientes", icon: "customers" },
+      { id: "partners", label: "Parceiros", href: "/parceiros", icon: "partners" },
     ],
   },
   {
@@ -51,21 +59,26 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       { id: "purchases", label: "Compras", href: "/compras", icon: "purchases" },
       { id: "stock", label: "Estoque", href: "/estoque", icon: "stock" },
+      { id: "suppliers", label: "Fornecedores e prestadores", href: "/fornecedores", icon: "suppliers" },
     ],
   },
   {
     id: "finance",
     label: "Financeiro",
     items: [
-      { id: "accounts", label: "Contas", href: "/contas", icon: "receivables" },
+      { id: "receivables", label: "A receber", href: "/contas/receber", icon: "receivables" },
+      { id: "payables", label: "A pagar", href: "/contas/pagar", icon: "payables" },
       { id: "movements", label: "Movimentações", href: "/movimentacoes", icon: "movements" },
-      { id: "results", label: "Financeiro", href: "/financeiro", icon: "results" },
+      { id: "results", label: "Resultado", href: "/financeiro", icon: "results" },
     ],
   },
   {
     id: "registries",
     label: "Cadastros",
-    items: [{ id: "catalogs", label: "Catálogos", href: "/catalogos", icon: "catalog" }],
+    items: [
+      { id: "products", label: "Produtos", href: "/produtos", icon: "products" },
+      { id: "services", label: "Serviços", href: "/servicos", icon: "services" },
+    ],
   },
 ];
 
@@ -107,12 +120,15 @@ export interface NewMenuEntry {
   quickCreate?: "customer" | "product" | "supplier" | "partner" | "service";
 }
 
-/** Menu "＋ Novo". U2 acrescenta Venda rápida / Receber / Pagar / Despesa quando as telas existirem. */
+/** Menu "＋ Novo" (UX-P02): cada entrada abre um fluxo real, sem sair da tela quando é cadastro. */
 export const NEW_MENU: readonly NewMenuEntry[] = [
   { id: "quote", label: "Orçamento", href: "/orcamentos/novo" },
+  { id: "quick-sale", label: "Venda rápida", href: "/orcamentos/novo?rapida=1" },
+  { id: "receive", label: "Receber", href: "/contas/receber" },
+  { id: "pay", label: "Pagar", href: "/contas/pagar" },
+  { id: "expense", label: "Despesa", href: "/movimentacoes?nova=despesa" },
   { id: "customer", label: "Cliente", quickCreate: "customer" },
   { id: "product", label: "Produto", quickCreate: "product" },
   { id: "supplier", label: "Fornecedor ou prestador", quickCreate: "supplier" },
   { id: "partner", label: "Parceiro", quickCreate: "partner" },
-  { id: "movement", label: "Despesa ou movimentação", href: "/movimentacoes" },
 ];

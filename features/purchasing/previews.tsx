@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/patterns/StatusBadge";
 import { DateText, MoneyText } from "@/components/patterns/values";
 import { usePurchase } from "@/hooks/usePurchases";
 import { PURCHASE_KIND_LABELS } from "@/lib/format";
+import { docTitle } from "@/lib/format";
 import type { PurchaseDetail } from "@/lib/types";
 
 function usePurchasePreview(id: string): PreviewData<PurchaseDetail> {
@@ -45,7 +46,7 @@ function PurchasePreviewBody({ data }: { data: PurchaseDetail }) {
 }
 
 registerPreview<PurchaseDetail>("purchase", {
-  title: (p) => `${p.number ? `Compra nº ${p.number}` : "Compra"} · ${p.supplier_name}`,
+  title: (p) => docTitle("Compra", p.number, p.id, p.supplier_name),
   useData: usePurchasePreview,
   Body: PurchasePreviewBody,
 });

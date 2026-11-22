@@ -32,8 +32,9 @@ export const ENTITY_LABELS: Record<EntityType, string> = {
 };
 
 /**
- * Página da entidade. ÚNICO lugar onde isso é definido: as fases U2–U5 criam páginas novas
- * (`/clientes/[id]` 360, `/fornecedores/[id]`…) e só mudam este mapa.
+ * Página da entidade. ÚNICO lugar onde isso é definido: as fases U4–U5 criam páginas novas
+ * (`/fornecedores/[id]` 360…) e só mudam este mapa. Produto, serviço e fornecedor ainda
+ * abrem a lista do cadastro.
  */
 export function entityHref(type: EntityType, id: string): string {
   switch (type) {
@@ -48,13 +49,13 @@ export function entityHref(type: EntityType, id: string): string {
     case "obligation":
       return `/contas/${id}`;
     case "product":
-      return `/catalogos?tab=produtos`;
+      return `/produtos`;
     case "service":
-      return `/catalogos?tab=servicos`;
+      return `/servicos`;
     case "supplier":
-      return `/catalogos?tab=fornecedores`;
+      return `/fornecedores`;
     case "partner":
-      return `/catalogos?tab=parceiros`;
+      return `/parceiros/${id}`;
   }
 }
 

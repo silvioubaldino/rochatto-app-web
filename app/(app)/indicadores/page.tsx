@@ -15,10 +15,8 @@ import { PeriodSelector } from "@/components/dashboard/PeriodSelector";
 import { VendasChart } from "@/components/dashboard/VendasChart";
 import { ProdutosTable } from "@/components/dashboard/ProdutosTable";
 import { ServicosTable } from "@/components/dashboard/ServicosTable";
-import { AlertasPanel } from "@/components/dashboard/AlertasPanel";
 import {
   useDashboardKpis,
-  useNotificacoes,
   useVendasPorMes,
   useProdutosMaisVendidos,
   useServicosMaisVendidos,
@@ -36,7 +34,7 @@ import { Button } from "@/components/ui/button";
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-export default function DashboardPage() {
+export default function IndicatorsPage() {
   const router = useRouter();
   const [period, setPeriod] = useState<FinancePeriod>(() =>
     financePresetPeriod("this_month"),
@@ -48,7 +46,6 @@ export default function DashboardPage() {
 
   const { kpis, isLoading: kpisLoading, error: kpisError, refresh: refreshKpis } =
     useDashboardKpis(period.from, period.to, periodOk);
-  const { notificacoes, isLoading: notifLoading } = useNotificacoes();
   const { vendasPorMes, isLoading: chartLoading } = useVendasPorMes(meses);
   const { produtos, isLoading: produtosLoading } = useProdutosMaisVendidos(
     period.from,
@@ -71,7 +68,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-3">
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Indicadores</h1>
         <PeriodSelector period={period} onChange={setPeriod} />
         {periodError && <p className="text-xs text-destructive">{periodError}</p>}
       </div>
@@ -144,7 +141,7 @@ export default function DashboardPage() {
             variant="warning"
             icon={<DollarSign className="h-4 w-4" />}
             isLoading={loading}
-            onClick={() => router.push("/contas?direction=RECEIVABLE")}
+            onClick={() => router.push("/contas/receber")}
           />
           <KPICard
             title="A Pagar"
@@ -153,7 +150,7 @@ export default function DashboardPage() {
             variant="danger"
             icon={<TrendingDown className="h-4 w-4" />}
             isLoading={loading}
-            onClick={() => router.push("/contas?direction=PAYABLE")}
+            onClick={() => router.push("/contas/pagar")}
           />
           <KPICard
             title="Vendas a Entregar"
@@ -165,32 +162,14 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* Middle row: Alertas + Gráfico */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Alertas */}
-        <div className="lg:col-span-1 rounded-lg border p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-sm">
-              Alertas
-              {Array.isArray(notificacoes) && notificacoes.length > 0 && (
-                <span className="ml-2 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-xs px-1.5 py-0.5 leading-none">
-                  {notificacoes.length}
-                </span>
-              )}
-            </h2>
-          </div>
-          <AlertasPanel notificacoes={notificacoes} isLoading={notifLoading} />
-        </div>
-
-        {/* Gráfico */}
-        <div className="lg:col-span-2 rounded-lg border p-4 min-w-0">
-          <VendasChart
-            dados={vendasPorMes}
-            isLoading={chartLoading}
-            meses={meses}
-            onChangeMeses={setMeses}
-          />
-        </div>
+      {/* Gráfico (os alertas viraram pendências na tela Hoje) */}
+      <div className="rounded-lg border p-4 min-w-0">
+        <VendasChart
+          dados={vendasPorMes}
+          isLoading={chartLoading}
+          meses={meses}
+          onChangeMeses={setMeses}
+        />
       </div>
 
       {/* Produtos mais vendidos */}

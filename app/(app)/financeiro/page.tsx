@@ -253,8 +253,8 @@ function SummaryView({ summary, from, to }: { summary: FinanceSummary; from: str
 
       <Section title="Saldos em aberto (hoje)" description="Não dependem do período escolhido.">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <BalanceCard label="A receber" value={balances.receivable} href="/contas?direction=RECEIVABLE" />
-          <BalanceCard label="A pagar" value={balances.payable} href="/contas?direction=PAYABLE" />
+          <BalanceCard label="A receber" value={balances.receivable} href="/contas/receber" />
+          <BalanceCard label="A pagar" value={balances.payable} href="/contas/pagar" />
         </div>
         {balances.payable_by_counterparty_kind.length > 0 && (
           <Card className="p-4">

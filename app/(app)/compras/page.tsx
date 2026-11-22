@@ -1,5 +1,6 @@
 "use client";
 
+import { docNumber } from "@/lib/format";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSWRConfig } from "swr";
@@ -89,6 +90,11 @@ export default function ComprasPage() {
   );
 
   const columns = [
+    {
+      key: "number",
+      header: "Nº",
+      render: (row: PurchaseListItem) => docNumber("Compra", row.number, row.id),
+    },
     {
       key: "created_at",
       header: "Criada em",
